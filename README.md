@@ -33,7 +33,13 @@ The resulting `part_main_wreck-lod0.dae` will be created in the same directory.
 ```bash
 python xmf_converter.py "C:\SteamLibrary\steamapps\common\X4FoundationsDAE\assets\structures\dock\dockarea_arg_m_ship_01_data"
 ```
-This converts every `.xmf` file in the folder to its corresponding `.dae` file in place.
+This converts every `.xmf` file in the folder to its corresponding `.dae` file in place (non-recursively).
+
+### Batch Convert Recursively (All Subdirectories)
+```bash
+python xmf_converter.py "C:\SteamLibrary\steamapps\common\X4FoundationsDAE\assets\structures\dock" --recursive
+```
+Use the `-r` or `--recursive` flag to scan all subdirectories recursively. This will convert every `.xmf` file found within any subdirectory (e.g. `dockarea_arg_m_ship_01_data/`, etc.) in place.
 
 ### Custom Paths and Overrides
 If your game files or tools are installed in non-standard directories, you can specify them manually:

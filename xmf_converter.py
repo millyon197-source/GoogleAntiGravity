@@ -62,11 +62,16 @@ def find_unpacked_root(path):
         current = os.path.dirname(current)
     
     while True:
+        # Check if current directory itself is the root containing an 'assets' folder
+        if os.path.isdir(os.path.join(current, "assets")):
+            return current
+        # Check if the current folder is 'assets', making its parent the root
+        if os.path.basename(current).lower() == 'assets':
+            return os.path.dirname(current)
+            
         parent = os.path.dirname(current)
         if parent == current:
             break
-        if os.path.basename(current).lower() == 'assets':
-            return parent
         current = parent
     return None
 
@@ -211,6 +216,7 @@ def convert_single_file(xmf_path, converter_exe, unpacked_root):
 def main():
     parser = argparse.ArgumentParser(description="X4: Foundations XMF to DAE static mesh converter.")
     parser.add_argument("path", help="Path to a single .xmf file, or a directory containing .xmf files to convert.")
+    parser.add_argument("-r", "--recursive", action="store_true", help="Recursively convert all .xmf files inside subdirectories.")
     parser.add_argument("--game-dir", help="Path to your main 'X4 Foundations' game directory.")
     parser.add_argument("--converter-path", help="Direct path to XRConvertersMain.exe.")
     parser.add_argument("--cat-tool-path", help="Direct path to XRCatTool.exe.")
@@ -271,9 +277,17 @@ def main():
         sys.exit(0 if success else 1)
     else:
         # It's a directory, batch convert all .xmf files
-        xmf_files = [os.path.join(input_path, f) for f in os.listdir(input_path) if f.lower().endswith(".xmf")]
+        if args.recursive:
+            xmf_files = []
+            for root_dir, dirs, files in os.walk(input_path):
+                for f in files:
+                    if f.lower().endswith(".xmf"):
+                        xmf_files.append(os.path.join(root_dir, f))
+        else:
+            xmf_files = [os.path.join(input_path, f) for f in os.listdir(input_path) if f.lower().endswith(".xmf")]
+            
         if not xmf_files:
-            print(f"[-] No .xmf files found in folder: {input_path}")
+            print(f"[-] No .xmf files found in folder: {input_path}" + (" (or subfolders)" if args.recursive else ""))
             sys.exit(0)
             
         print(f"[*] Found {len(xmf_files)} .xmf file(s) to convert.")
