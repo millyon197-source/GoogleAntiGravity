@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary / Conversion files
+temp_mesh-lod0.xmf
+temp_mesh_comp.xml
+temp_mesh_comp.dae
+out.log
+*.log
+
+# Editor configurations
+.vscode/
+.idea/
