@@ -268,7 +268,8 @@ export class StationViewer {
       try {
         // Do a quick HEAD request to verify file existence without spamming GET 404 console errors
         const response = await fetch(url, { method: 'HEAD' });
-        if (response.ok) {
+        const contentType = response.headers.get('Content-Type');
+        if (response.ok && (!contentType || !contentType.includes('text/html'))) {
           const scene = await this.loadColladaModel(url);
           if (scene) {
             scene.traverse(child => {
