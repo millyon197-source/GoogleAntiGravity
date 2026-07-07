@@ -13,3 +13,15 @@ out.log
 # Editor configurations
 .vscode/
 .idea/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Assets (local DAE files)
+assets/structures/

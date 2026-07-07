@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis Station Visualizer - X4:Foundations Plan Utility</title>
+  <meta name="description" content="An interactive web 3D visualizer utility for X4:Foundations station construction plans. Analyze modules, compute resources, and watch build animations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app-container">
+    
+    <!-- Top Control Bar -->
+    <header id="app-header">
+      <div class="logo-area">
+        <div class="logo-glow"></div>
+        <h1>AEGIS STATION VISUALIZER</h1>
+        <p class="subtitle">X4: FOUNDATIONS UTILITY</p>
+      </div>
+      
+      <div class="header-actions">
+        <div class="select-wrapper">
+          <label for="sample-selector" class="sr-only">Choose Plan</label>
+          <select id="sample-selector">
+            <option value="refineryComplex">Argon Refinery Complex</option>
+            <option value="defenseFortress">Xenon Border Citadel</option>
+          </select>
+        </div>
+        
+        <label for="file-upload" class="btn btn-primary" id="btn-upload-label">
+          <span>📁 Upload XML File</span>
+          <input type="file" id="file-upload" accept=".xml">
+        </label>
+        
+        <button id="btn-open-paste" class="btn btn-secondary">
+          <span>📝 Paste XML Code</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main id="app-workspace">
+      
+      <!-- Left Panel: Statistics and Details -->
+      <section id="left-sidebar" class="sidebar">
+        
+        <!-- Metadata Box -->
+        <div class="panel-card metadata-card">
+          <div class="card-header">
+            <span class="header-dot"></span>
+            <h2>Station Plan Profile</h2>
+          </div>
+          <div class="card-body">
+            <div class="meta-row"><span class="label">Plan Name:</span> <span id="plan-name" class="value text-highlight">Loading...</span></div>
+            <div class="meta-row"><span class="label">ID:</span> <span id="plan-id" class="value code-font">Loading...</span></div>
+            <p id="plan-desc" class="plan-desc-text">Plan description will appear here...</p>
+          </div>
+        </div>
+
+        <!-- Statistics Dashboard -->
+        <div class="panel-card stats-card">
+          <div class="card-header">
+            <span class="header-dot"></span>
+            <h2>Structure Analysis</h2>
+          </div>
+          <div class="card-body">
+            <div class="stat-grid">
+              <div class="stat-box category-select-btn" id="stat-box-all" data-category="all" style="border-left-color: #ffffff;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-total-modules">0</span>
+                  <span class="stat-lbl">Total Modules</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-all"></div>
+              </div>
+              <div class="stat-box category-select-btn" id="stat-box-docks" data-category="docks" style="border-left-color: #FF9F1C;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-docks">0</span>
+                  <span class="stat-lbl" style="color: #FF9F1C;">Docks</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-docks"></div>
+              </div>
+              <div class="stat-box category-select-btn" id="stat-box-production" data-category="production" style="border-left-color: #2EC4B6;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-production">0</span>
+                  <span class="stat-lbl" style="color: #2EC4B6;">Production</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-production"></div>
+              </div>
+              <div class="stat-box category-select-btn" id="stat-box-storage" data-category="storage" style="border-left-color: #00B4D8;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-storage">0</span>
+                  <span class="stat-lbl" style="color: #00B4D8;">Storage</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-storage"></div>
+              </div>
+              <div class="stat-box category-select-btn" id="stat-box-habitation" data-category="habitation" style="border-left-color: #9D4EDD;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-habitation">0</span>
+                  <span class="stat-lbl" style="color: #9D4EDD;">Habitats</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-habitation"></div>
+              </div>
+              <div class="stat-box category-select-btn" id="stat-box-defense" data-category="defense" style="border-left-color: #E63946;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-defense">0</span>
+                  <span class="stat-lbl" style="color: #E63946;">Defense</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-defense"></div>
+              </div>
+              <div class="stat-box category-select-btn" id="stat-box-structure" data-category="structure" style="border-left-color: #8D99AE;">
+                <div class="stat-box-header">
+                  <span class="stat-val" id="stat-structure">0</span>
+                  <span class="stat-lbl" style="color: #8D99AE;">Structures</span>
+                </div>
+                <div class="stat-box-macros" id="stat-macros-structure"></div>
+              </div>
+            </div>
+            
+            <hr class="panel-divider" />
+            
+            <h3 class="sub-heading">Estimated Bounding Envelope</h3>
+            <div class="envelope-grid">
+              <div><span class="lbl">Width (X):</span> <span class="val" id="stat-size-x">0m</span></div>
+              <div><span class="lbl">Height (Y):</span> <span class="val" id="stat-size-y">0m</span></div>
+              <div><span class="lbl">Depth (Z):</span> <span class="val" id="stat-size-z">0m</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resource Estimation -->
+        <div class="panel-card resources-card">
+          <div class="card-header">
+            <span class="header-dot"></span>
+            <h2>Construction Materials</h2>
+          </div>
+          <div class="card-body" id="resources-list-container">
+            <!-- Programmatically populated dynamic list of construction resources -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Center Panel: 3D Viewport & Overlay Controls -->
+      <section id="viewport-panel">
+        
+        <!-- Three.js Canvas Container -->
+        <div id="canvas-container">
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Initializing WebGL Star System...</p>
+          </div>
+        </div>
+
+        <!-- Float Control: View Presets -->
+        <div class="floating-hub view-presets">
+          <button id="view-iso" title="Isometric View" class="hub-btn active">ISO</button>
+          <button id="view-top" title="Top Down View" class="hub-btn">TOP</button>
+          <button id="view-front" title="Front View" class="hub-btn">FRNT</button>
+          <button id="view-side" title="Right Side View" class="hub-btn">SIDE</button>
+          <button id="view-fit" title="Center on Station" class="hub-btn fit-btn">🎯 FIT</button>
+        </div>
+
+        <!-- Float Control: Scene Controls -->
+        <div class="floating-hub scene-toggles">
+          <label class="toggle-control" title="Show Plot Grid Boundaries">
+            <input type="checkbox" id="toggle-grid" checked>
+            <span class="toggle-label">Plot Grid</span>
+          </label>
+          <label class="toggle-control" title="View Wireframe Render">
+            <input type="checkbox" id="toggle-wireframe">
+            <span class="toggle-label">Wireframe</span>
+          </label>
+          <label class="toggle-control" title="Auto-Rotate Camera View">
+            <input type="checkbox" id="toggle-autorotate">
+            <span class="toggle-label">Rotate</span>
+          </label>
+        </div>
+
+        <!-- Float Control: Build Sequence Animator Timeline -->
+        <div id="animator-hub" class="floating-card">
+          <div class="animator-header">
+            <div class="animator-title">
+              <span class="live-pulse"></span>
+              <h3>Build Sequence Simulation</h3>
+            </div>
+            <div class="anim-counter">
+              <span class="progress-badge" id="anim-progress-badge">100%</span>
+              <span class="visible-lbl">Visible Modules:</span>
+              <span class="visible-count" id="anim-visible-count">0 / 0</span>
+            </div>
+          </div>
+          
+          <div class="animator-body">
+            <div class="timeline-controls">
+              <button id="btn-anim-reset" class="control-btn" title="Rewind to start">⏮</button>
+              <button id="btn-anim-prev" class="control-btn" title="Step back">◀</button>
+              <button id="btn-anim-play" class="play-btn-primary">
+                <span class="play-icon">▶</span> Play Sequence
+              </button>
+              <button id="btn-anim-next" class="control-btn" title="Step forward">▶</button>
+            </div>
+            
+            <div class="timeline-slider-area">
+              <input type="range" id="anim-progress-slider" min="0" max="100" value="100" class="timeline-slider">
+            </div>
+
+            <div class="timeline-footer">
+              <div class="speed-select-group">
+                <label for="anim-speed-select">Simulation Speed:</label>
+                <select id="anim-speed-select" class="select-mini">
+                  <option value="2000">Slow (2.0s)</option>
+                  <option value="1000" selected>Normal (1.0s)</option>
+                  <option value="400">Fast (0.4s)</option>
+                  <option value="150">Hyper (0.15s)</option>
+                </select>
+              </div>
+              <span class="tip-lbl">Drag timeline to scrub build progress manually</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Panel: Module Navigator & Node Inspection -->
+      <section id="right-sidebar" class="sidebar">
+        
+        <!-- Search and Navigation -->
+        <div class="panel-card search-card">
+          <div class="card-header">
+            <span class="header-dot"></span>
+            <h2>Module Navigator</h2>
+          </div>
+          <div class="card-body search-body">
+            <div class="search-input-wrapper">
+              <input type="text" id="module-search" placeholder="Search by name, index, macro...">
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Component Visibility Hub -->
+        <div class="panel-card visibility-card">
+          <div class="card-header">
+            <span class="header-dot"></span>
+            <h2>Component Visibility</h2>
+            <button id="btn-visibility-show-all" class="card-action-btn" title="Include all components">Show All</button>
+          </div>
+          <div class="card-body visibility-body" id="visibility-controls-container">
+            <!-- Programmatically populated checklist of macro types with toggles -->
+          </div>
+        </div>
+
+        <!-- Module Tree List -->
+        <div class="panel-card list-card flex-grow-card">
+          <div class="module-table-wrapper">
+            <table class="module-table">
+              <thead>
+                <tr>
+                  <th class="col-index">Idx</th>
+                  <th class="col-name">Module Name / Macro</th>
+                  <th class="col-category">Category</th>
+                  <th class="col-coords">Pos (m)</th>
+                </tr>
+              </thead>
+              <tbody id="module-list-body">
+                <!-- Programmatically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Interactive Selection Detail View -->
+        <div class="panel-card selection-card">
+          <div class="card-header">
+            <span class="header-dot glow-dot"></span>
+            <h2>Selected Module Details</h2>
+          </div>
+          <div class="card-body select-body">
+            <!-- Placeholder state -->
+            <div id="details-placeholder" class="placeholder-content">
+              <div class="placeholder-ring"></div>
+              <p>Select a module in the Navigator list or click on it directly in the 3D viewport to inspect its data node.</p>
+            </div>
+            
+            <!-- Real detail view (hidden initially) -->
+            <div id="details-card" class="details-content hidden">
+              <button id="btn-close-details" class="close-card-btn" title="Deselect">✕</button>
+              
+              <div class="detail-header-area">
+                <span id="det-category" class="category-tag">Category</span>
+                <h3 id="det-title" class="detail-title">Module Title</h3>
+                <span id="det-macro" class="detail-macro code-font">macro_name</span>
+              </div>
+              
+              <hr class="panel-divider" />
+              
+              <div class="detail-grid">
+                <div class="detail-cell">
+                  <span class="cell-lbl">Local Position</span>
+                  <span class="cell-val font-medium" id="det-pos">X: 0m | Y: 0m | Z: 0m</span>
+                </div>
+                <div class="detail-cell">
+                  <span class="cell-lbl">Rotational Orientation</span>
+                  <span class="cell-val font-medium" id="det-rot">Yaw: 0° | Pitch: 0° | Roll: 0°</span>
+                </div>
+                <div class="detail-cell">
+                  <span class="cell-lbl">Source Connection Node</span>
+                  <span class="cell-val code-font font-medium text-cyan" id="det-conn">connection_node</span>
+                </div>
+              </div>
+
+              <hr class="panel-divider" />
+              
+              <h4 class="sub-heading-mini">Individual Base Cost</h4>
+              <div class="mini-cost-row" id="det-resources-container">
+                <!-- Programmatically populated individual costs -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Paste XML Dialog Modal -->
+    <div id="paste-modal" class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Paste Station XML Construction Plan</h3>
+          <button id="btn-close-paste" class="close-modal-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Paste the complete XML snippet exported from X4 or shared online (starts with <code>&lt;plans&gt;</code>):</p>
+          <textarea id="xml-paste-text" placeholder="Paste X4 construction plan XML code here..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-submit-paste" class="btn btn-primary">Process Code</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast Rack -->
+    <div id="notification-container"></div>
+    
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
