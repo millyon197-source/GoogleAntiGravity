@@ -259,15 +259,17 @@ export class StationViewer {
     const urls = [];
     subfolders.forEach(sf => {
       // Game-extracted lod0 structure: /assets/structures/subfolder/component_data/component_main-lod0.dae
-      urls.push(`/assets/structures/${sf}/${baseName}_data/${baseName}_main-lod0.dae`);
-      urls.push(`/assets/structures/${sf}/${baseName}_data/${baseName}_main.dae`);
-      urls.push(`/assets/structures/${sf}/${baseName}/${baseName}.dae`);
+      urls.push(`/assets/structures/${sf}/${baseName}_data/${baseName}part_main-lod0.dae`);
+      urls.push(`/assets/structures/${sf}/${baseName}_data/${baseName}part_main.dae`);
+  /*    urls.push(`/assets/structures/${sf}/${baseName}/${baseName}.dae`);
       urls.push(`/assets/structures/${sf}/${baseName}.dae`);
+  */
     });
-    urls.push(`/assets/structures/${baseName}_data/${baseName}_main-lod0.dae`);
+  /*  urls.push(`/assets/structures/${baseName}_data/${baseName}part_main-lod0.dae`);
     urls.push(`/assets/structures/${baseName}.dae`);
     urls.push(`/assets/${baseName}.dae`);
-
+  */
+ 
     for (const url of urls) {
       try {
         // Do a quick HEAD request to verify file existence without spamming GET 404 console errors
