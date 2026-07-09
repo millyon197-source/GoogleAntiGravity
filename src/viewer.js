@@ -70,9 +70,6 @@ export class StationViewer {
     // 5. Lighting
     this.setupLighting();
 
-    // 6. Starfield particle background
-    this.createStarfield();
-
     // 7. Grid & Plot Boundaries
     this.createGridAndBounds();
 
@@ -121,59 +118,6 @@ export class StationViewer {
     this.scene.add(fillLight);
   }
 
-  createStarfield() {
-    const starCount = 3000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(starCount * 3);
-    const colors = new Float32Array(starCount * 3);
-
-    for (let i = 0; i < starCount; i++) {
-      // Distribute stars in a large sphere
-      const u = Math.random();
-      const v = Math.random();
-      const theta = u * 2.0 * Math.PI;
-      const phi = Math.acos(2.0 * v - 1.0);
-      const r = 4000 + Math.random() * 6000; // Far away
-
-      const x = r * Math.sin(phi) * Math.cos(theta);
-      const y = r * Math.sin(phi) * Math.sin(theta);
-      const z = r * Math.cos(phi);
-
-      positions[i * 3] = x;
-      positions[i * 3 + 1] = y;
-      positions[i * 3 + 2] = z;
-
-      // Color variation (blue-white, yellow-white, orange-red stars)
-      const rand = Math.random();
-      if (rand > 0.8) {
-        colors[i * 3] = 0.7;     // Reddish star
-        colors[i * 3 + 1] = 0.8;
-        colors[i * 3 + 2] = 1.0;
-      } else if (rand > 0.5) {
-        colors[i * 3] = 1.0;     // Yellowish star
-        colors[i * 3 + 1] = 0.95;
-        colors[i * 3 + 2] = 0.7;
-      } else {
-        colors[i * 3] = 1.0;     // Pure white star
-        colors[i * 3 + 1] = 1.0;
-        colors[i * 3 + 2] = 1.0;
-      }
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-      size: 4.5,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.8,
-      sizeAttenuation: true
-    });
-
-    this.starfield = new THREE.Points(geometry, material);
-    this.scene.add(this.starfield);
-  }
 
   createGridAndBounds() {
     // 10km grid helper (scaled representation of build plot, e.g. 500m increments)
@@ -557,15 +501,25 @@ export class StationViewer {
     const total = this.modulesGroup.children.length;
     if (total === 0) return;
 
-    // Calculate count to show
-    const countToShow = Math.ceil((progressPercentage / 100) * total);
+    // Filter to get only visible children (sorted by index)
+    const visibleChildren = this.modulesGroup.children.filter(child => {
+      const macroName = child.userData.macro;
+      return !this.hiddenMacros.has(macroName);
+    });
+
+    const visibleTotal = visibleChildren.length;
+
+    // Create a Set of visible children that should be shown based on timeline progress
+    const activeVisibleSet = new Set();
+    if (visibleTotal > 0) {
+      const visibleCountToShow = Math.ceil((progressPercentage / 100) * visibleTotal);
+      for (let i = 0; i < visibleCountToShow; i++) {
+        activeVisibleSet.add(visibleChildren[i]);
+      }
+    }
 
     this.modulesGroup.children.forEach(child => {
-      const idx = child.userData.index;
-      const macroName = child.userData.macro;
-      const isMacroVisible = !this.hiddenMacros.has(macroName);
-      
-      const targetVisibility = (idx <= countToShow) && isMacroVisible;
+      const targetVisibility = activeVisibleSet.has(child);
 
       if (targetVisibility) {
         child.visible = true;
@@ -735,10 +689,6 @@ export class StationViewer {
       this.selectionHelper.update();
     }
 
-    // 3. Keep starfield slowly rotating for cosmic ambiance
-    if (this.starfield) {
-      this.starfield.rotation.y = time * 0.003;
-    }
 
     // 4. Update highlight helpers
     if (this.highlightHelpers) {
