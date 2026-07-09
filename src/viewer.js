@@ -476,9 +476,38 @@ export class StationViewer {
       this.selectionHelper.dispose();
       this.selectionHelper = null;
     }
+    this.resetCameraTarget();
   }
 
-  focusCameraOnModule(index) {
+  resetCameraTarget() {
+    if (this.modulesGroup.children.length === 0) return;
+
+    const box = new THREE.Box3().setFromObject(this.modulesGroup);
+    const center = box.getCenter(new THREE.Vector3());
+
+    const duration = 600; // ms
+    const startTar = this.controls.target.clone();
+    const endTar = center.clone();
+
+    const startTime = performance.now();
+
+    const animateTransition = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1.0);
+      const ease = progress * (2 - progress);
+
+      this.controls.target.lerpVectors(startTar, endTar, ease);
+      this.controls.update();
+
+      if (progress < 1.0) {
+        requestAnimationFrame(animateTransition);
+      }
+    };
+
+    requestAnimationFrame(animateTransition);
+  }
+
+  focusCameraOnModule(index, focusCameraPosition = true) {
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
 
@@ -492,8 +521,8 @@ export class StationViewer {
 
     // Target positions
     const endTar = center.clone();
-    // Offset camera slightly relative to module center
-    const endCam = center.clone().add(new THREE.Vector3(150, 100, 200));
+    // Offset camera slightly relative to module center (only if focusCameraPosition is true)
+    const endCam = focusCameraPosition ? center.clone().add(new THREE.Vector3(150, 100, 200)) : startCam;
 
     const startTime = performance.now();
 
@@ -504,7 +533,9 @@ export class StationViewer {
       // Smooth step easing
       const ease = progress * (2 - progress);
 
-      this.camera.position.lerpVectors(startCam, endCam, ease);
+      if (focusCameraPosition) {
+        this.camera.position.lerpVectors(startCam, endCam, ease);
+      }
       this.controls.target.lerpVectors(startTar, endTar, ease);
       this.controls.update();
 

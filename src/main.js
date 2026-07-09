@@ -590,10 +590,7 @@ function selectModule(index, focusCamera = true) {
 
     // Highlight inside 3D viewer
     viewer.selectModuleByIndex(index);
-
-    if (focusCamera) {
-      viewer.focusCameraOnModule(index);
-    }
+    viewer.focusCameraOnModule(index, focusCamera);
   } else {
     placeholder.classList.remove('hidden');
     card.classList.add('hidden');
