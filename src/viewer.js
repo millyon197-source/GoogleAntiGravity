@@ -295,24 +295,53 @@ export class StationViewer {
 
                 // Process materials (handles both single material and array of materials)
                 const processMaterial = (mat) => {
-                  if (!mat) return mat;
-                  
-                  // If it's a basic unlit material or does not support lights, convert to standard
-                  if (mat.isMeshBasicMaterial || mat.lights === false) {
+                  if (!mat) {
                     return new THREE.MeshStandardMaterial({
-                      color: mat.color || new THREE.Color(0xcccccc),
-                      map: mat.map || null,
+                      color: 0x8D99AE,
                       roughness: 0.6,
                       metalness: 0.2,
                       side: THREE.DoubleSide
                     });
                   }
                   
-                  // Otherwise, ensure standard lighting properties are set
-                  mat.roughness = mat.roughness !== undefined ? mat.roughness : 0.6;
-                  mat.metalness = mat.metalness !== undefined ? mat.metalness : 0.2;
-                  mat.side = THREE.DoubleSide; // Ensure double-sided rendering for open/shell meshes
-                  return mat;
+                  // Check if the original color is black or too dark
+                  const baseColor = new THREE.Color(0x8D99AE); // default metal grey
+                  if (mat.color) {
+                    // If the color is not pure black or extremely dark, preserve it
+                    if (mat.color.r > 0.02 || mat.color.g > 0.02 || mat.color.b > 0.02) {
+                      baseColor.copy(mat.color);
+                    }
+                  }
+                  
+                  // Force convert any material type to MeshStandardMaterial to guarantee lighting response
+                  const newMat = new THREE.MeshStandardMaterial({
+                    color: baseColor,
+                    map: mat.map || null,
+                    normalMap: mat.normalMap || null,
+                    bumpMap: mat.bumpMap || null,
+                    roughness: 0.6,
+                    metalness: 0.2,
+                    opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
+                    transparent: mat.transparent || false,
+                    side: THREE.DoubleSide,
+                    emissive: new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
+                  });
+
+                  // If old material had vertex colors enabled, only keep it if geometry actually supports it
+                  if (mat.vertexColors && child.geometry && child.geometry.attributes.color) {
+                    newMat.vertexColors = true;
+                  } else {
+                    newMat.vertexColors = false;
+                  }
+
+                  newMat.name = mat.name || '';
+
+                  // Clean up old material reference
+                  if (typeof mat.dispose === 'function') {
+                    mat.dispose();
+                  }
+
+                  return newMat;
                 };
 
                 if (Array.isArray(child.material)) {
