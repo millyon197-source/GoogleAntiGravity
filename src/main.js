@@ -902,6 +902,19 @@ function setupEventListeners() {
       viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
     });
   }
+
+  // 9. Clear Panels Checkbox
+  const clearCheckbox = document.getElementById('clear-panels-checkbox');
+  if (clearCheckbox) {
+    clearCheckbox.addEventListener('change', () => {
+      if (clearCheckbox.checked) {
+        clearAllPanels();
+        setTimeout(() => {
+          clearCheckbox.checked = false;
+        }, 2000);
+      }
+    });
+  }
 }
 
 function updateActiveFilterUI() {
@@ -944,4 +957,66 @@ function showNotification(message, type = 'info') {
       notif.remove();
     }, 300);
   }, 4500);
+}
+
+/**
+ * Clear all station data, list panels, and Three.js 3D viewport meshes.
+ */
+function clearAllPanels() {
+  const emptyPlan = {
+    name: '-',
+    description: 'Upload or select a station plan to begin visual analysis.',
+    id: '-',
+    modules: [],
+    connections: []
+  };
+
+  currentPlan = null;
+  selectedIndex = null;
+  activeCategoryFilter = 'all';
+  activeMacroFilter = null;
+  excludedMacros.clear();
+  updateActiveFilterUI();
+
+  // Load into 3D viewer (this will clear all meshes)
+  viewer.clear();
+  viewer.clearFilterHighlights();
+
+  // Reset UI Panels
+  updatePlanMetadata(emptyPlan);
+  calculateAndRenderStats(emptyPlan);
+  renderVisibilityControls(emptyPlan);
+  renderModuleList(emptyPlan.modules);
+  
+  // Clear search input
+  const searchInput = document.getElementById('module-search');
+  if (searchInput) searchInput.value = '';
+
+  // Clear selected detail view and restore placeholder
+  const detailsCard = document.getElementById('details-card');
+  const detailsPlaceholder = document.getElementById('details-placeholder');
+  if (detailsCard) detailsCard.classList.add('hidden');
+  if (detailsPlaceholder) detailsPlaceholder.classList.remove('hidden');
+
+  // Reset size badges to 0
+  const sizeX = document.getElementById('stat-size-x');
+  const sizeY = document.getElementById('stat-size-y');
+  const sizeZ = document.getElementById('stat-size-z');
+  if (sizeX) sizeX.textContent = '0m';
+  if (sizeY) sizeY.textContent = '0m';
+  if (sizeZ) sizeZ.textContent = '0m';
+
+  // Reset animator
+  stopAnimation();
+  animProgress = 100;
+  
+  const slider = document.getElementById('anim-progress-slider');
+  const badge = document.getElementById('anim-progress-badge');
+  const countSpan = document.getElementById('anim-visible-count');
+  
+  if (slider) slider.value = 100;
+  if (badge) badge.textContent = '100%';
+  if (countSpan) countSpan.textContent = '0 / 0';
+
+  showNotification('All panels and viewport cleared.', 'info');
 }

@@ -127,6 +127,38 @@ body {
   gap: 12px;
 }
 
+.clear-checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+  border-right: 1px solid var(--panel-border);
+  padding-right: 16px;
+}
+
+.cyber-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.cyber-checkbox-label:hover {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 245, 255, 0.4);
+}
+
+.cyber-checkbox-label input[type="checkbox"] {
+  accent-color: var(--neon-cyan);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 /* Workspace Layout Grid */
 #app-workspace {
   flex: 1;
