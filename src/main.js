@@ -934,6 +934,22 @@ function updateActiveFilterUI() {
       box.classList.remove('active-filter');
     }
   });
+
+  // Center the selected component in the Structural Analysis panel (SA panel)
+  setTimeout(() => {
+    let elementToCenter = null;
+    if (activeMacroFilter) {
+      elementToCenter = document.querySelector('.stat-macro-item.active-macro-filter');
+    } else if (activeCategoryFilter && activeCategoryFilter !== 'all') {
+      elementToCenter = document.getElementById(`stat-box-${activeCategoryFilter}`);
+    } else {
+      elementToCenter = document.getElementById('stat-box-all');
+    }
+
+    if (elementToCenter) {
+      elementToCenter.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 100);
 }
 
 /**
