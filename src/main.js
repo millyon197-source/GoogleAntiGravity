@@ -429,6 +429,26 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
     `;
     container.appendChild(catHeader);
 
+     // Bind Category Title click (non-toggle button click)
+    const titleBtn = catHeader.querySelector('.visibility-cat-title');
+    if (titleBtn) {
+      titleBtn.style.cursor = 'pointer';
+      titleBtn.addEventListener('click', () => {
+        activeCategoryFilter = cat;
+        activeMacroFilter = null;
+        updateActiveFilterUI();
+
+        renderVisibilityControls(currentPlan, cat);
+        calculateAndRenderStats(currentPlan);
+        renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
+        viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
+        scrollAndHighlightLeftCategory(cat);
+
+        // Zoom and center camera to fit all of this category
+        viewer.fitCameraToSelection(activeCategoryFilter, activeMacroFilter);
+      });
+    }
+
     // Bind Category Toggle click
     const toggleBtn = catHeader.querySelector('.visibility-cat-toggle-btn');
     toggleBtn.addEventListener('click', () => {
@@ -448,6 +468,11 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
       viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
       scrollAndHighlightLeftCategory(cat);
+
+      // If category was made visible, zoom to display all of it
+      if (allExcluded) {
+        viewer.fitCameraToSelection(cat, null);
+      }
     });
 
     // Render Macro Checklist
@@ -458,6 +483,7 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
 
       const row = document.createElement('div');
       row.className = 'visibility-row';
+      row.style.cursor = 'pointer';
       if (cat === highlightedCategory) {
         row.style.borderLeft = '2px solid rgba(0, 245, 255, 0.25)';
         row.style.paddingLeft = '6px';
@@ -466,12 +492,30 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       const checkboxId = `vis-chk-${macro.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
       row.innerHTML = `
-        <label for="${checkboxId}">
+        <label for="${checkboxId}" style="cursor: pointer;">
           <input type="checkbox" id="${checkboxId}" ${!isExcluded ? 'checked' : ''}>
           <span>${friendlyName}</span>
         </label>
         <span class="macro-count-badge">${count}</span>
       `;
+
+      // Click on row (excluding checkbox label check click) selects macro and zooms/fits
+      row.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT') return; // let checkbox handler handle it
+        
+        activeCategoryFilter = cat;
+        activeMacroFilter = macro;
+        updateActiveFilterUI();
+        
+        renderVisibilityControls(currentPlan, cat);
+        calculateAndRenderStats(currentPlan);
+        renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
+        viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
+        scrollAndHighlightLeftCategory(cat);
+
+        // Zoom and center camera to fit all of this macro
+        viewer.fitCameraToSelection(activeCategoryFilter, activeMacroFilter);
+      });
 
       const input = row.querySelector('input');
       input.addEventListener('change', (e) => {
@@ -491,6 +535,11 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
         renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
         viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
         scrollAndHighlightLeftCategory(cat);
+
+        // If made visible, fit camera to selection
+        if (isVisible) {
+          viewer.fitCameraToSelection(null, macro);
+        }
       });
 
       container.appendChild(row);
@@ -621,15 +670,6 @@ function updateAnimatorUI() {
     const total = visibleModules.length;
     const current = Math.ceil((animProgress / 100) * total);
     countSpan.textContent = `${current} / ${total}`;
-  }
-
-  const varDisplay = document.getElementById('anim-variable-display');
-  if (varDisplay) {
-    if (animProgress < 100) {
-      varDisplay.textContent = `animProgress: ${animProgress}%`;
-    } else {
-      varDisplay.textContent = '';
-    }
   }
 }
 
