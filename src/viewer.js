@@ -206,26 +206,41 @@ export class StationViewer {
     subfolders.push(category);
 
     const urls = [];
-    subfolders.forEach(sf => {
-      // Try highest level of detail (LOD) from 0 to 4 in ascending order, then fallback to part_main.dae
+    for (const sf of subfolders) {
+      let lodFound = false;
       for (let lod = 0; lod <= 4; lod++) {
-        urls.push(`/assets/structures/${sf}/${baseName}_data/part_main-lod${lod}.dae`);
+        const checkUrl = `/assets/structures/${sf}/${baseName}_data/part_main-lod${lod}.dae`;
+        try {
+          const response = await fetch(checkUrl, { method: 'HEAD' });
+          const contentType = response.headers.get('Content-Type');
+          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
+            urls.push(checkUrl);
+            lodFound = true;
+            break; // Found the highest available LOD, skip checking lower LODs
+          }
+        } catch (e) {
+          // Ignore fetch errors
+        }
       }
-      urls.push(`/assets/structures/${sf}/${baseName}_data/part_main.dae`);
-    });
-  /*  urls.push(`/assets/structures/${baseName}_data/${baseName}part_main-lod0.dae`);
-    urls.push(`/assets/structures/${baseName}.dae`);
-    urls.push(`/assets/${baseName}.dae`);
-  */
+
+      if (!lodFound) {
+        const fallbackUrl = `/assets/structures/${sf}/${baseName}_data/part_main.dae`;
+        try {
+          const response = await fetch(fallbackUrl, { method: 'HEAD' });
+          const contentType = response.headers.get('Content-Type');
+          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
+            urls.push(fallbackUrl);
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
 
     for (const url of urls) {
       try {
-        // Do a quick HEAD request to verify file existence without spamming GET 404 console errors
-        const response = await fetch(url, { method: 'HEAD' });
-        const contentType = response.headers.get('Content-Type');
-        if (response.ok && (!contentType || !contentType.includes('text/html'))) {
-          const scene = await this.loadColladaModel(url);
-          if (scene) {
+        const scene = await this.loadColladaModel(url);
+        if (scene) {
             scene.traverse(child => {
               if (child.isMesh) {
                 // Ensure geometry has proper normals for lighting
@@ -301,7 +316,6 @@ export class StationViewer {
             });
             return scene;
           }
-        }
       } catch (e) {
         // Ignore and check next path
       }
