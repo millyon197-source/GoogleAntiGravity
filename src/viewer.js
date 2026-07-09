@@ -88,16 +88,16 @@ export class StationViewer {
   }
 
   setupLighting() {
-    // Ambient fill light (cool nebula glow)
-    const ambientLight = new THREE.AmbientLight(0x1B1F38, 1.5);
+    // Ambient fill light (cool nebula glow) - Brightened
+    const ambientLight = new THREE.AmbientLight(0x22294A, 2.2);
     this.scene.add(ambientLight);
 
-    // Planetary blue-indigo glow from below
-    const hemisphereLight = new THREE.HemisphereLight(0x3B4E8C, 0x060814, 0.8);
+    // Planetary blue-indigo glow from below - Brightened
+    const hemisphereLight = new THREE.HemisphereLight(0x3B4E8C, 0x060814, 1.2);
     this.scene.add(hemisphereLight);
 
-    // Primary solar key light (intense white-orange star light)
-    const sunLight = new THREE.DirectionalLight(0xFFEADB, 2.5);
+    // Primary solar key light (intense white-orange star light) - Brightened
+    const sunLight = new THREE.DirectionalLight(0xFFEADB, 3.8);
     sunLight.position.set(1000, 800, 1000);
     sunLight.castShadow = true;
     
@@ -114,6 +114,11 @@ export class StationViewer {
     sunLight.shadow.camera.bottom = -d;
 
     this.scene.add(sunLight);
+
+    // Opposing fill light to brighten the dark shadow sides of the modules
+    const fillLight = new THREE.DirectionalLight(0x6B7DFF, 1.8);
+    fillLight.position.set(-1000, -800, -1000);
+    this.scene.add(fillLight);
   }
 
   createStarfield() {
