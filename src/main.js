@@ -191,6 +191,10 @@ function calculateAndRenderStats(plan) {
           calculateAndRenderStats(currentPlan);
           renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
           viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
+          
+          if (activeMacroFilter) {
+            scrollAndHighlightVisibilityComponent(activeCategoryFilter, activeMacroFilter);
+          }
         });
         
         macrosContainer.appendChild(item);
@@ -238,6 +242,11 @@ function calculateAndRenderStats(plan) {
         calculateAndRenderStats(currentPlan);
         renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
         viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
+        
+        if (activeMacroFilter) {
+          const cat = getModuleCategory(macro);
+          scrollAndHighlightVisibilityComponent(cat, activeMacroFilter);
+        }
       });
       
       macrosAllContainer.appendChild(item);
@@ -415,6 +424,7 @@ function renderVisibilityControls(plan) {
     // Render Category Header
     const catHeader = document.createElement('div');
     catHeader.className = 'visibility-cat-header';
+    catHeader.setAttribute('data-category', cat);
     catHeader.innerHTML = `
       <span class="visibility-cat-title" style="color: ${CATEGORY_COLORS[cat]}" title="Click to zoom/center on all visible ${CATEGORY_NAMES[cat]} components">${CATEGORY_NAMES[cat]}</span>
       <button class="visibility-cat-toggle-btn" title="${toggleLabel} category components">${toggleLabel}</button>
@@ -461,6 +471,8 @@ function renderVisibilityControls(plan) {
 
       const row = document.createElement('div');
       row.className = 'visibility-row';
+      row.setAttribute('data-category', cat);
+      row.setAttribute('data-macro', macro);
       
       const checkboxId = `vis-chk-${macro.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
@@ -525,6 +537,37 @@ function scrollAndHighlightLeftCategory(category) {
     // Remove highlight class after animation finishes
     setTimeout(() => {
       statBox.classList.remove('reveal-highlight');
+    }, 1500);
+  }
+}
+
+function scrollAndHighlightVisibilityComponent(category, macro = null) {
+  const container = document.getElementById('visibility-controls-container');
+  if (!container) return;
+
+  const target = macro 
+    ? container.querySelector(`.visibility-row[data-macro="${macro}"]`)
+    : container.querySelector(`.visibility-cat-header[data-category="${category}"]`);
+
+  if (target) {
+    const containerHeight = container.clientHeight;
+    const targetTop = target.offsetTop;
+    const targetHeight = target.offsetHeight;
+    
+    // Target position to center is offsetTop - (containerHeight / 2) + (targetHeight / 2)
+    const scrollTarget = targetTop - (containerHeight / 2) + (targetHeight / 2);
+    
+    container.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth'
+    });
+    
+    // Add glowing outline pulse highlight
+    target.classList.add('reveal-highlight-cv');
+    
+    // Remove highlight class after animation finishes
+    setTimeout(() => {
+      target.classList.remove('reveal-highlight-cv');
     }, 1500);
   }
 }
@@ -883,6 +926,10 @@ function setupEventListeners() {
       calculateAndRenderStats(currentPlan);
       renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
       viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
+      
+      if (activeCategoryFilter !== 'all') {
+        scrollAndHighlightVisibilityComponent(activeCategoryFilter);
+      }
     });
   });
 
@@ -934,22 +981,6 @@ function updateActiveFilterUI() {
       box.classList.remove('active-filter');
     }
   });
-
-  // Center the selected component in the Structural Analysis panel (SA panel)
-  setTimeout(() => {
-    let elementToCenter = null;
-    if (activeMacroFilter) {
-      elementToCenter = document.querySelector('.stat-macro-item.active-macro-filter');
-    } else if (activeCategoryFilter && activeCategoryFilter !== 'all') {
-      elementToCenter = document.getElementById(`stat-box-${activeCategoryFilter}`);
-    } else {
-      elementToCenter = document.getElementById('stat-box-all');
-    }
-
-    if (elementToCenter) {
-      elementToCenter.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, 100);
 }
 
 /**

@@ -1348,9 +1348,18 @@ select:hover, select:focus {
 }
 
 .visibility-body {
+  position: relative;
   overflow-y: auto;
   padding: 10px 14px;
   padding-right: 6px;
+}
+
+.visibility-cat-header.reveal-highlight-cv,
+.visibility-row.reveal-highlight-cv {
+  background: rgba(0, 245, 255, 0.12) !important;
+  border-left: 2px solid var(--neon-cyan) !important;
+  padding-left: 6px !important;
+  animation: pulse-visibility-highlight 1.5s ease-in-out;
 }
 
 .visibility-cat-header {
