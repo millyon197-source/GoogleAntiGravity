@@ -29,6 +29,7 @@ export class StationViewer {
     this.wireframeMode = false;
     this.ghostMode = false;
     this.hiddenMacros = new Set();
+    this.currentPlan = null;
     this.currentBuildProgressPercentage = 100;
     this.highlightHelpers = [];
     this.colladaLoader = new ColladaLoader();
@@ -139,6 +140,7 @@ export class StationViewer {
 
   async loadStationPlan(planData) {
     this.clear();
+    this.currentPlan = planData;
     this.hiddenMacros.clear();
     this.currentBuildProgressPercentage = 100;
     this.clearFilterHighlights();
@@ -409,6 +411,79 @@ export class StationViewer {
     this.controls.update();
   }
 
+  fitCameraToSelection(categoryFilter, macroFilter = null) {
+    if (!this.currentPlan) return;
+
+    // Find all meshes matching category and/or macro
+    const matchingMeshes = [];
+    this.modulesGroup.traverse(child => {
+      if (child.isMesh && child.visible) {
+        // Find top level module object index
+        let hitObj = child;
+        let moduleIdx = hitObj.userData.moduleIndex;
+        while (hitObj && moduleIdx === undefined) {
+          hitObj = hitObj.parent;
+          if (hitObj) moduleIdx = hitObj.userData.index;
+        }
+
+        if (moduleIdx !== undefined) {
+          const mod = this.currentPlan.modules.find(m => m.index === moduleIdx);
+          if (mod) {
+            const cat = getModuleCategory(mod.macro);
+            const matchesCat = (categoryFilter === 'all' || cat === categoryFilter);
+            const matchesMacro = (!macroFilter || mod.macro === macroFilter);
+            if (matchesCat && matchesMacro) {
+              matchingMeshes.push(child);
+            }
+          }
+        }
+      }
+    });
+
+    if (matchingMeshes.length === 0) return;
+
+    // Calculate bounding box of matching meshes
+    const box = new THREE.Box3();
+    matchingMeshes.forEach(mesh => {
+      box.expandByObject(mesh);
+    });
+
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // Fit camera
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = this.camera.fov * (Math.PI / 180);
+    let cameraDist = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+    cameraDist *= 1.35; // pad factor
+    cameraDist = Math.max(100, Math.min(cameraDist, 8000));
+
+    // Smoothly transition camera position and controls target
+    const direction = new THREE.Vector3().subVectors(this.camera.position, this.controls.target).normalize();
+    const endTar = center.clone();
+    const endCam = center.clone().add(direction.multiplyScalar(cameraDist));
+
+    const duration = 800; // ms
+    const startCam = this.camera.position.clone();
+    const startTar = this.controls.target.clone();
+    const startTime = performance.now();
+
+    const animateTransition = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1.0);
+      const ease = progress * (2 - progress);
+
+      this.camera.position.lerpVectors(startCam, endCam, ease);
+      this.controls.target.lerpVectors(startTar, endTar, ease);
+      this.controls.update();
+
+      if (progress < 1.0) {
+        requestAnimationFrame(animateTransition);
+      }
+    };
+    requestAnimationFrame(animateTransition);
+  }
+
   selectModuleByIndex(index) {
     this.deselect();
 
@@ -498,75 +573,6 @@ export class StationViewer {
       if (focusCameraPosition) {
         this.camera.position.lerpVectors(startCam, endCam, ease);
       }
-      this.controls.target.lerpVectors(startTar, endTar, ease);
-      this.controls.update();
-
-      if (progress < 1.0) {
-        requestAnimationFrame(animateTransition);
-      }
-    };
-
-    requestAnimationFrame(animateTransition);
-  }
-
-  fitCameraToSelection(categoryFilter, macroFilter) {
-    // Collect all visible meshes matching the filters
-    const matchingObjects = [];
-    this.modulesGroup.traverse(child => {
-      if (child.isMesh && child.visible) {
-        const macroName = child.userData.macro || '';
-        const category = getModuleCategory(macroName);
-        
-        const matchesCategory = !categoryFilter || categoryFilter === 'all' || category === categoryFilter;
-        const matchesMacro = !macroFilter || macroName === macroFilter;
-        
-        if (matchesCategory && matchesMacro) {
-          matchingObjects.push(child);
-        }
-      }
-    });
-
-    if (matchingObjects.length === 0) return;
-
-    // Calculate bounding box of matching objects
-    const box = new THREE.Box3();
-    matchingObjects.forEach(obj => {
-      box.expandByObject(obj);
-    });
-
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-
-    // Transition camera to fit this bounding box
-    const duration = 1000; // ms
-    const startCam = this.camera.position.clone();
-    const startTar = this.controls.target.clone();
-
-    // Target positions
-    const endTar = center.clone();
-    
-    // Calculate distance to fit
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = this.camera.fov * (Math.PI / 180);
-    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-    cameraZ *= 1.35; // pad factor
-    cameraZ = Math.max(150, Math.min(cameraZ, 8000));
-
-    // Position camera slightly offset from the target center
-    const endCam = new THREE.Vector3(
-      center.x + cameraZ * 0.7,
-      center.y + cameraZ * 0.5,
-      center.z + cameraZ * 0.7
-    );
-
-    const startTime = performance.now();
-
-    const animateTransition = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1.0);
-      const ease = progress * (2 - progress); // ease out
-
-      this.camera.position.lerpVectors(startCam, endCam, ease);
       this.controls.target.lerpVectors(startTar, endTar, ease);
       this.controls.update();
 

@@ -424,30 +424,16 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       catHeader.classList.add('highlighted-cat');
     }
     catHeader.innerHTML = `
-      <span class="visibility-cat-title" style="color: ${CATEGORY_COLORS[cat]}">${CATEGORY_NAMES[cat]}</span>
+      <span class="visibility-cat-title" style="color: ${CATEGORY_COLORS[cat]}" title="Click to zoom/center on all visible ${CATEGORY_NAMES[cat]} components">${CATEGORY_NAMES[cat]}</span>
       <button class="visibility-cat-toggle-btn" title="${toggleLabel} category components">${toggleLabel}</button>
     `;
     container.appendChild(catHeader);
 
-     // Bind Category Title click (non-toggle button click)
-    const titleBtn = catHeader.querySelector('.visibility-cat-title');
-    if (titleBtn) {
-      titleBtn.style.cursor = 'pointer';
-      titleBtn.addEventListener('click', () => {
-        activeCategoryFilter = cat;
-        activeMacroFilter = null;
-        updateActiveFilterUI();
-
-        renderVisibilityControls(currentPlan, cat);
-        calculateAndRenderStats(currentPlan);
-        renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
-        viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
-        scrollAndHighlightLeftCategory(cat);
-
-        // Zoom and center camera to fit all of this category
-        viewer.fitCameraToSelection(activeCategoryFilter, activeMacroFilter);
-      });
-    }
+    // Bind Category Title click to fit camera
+    const catTitle = catHeader.querySelector('.visibility-cat-title');
+    catTitle.addEventListener('click', () => {
+      viewer.fitCameraToSelection(cat);
+    });
 
     // Bind Category Toggle click
     const toggleBtn = catHeader.querySelector('.visibility-cat-toggle-btn');
@@ -469,9 +455,9 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
       scrollAndHighlightLeftCategory(cat);
 
-      // If category was made visible, zoom to display all of it
+      // Auto-focus category if shown
       if (allExcluded) {
-        viewer.fitCameraToSelection(cat, null);
+        viewer.fitCameraToSelection(cat);
       }
     });
 
@@ -483,7 +469,6 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
 
       const row = document.createElement('div');
       row.className = 'visibility-row';
-      row.style.cursor = 'pointer';
       if (cat === highlightedCategory) {
         row.style.borderLeft = '2px solid rgba(0, 245, 255, 0.25)';
         row.style.paddingLeft = '6px';
@@ -492,29 +477,20 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       const checkboxId = `vis-chk-${macro.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
       row.innerHTML = `
-        <label for="${checkboxId}" style="cursor: pointer;">
+        <label for="${checkboxId}">
           <input type="checkbox" id="${checkboxId}" ${!isExcluded ? 'checked' : ''}>
-          <span>${friendlyName}</span>
+          <span class="macro-text-btn" title="Click to zoom/center on these components">${friendlyName}</span>
         </label>
         <span class="macro-count-badge">${count}</span>
       `;
 
-      // Click on row (excluding checkbox label check click) selects macro and zooms/fits
-      row.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT') return; // let checkbox handler handle it
-        
-        activeCategoryFilter = cat;
-        activeMacroFilter = macro;
-        updateActiveFilterUI();
-        
-        renderVisibilityControls(currentPlan, cat);
-        calculateAndRenderStats(currentPlan);
-        renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
-        viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
-        scrollAndHighlightLeftCategory(cat);
-
-        // Zoom and center camera to fit all of this macro
-        viewer.fitCameraToSelection(activeCategoryFilter, activeMacroFilter);
+      // Bind text click to focus camera without toggling if already visible
+      const textBtn = row.querySelector('.macro-text-btn');
+      textBtn.addEventListener('click', (e) => {
+        if (!isExcluded) {
+          e.preventDefault(); // Stop checkbox from toggling if already shown
+          viewer.fitCameraToSelection(cat, macro);
+        }
       });
 
       const input = row.querySelector('input');
@@ -526,19 +502,19 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
           excludedMacros.add(macro);
         }
 
-        // Update 3D viewport portal meshes
+        // Update 3D viewport meshes
         viewer.setMacroVisibility(macro, isVisible);
 
         // Refresh stats and module list
-        renderVisibilityControls(currentPlan, highlightedCategory); // Re-render to update the header toggle label
+        renderVisibilityControls(currentPlan, highlightedCategory);
         calculateAndRenderStats(currentPlan);
         renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
         viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
         scrollAndHighlightLeftCategory(cat);
 
-        // If made visible, fit camera to selection
+        // Auto-focus component if shown
         if (isVisible) {
-          viewer.fitCameraToSelection(null, macro);
+          viewer.fitCameraToSelection(cat, macro);
         }
       });
 
