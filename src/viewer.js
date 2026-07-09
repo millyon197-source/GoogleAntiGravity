@@ -90,7 +90,7 @@ export class StationViewer {
     this.scene.add(ambientLight);
 
     // Planetary blue-indigo glow from below - Brightened
-    const hemisphereLight = new THREE.HemisphereLight(0x3B4E8C, 0x060814, 1.2);
+    const hemisphereLight = new THREE.HemisphereLight(0x3B4E8C, 0x060814, 2.0);
     this.scene.add(hemisphereLight);
 
     // Primary solar key light (intense white-orange star light) - Brightened
@@ -113,7 +113,7 @@ export class StationViewer {
     this.scene.add(sunLight);
 
     // Opposing fill light to brighten the dark shadow sides of the modules
-    const fillLight = new THREE.DirectionalLight(0x6B7DFF, 1.8);
+    const fillLight = new THREE.DirectionalLight(0x6B7DFF, 4.0);
     fillLight.position.set(-1000, -800, -1000);
     this.scene.add(fillLight);
   }
@@ -207,12 +207,11 @@ export class StationViewer {
 
     const urls = [];
     subfolders.forEach(sf => {
-      // Game-extracted lod0 structure: /assets/structures/subfolder/component_data/component_main-lod0.dae
-      urls.push(`/assets/structures/${sf}/${baseName}_data/part_main-lod0.dae`);
+      // Try highest level of detail (LOD) from 0 to 4 in ascending order, then fallback to part_main.dae
+      for (let lod = 0; lod <= 4; lod++) {
+        urls.push(`/assets/structures/${sf}/${baseName}_data/part_main-lod${lod}.dae`);
+      }
       urls.push(`/assets/structures/${sf}/${baseName}_data/part_main.dae`);
-  /*    urls.push(`/assets/structures/${sf}/${baseName}/${baseName}.dae`);
-      urls.push(`/assets/structures/${sf}/${baseName}.dae`);
-  */
     });
   /*  urls.push(`/assets/structures/${baseName}_data/${baseName}part_main-lod0.dae`);
     urls.push(`/assets/structures/${baseName}.dae`);
