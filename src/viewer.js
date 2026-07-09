@@ -88,8 +88,8 @@ export class StationViewer {
   }
 
   setupLighting() {
-    // Ambient fill light (cool nebula glow) - Brightened
-    const ambientLight = new THREE.AmbientLight(0x22294A, 2.2);
+    // Ambient fill light (cool nebula glow) - High Ambient
+    const ambientLight = new THREE.AmbientLight(0x22294A, 5.0);
     this.scene.add(ambientLight);
 
     // Planetary blue-indigo glow from below - Brightened
