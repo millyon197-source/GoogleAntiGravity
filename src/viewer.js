@@ -280,17 +280,45 @@ export class StationViewer {
           if (scene) {
             scene.traverse(child => {
               if (child.isMesh) {
-                // If material is basic, convert to Standard for lighting response
-                if (child.material && child.material.isMeshBasicMaterial) {
-                  child.material = new THREE.MeshStandardMaterial({
-                    color: child.material.color,
-                    map: child.material.map,
-                    roughness: 0.5,
-                    metalness: 0.7
-                  });
+                // Ensure geometry has proper normals for lighting
+                if (child.geometry) {
+                  try {
+                    child.geometry.computeVertexNormals();
+                  } catch (geomErr) {
+                    // Ignore geometry calculation errors
+                  }
+                }
+
+                // Enable shadow casting/receiving
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+                // Process materials (handles both single material and array of materials)
+                const processMaterial = (mat) => {
+                  if (!mat) return mat;
+                  
+                  // If it's a basic unlit material or does not support lights, convert to standard
+                  if (mat.isMeshBasicMaterial || mat.lights === false) {
+                    return new THREE.MeshStandardMaterial({
+                      color: mat.color || new THREE.Color(0xcccccc),
+                      map: mat.map || null,
+                      roughness: 0.6,
+                      metalness: 0.2,
+                      side: THREE.DoubleSide
+                    });
+                  }
+                  
+                  // Otherwise, ensure standard lighting properties are set
+                  mat.roughness = mat.roughness !== undefined ? mat.roughness : 0.6;
+                  mat.metalness = mat.metalness !== undefined ? mat.metalness : 0.2;
+                  mat.side = THREE.DoubleSide; // Ensure double-sided rendering for open/shell meshes
+                  return mat;
+                };
+
+                if (Array.isArray(child.material)) {
+                  child.material = child.material.map(processMaterial);
                 } else if (child.material) {
-                  child.material.roughness = 0.5;
-                  child.material.metalness = 0.7;
+                  child.material = processMaterial(child.material);
                 }
               }
             });
