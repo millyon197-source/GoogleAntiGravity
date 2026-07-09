@@ -189,7 +189,6 @@ function calculateAndRenderStats(plan) {
           
           updateActiveFilterUI();
           calculateAndRenderStats(currentPlan);
-          renderVisibilityControls(currentPlan, activeCategoryFilter);
           renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
           viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
         });
@@ -237,7 +236,6 @@ function calculateAndRenderStats(plan) {
         
         updateActiveFilterUI();
         calculateAndRenderStats(currentPlan);
-        renderVisibilityControls(currentPlan, activeCategoryFilter);
         renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
         viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
       });
@@ -378,7 +376,7 @@ function renderModuleList(modules, filterText = '') {
   });
 }
 
-function renderVisibilityControls(plan, highlightedCategory = null) {
+function renderVisibilityControls(plan) {
   const container = document.getElementById('visibility-controls-container');
   if (!container) return;
 
@@ -403,10 +401,7 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
     }
   });
 
-  let categories = ['docks', 'production', 'storage', 'habitation', 'defense', 'structure'];
-  if (highlightedCategory && highlightedCategory !== 'all' && categories.includes(highlightedCategory)) {
-    categories = [highlightedCategory, ...categories.filter(c => c !== highlightedCategory)];
-  }
+  const categories = ['docks', 'production', 'storage', 'habitation', 'defense', 'structure'];
 
   categories.forEach(cat => {
     const macros = categoryMacros[cat];
@@ -420,9 +415,6 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
     // Render Category Header
     const catHeader = document.createElement('div');
     catHeader.className = 'visibility-cat-header';
-    if (cat === highlightedCategory) {
-      catHeader.classList.add('highlighted-cat');
-    }
     catHeader.innerHTML = `
       <span class="visibility-cat-title" style="color: ${CATEGORY_COLORS[cat]}" title="Click to zoom/center on all visible ${CATEGORY_NAMES[cat]} components">${CATEGORY_NAMES[cat]}</span>
       <button class="visibility-cat-toggle-btn" title="${toggleLabel} category components">${toggleLabel}</button>
@@ -449,7 +441,7 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       });
 
       // Refresh UI state
-      renderVisibilityControls(currentPlan, highlightedCategory);
+      renderVisibilityControls(currentPlan);
       calculateAndRenderStats(currentPlan);
       renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
       viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
@@ -469,10 +461,6 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
 
       const row = document.createElement('div');
       row.className = 'visibility-row';
-      if (cat === highlightedCategory) {
-        row.style.borderLeft = '2px solid rgba(0, 245, 255, 0.25)';
-        row.style.paddingLeft = '6px';
-      }
       
       const checkboxId = `vis-chk-${macro.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
@@ -506,7 +494,7 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
         viewer.setMacroVisibility(macro, isVisible);
 
         // Refresh stats and module list
-        renderVisibilityControls(currentPlan, highlightedCategory);
+        renderVisibilityControls(currentPlan);
         calculateAndRenderStats(currentPlan);
         renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
         viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
@@ -521,9 +509,6 @@ function renderVisibilityControls(plan, highlightedCategory = null) {
       container.appendChild(row);
     });
   });
-
-  // Automatically scroll back to top to display highlighted item
-  container.scrollTop = 0;
 }
 
 function scrollAndHighlightLeftCategory(category) {
@@ -896,7 +881,6 @@ function setupEventListeners() {
       
       updateActiveFilterUI();
       calculateAndRenderStats(currentPlan);
-      renderVisibilityControls(currentPlan, activeCategoryFilter);
       renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
       viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
     });
