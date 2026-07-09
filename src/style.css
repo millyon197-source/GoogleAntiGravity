@@ -709,6 +709,23 @@ select:hover, select:focus {
   gap: 8px;
 }
 
+.variable-display-text {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--neon-cyan);
+  background: rgba(0, 245, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 10px;
+  border: 1px dashed rgba(0, 245, 255, 0.3);
+  display: inline-block;
+  transition: opacity 0.2s ease;
+}
+
+.variable-display-text:empty {
+  display: none;
+}
+
 .live-pulse {
   width: 6px;
   height: 6px;

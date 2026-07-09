@@ -617,9 +617,19 @@ function updateAnimatorUI() {
   if (badge) badge.textContent = `${animProgress}%`;
   
   if (currentPlan && countSpan) {
-    const total = currentPlan.modules.length;
+    const visibleModules = currentPlan.modules.filter(mod => !excludedMacros.has(mod.macro));
+    const total = visibleModules.length;
     const current = Math.ceil((animProgress / 100) * total);
     countSpan.textContent = `${current} / ${total}`;
+  }
+
+  const varDisplay = document.getElementById('anim-variable-display');
+  if (varDisplay) {
+    if (animProgress < 100) {
+      varDisplay.textContent = `animProgress: ${animProgress}%`;
+    } else {
+      varDisplay.textContent = '';
+    }
   }
 }
 
