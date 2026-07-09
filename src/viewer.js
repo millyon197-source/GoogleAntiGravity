@@ -647,11 +647,22 @@ export class StationViewer {
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
     
-    // Only check intersection with visible module meshes
+    // Only check intersection with visible module meshes (accounting for parent visibility)
     const visibleObjects = [];
     this.modulesGroup.traverse(child => {
-      if (child.isMesh && child.visible) {
-        visibleObjects.push(child);
+      if (child.isMesh) {
+        let isVisible = true;
+        let current = child;
+        while (current && current !== this.modulesGroup) {
+          if (current.visible === false) {
+            isVisible = false;
+            break;
+          }
+          current = current.parent;
+        }
+        if (isVisible) {
+          visibleObjects.push(child);
+        }
       }
     });
 
