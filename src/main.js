@@ -165,6 +165,7 @@ function calculateAndRenderStats(plan) {
         const count = macroCounts[macro];
         const item = document.createElement('div');
         item.className = 'stat-macro-item';
+        item.setAttribute('data-macro', macro);
         if (activeMacroFilter === macro) {
           item.classList.add('active-macro-filter');
         }
@@ -217,6 +218,7 @@ function calculateAndRenderStats(plan) {
       const count = allMacros[macro];
       const item = document.createElement('div');
       item.className = 'stat-macro-item';
+      item.setAttribute('data-macro', macro);
       if (activeMacroFilter === macro) {
         item.classList.add('active-macro-filter');
       }
@@ -490,6 +492,7 @@ function renderVisibilityControls(plan) {
         if (!isExcluded) {
           e.preventDefault(); // Stop checkbox from toggling if already shown
           viewer.fitCameraToSelection(cat, macro);
+          scrollAndHighlightLeftMacro(macro);
         }
       });
 
@@ -515,6 +518,7 @@ function renderVisibilityControls(plan) {
         // Auto-focus component if shown
         if (isVisible) {
           viewer.fitCameraToSelection(cat, macro);
+          scrollAndHighlightLeftMacro(macro);
         }
       });
 
@@ -537,6 +541,53 @@ function scrollAndHighlightLeftCategory(category) {
     // Remove highlight class after animation finishes
     setTimeout(() => {
       statBox.classList.remove('reveal-highlight');
+    }, 1500);
+  }
+}
+
+function scrollAndHighlightLeftMacro(macro) {
+  const cat = getModuleCategory(macro);
+  const parentCard = document.getElementById(`stat-box-${cat}`);
+  const leftScrollContainer = document.querySelector('.stats-card .card-body');
+  
+  if (parentCard && leftScrollContainer) {
+    const containerHeight = leftScrollContainer.clientHeight;
+    const targetTop = parentCard.offsetTop;
+    const targetHeight = parentCard.offsetHeight;
+    const scrollTarget = targetTop - (containerHeight / 2) + (targetHeight / 2);
+    
+    leftScrollContainer.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth'
+    });
+    
+    // Add glowing outline pulse highlight
+    parentCard.classList.add('reveal-highlight');
+    setTimeout(() => {
+      parentCard.classList.remove('reveal-highlight');
+    }, 1500);
+  }
+
+  // Centering macro item in sub-container
+  const subContainer = document.getElementById(`stat-macros-${cat}`);
+  const macroItem = subContainer?.querySelector(`.stat-macro-item[data-macro="${macro}"]`);
+  if (macroItem && subContainer) {
+    const containerHeight = subContainer.clientHeight;
+    const targetTop = macroItem.offsetTop;
+    const targetHeight = macroItem.offsetHeight;
+    const scrollTarget = targetTop - (containerHeight / 2) + (targetHeight / 2);
+    
+    subContainer.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth'
+    });
+    
+    // Flash sub-item briefly
+    macroItem.style.borderColor = 'var(--neon-cyan)';
+    macroItem.style.boxShadow = '0 0 8px var(--neon-cyan)';
+    setTimeout(() => {
+      macroItem.style.borderColor = '';
+      macroItem.style.boxShadow = '';
     }, 1500);
   }
 }
