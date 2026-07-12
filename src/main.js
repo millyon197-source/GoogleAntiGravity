@@ -399,6 +399,17 @@ function renderVisibilityControls(plan) {
 
   container.innerHTML = '';
 
+  const showAllBtn = document.getElementById('btn-visibility-show-all');
+  if (showAllBtn) {
+    if (excludedMacros.size === 0) {
+      showAllBtn.textContent = 'Hide All';
+      showAllBtn.setAttribute('title', 'Hide all components');
+    } else {
+      showAllBtn.textContent = 'Show All';
+      showAllBtn.setAttribute('title', 'Show all components');
+    }
+  }
+
   const modules = plan.modules;
   
   // Group modules by category and count unique macros
@@ -1030,19 +1041,27 @@ function setupEventListeners() {
     });
   });
 
-  // 8. Global visibility "Show All" button
+  // 8. Global visibility "Show All" / "Hide All" toggle button
   const showAllVisBtn = document.getElementById('btn-visibility-show-all');
   if (showAllVisBtn) {
     showAllVisBtn.addEventListener('click', () => {
       if (!currentPlan) return;
       
-      // Clear excluded set
-      excludedMacros.clear();
+      const allShown = excludedMacros.size === 0;
       
-      // Re-include all meshes in 3D viewer
-      currentPlan.modules.forEach(mod => {
-        viewer.setMacroVisibility(mod.macro, true);
-      });
+      if (allShown) {
+        // Hide All: add all macros in the plan to excluded
+        currentPlan.modules.forEach(mod => {
+          excludedMacros.add(mod.macro);
+          viewer.setMacroVisibility(mod.macro, false);
+        });
+      } else {
+        // Show All: clear excluded set
+        excludedMacros.clear();
+        currentPlan.modules.forEach(mod => {
+          viewer.setMacroVisibility(mod.macro, true);
+        });
+      }
       
       // Re-render checklist
       renderVisibilityControls(currentPlan);
