@@ -510,14 +510,10 @@ function renderVisibilityControls(plan) {
         }
 
         if (cycleCounter < 0) {
-          cycleCounter = cycleCount;
+          cycleCounter = cycleCount - 1;
         }
 
-        let displayIndex = cycleCounter - 1;
-        if (displayIndex < 0) {
-          displayIndex = 0; // safety fallback
-        }
-
+        const displayIndex = cycleCounter % cycleCount;
         const targetModule = cycleModules[displayIndex];
         if (targetModule) {
           // Display that component as if selected
