@@ -29,6 +29,7 @@ export class StationViewer {
     this.wireframeMode = false;
     this.ghostMode = false;
     this.hiddenMacros = new Set();
+    this.isolatedModule = null;
     this.currentPlan = null;
     this.currentBuildProgressPercentage = 100;
     this.highlightHelpers = [];
@@ -712,7 +713,12 @@ export class StationViewer {
     }
 
     this.modulesGroup.children.forEach(child => {
-      const targetVisibility = activeVisibleSet.has(child);
+      let targetVisibility = false;
+      if (this.isolatedModule) {
+        targetVisibility = (child === this.isolatedModule);
+      } else {
+        targetVisibility = activeVisibleSet.has(child);
+      }
 
       if (targetVisibility) {
         child.visible = true;
@@ -748,6 +754,11 @@ export class StationViewer {
     if (this.selectionHelper) {
       this.selectionHelper.update();
     }
+  }
+
+  setIsolatedModule(moduleInstance) {
+    this.isolatedModule = moduleInstance;
+    this.setBuildProgress(this.currentBuildProgressPercentage);
   }
 
   setMacroVisibility(macroName, isVisible) {

@@ -33,6 +33,8 @@ const excludedMacros = new Set();
 // Visibility Isolation State
 let visibilityIsolationSnapshot = null;
 let activeIsolatedBadge = null;
+let isolatedBadgeOriginalCount = null;
+let isolatedBadgeElement = null;
 
 // Build Sequence Animator state
 let animInterval = null;
@@ -647,30 +649,35 @@ function isolateVisibility(clickedMacro, clickedBadge) {
     restoreVisibility();
   }
 
+  // Get instances in the 3D scene matching this macro
+  const instances = viewer.modulesGroup.children.filter(child => child.userData.macro === clickedMacro);
+  if (instances.length === 0) return;
+
+  const originalCount = instances.length;
+  const decrementedCount = originalCount - 1;
+
   // Take snapshot of currently excluded macros
   visibilityIsolationSnapshot = new Set(excludedMacros);
   activeIsolatedBadge = clickedBadge;
   clickedBadge.setAttribute('data-macro', clickedMacro);
 
-  // Hide all other macros in the scene
-  const allMacros = new Set();
-  currentPlan.modules.forEach(mod => allMacros.add(mod.macro));
+  isolatedBadgeOriginalCount = originalCount;
+  isolatedBadgeElement = clickedBadge;
 
-  excludedMacros.clear();
-  allMacros.forEach(macro => {
-    if (macro !== clickedMacro) {
-      excludedMacros.add(macro);
-      viewer.setMacroVisibility(macro, false);
-    } else {
-      viewer.setMacroVisibility(macro, true);
-    }
-  });
+  // Decrement the counter in the UI badge
+  clickedBadge.textContent = decrementedCount;
+
+  // Isolate only that component[count] in the viewer
+  const targetInstance = instances[decrementedCount];
+  viewer.setIsolatedModule(targetInstance);
+
+  // Focus and select this isolated component
+  selectModule(targetInstance.userData.index, true);
 
   // Highlight badge
   clickedBadge.classList.add('isolated-badge-active');
 
   // Refresh UI state
-  renderVisibilityControls(currentPlan);
   calculateAndRenderStats(currentPlan);
   renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
   viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
@@ -691,6 +698,14 @@ function handleOutsideIsolatedClick(e) {
 function restoreVisibility() {
   if (!visibilityIsolationSnapshot) return;
 
+  // Restore the saved count on the badge element
+  if (isolatedBadgeElement && isolatedBadgeOriginalCount !== null) {
+    isolatedBadgeElement.textContent = isolatedBadgeOriginalCount;
+  }
+
+  isolatedBadgeOriginalCount = null;
+  isolatedBadgeElement = null;
+
   // Restore excludedMacros Set content
   excludedMacros.clear();
   visibilityIsolationSnapshot.forEach(macro => excludedMacros.add(macro));
@@ -698,13 +713,11 @@ function restoreVisibility() {
   visibilityIsolationSnapshot = null;
   activeIsolatedBadge = null;
 
-  // Restore viewer mesh visibility states
-  if (currentPlan) {
-    currentPlan.modules.forEach(mod => {
-      const isExcluded = excludedMacros.has(mod.macro);
-      viewer.setMacroVisibility(mod.macro, !isExcluded);
-    });
-  }
+  // Clear viewer isolation reference
+  viewer.setIsolatedModule(null);
+
+  // Deselect selected module
+  selectModule(null, false);
 
   // Remove document click listener
   document.removeEventListener('click', handleOutsideIsolatedClick);
