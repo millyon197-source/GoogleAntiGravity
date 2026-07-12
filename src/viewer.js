@@ -20,6 +20,7 @@ export class StationViewer {
     this.starfield = null;
     this.gridHelper = null;
     this.plotBounds = null;
+    this.dimensionLabel = null;
 
     this.animationFrameId = null;
     this.clock = new THREE.Clock();
@@ -575,6 +576,45 @@ export class StationViewer {
     requestAnimationFrame(animateTransition);
   }
 
+  createDimensionSprite(text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    
+    // Background card (semi-transparent dark with glowing neon cyan border)
+    ctx.fillStyle = 'rgba(10, 16, 36, 0.85)';
+    ctx.strokeStyle = '#00F5FF';
+    ctx.lineWidth = 3;
+    
+    // Round rectangle
+    const x = 3, y = 3, w = 250, h = 58, r = 8;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 20px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 32);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+    const sprite = new THREE.Sprite(material);
+    
+    // Size representation in world scale units (e.g. 150m wide, 38m high)
+    sprite.scale.set(150, 38, 1);
+    return sprite;
+  }
+
   selectModuleByIndex(index) {
     this.deselect();
 
@@ -609,6 +649,19 @@ export class StationViewer {
     const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
 
     this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
+
+    // Dimension Label overlay
+    if (this.dimensionLabel) {
+      this.scene.remove(this.dimensionLabel);
+      if (this.dimensionLabel.material.map) this.dimensionLabel.material.map.dispose();
+      this.dimensionLabel.material.dispose();
+      this.dimensionLabel = null;
+    }
+
+    const dimText = `${Math.round(compSize.x)}m × ${Math.round(compSize.y)}m × ${Math.round(compSize.z)}m`;
+    this.dimensionLabel = this.createDimensionSprite(dimText);
+    this.dimensionLabel.position.set(compCenter.x, compBox.max.y + Math.max(15, compSize.y * 0.1), compCenter.z);
+    this.scene.add(this.dimensionLabel);
   }
 
   deselect() {
@@ -616,6 +669,12 @@ export class StationViewer {
       this.scene.remove(this.selectionHelper);
       this.selectionHelper.dispose();
       this.selectionHelper = null;
+    }
+    if (this.dimensionLabel) {
+      this.scene.remove(this.dimensionLabel);
+      if (this.dimensionLabel.material.map) this.dimensionLabel.material.map.dispose();
+      this.dimensionLabel.material.dispose();
+      this.dimensionLabel = null;
     }
     this.resetCameraTarget();
     this.restoreFullPlanGrid();
@@ -883,12 +942,14 @@ export class StationViewer {
 
     const time = this.clock.getElapsedTime();
 
-    // 1. Run animations inside procedural meshes (rotating rings, solar panels, etc.)
+    // 1. Run animations inside procedural meshes (rotating rings, solar panels, etc.) - Stopped as requested
+    /*
     this.modulesGroup.children.forEach(child => {
       if (child.visible && child.userData.update) {
         child.userData.update(time);
       }
     });
+    */
 
     // 2. Pulse the selection helper outline so it stands out
     if (this.selectionHelper) {
