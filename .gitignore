@@ -24,4 +24,4 @@ dist-ssr/
 *.local
 
 # Assets (local DAE files)
-assets/structures/
+assets/
