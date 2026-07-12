@@ -29,8 +29,11 @@ let selectedIndex = null;
 let activeCategoryFilter = 'all';
 let activeMacroFilter = null;
 const excludedMacros = new Set();
-const macroBadgeStates = {};
-let hasSelectedViaBadge = false;
+
+// Cycling selection state for macro badges
+let cycleMacro = null;
+let cycleCounter = 0;
+let cycleCount = 0;
 
 // Build Sequence Animator state
 let animInterval = null;
@@ -485,8 +488,53 @@ function renderVisibilityControls(plan) {
           <input type="checkbox" id="${checkboxId}" ${!isExcluded ? 'checked' : ''}>
           <span class="macro-text-btn" title="Click to zoom/center on these components">${friendlyName}</span>
         </label>
-        <span class="macro-count-badge">${count}</span>
+        <span class="macro-count-badge" title="Click to cycle/inspect individual components">${count}</span>
       `;
+
+      // Bind badge click to cycle selection of individual components
+      const badge = row.querySelector('.macro-count-badge');
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (!currentPlan) return;
+
+        const instances = currentPlan.modules.filter(m => m.macro === macro);
+        if (instances.length === 0) return;
+
+        // Clean up styling and reset text on other badges
+        const allRows = container.querySelectorAll('.visibility-row');
+        allRows.forEach(r => {
+          const m = r.getAttribute('data-macro');
+          if (m !== macro) {
+            const b = r.querySelector('.macro-count-badge');
+            if (b) {
+              const cnt = currentPlan.modules.filter(mod => mod.macro === m).length;
+              b.textContent = cnt;
+              b.classList.remove('cycling-active');
+            }
+          }
+        });
+
+        // Toggle / Cycle
+        if (cycleMacro !== macro) {
+          cycleMacro = macro;
+          cycleCount = instances.length;
+          cycleCounter = cycleCount - 1;
+        } else {
+          cycleCounter--;
+          if (cycleCounter < 0) {
+            cycleCounter = cycleCount - 1;
+          }
+        }
+
+        // Display current selection index in badge
+        badge.textContent = `${cycleCounter + 1}/${cycleCount}`;
+        badge.classList.add('cycling-active');
+
+        // Select the module component
+        selectModule(instances[cycleCounter].index, true);
+      });
 
       // Bind text click to focus camera without toggling if already visible
       const textBtn = row.querySelector('.macro-text-btn');
@@ -495,38 +543,6 @@ function renderVisibilityControls(plan) {
           e.preventDefault(); // Stop checkbox from toggling if already shown
           viewer.fitCameraToSelection(cat, macro);
           scrollAndHighlightLeftMacro(macro);
-        }
-      });
-
-      // Bind count badge click to select individual instances of the macro
-      const countBadge = row.querySelector('.macro-count-badge');
-      countBadge.addEventListener('click', (e) => {
-        e.stopPropagation(); // Avoid triggering click outside
-        
-        let state = macroBadgeStates[macro];
-        if (!state) {
-          state = {
-            count: count,
-            counter: count
-          };
-          macroBadgeStates[macro] = state;
-        } else {
-          state.counter--;
-          if (state.counter < 0) {
-            state.counter = state.count; // Reset to count
-          }
-        }
-
-        if (currentPlan && currentPlan.modules) {
-          const matchingModules = currentPlan.modules.filter(m => m.macro === macro);
-          if (matchingModules.length > 0) {
-            let idx = state.counter - 1;
-            if (idx < 0 || idx >= matchingModules.length) {
-              idx = 0;
-            }
-            selectModule(matchingModules[idx].index, true);
-            hasSelectedViaBadge = true;
-          }
         }
       });
 
@@ -558,6 +574,26 @@ function renderVisibilityControls(plan) {
 
       container.appendChild(row);
     });
+  });
+}
+
+function restoreCyclingBadges() {
+  cycleMacro = null;
+  cycleCounter = 0;
+  cycleCount = 0;
+  
+  const container = document.getElementById('visibility-controls-container');
+  if (!container) return;
+  
+  const rows = container.querySelectorAll('.visibility-row');
+  rows.forEach(row => {
+    const macro = row.getAttribute('data-macro');
+    const badge = row.querySelector('.macro-count-badge');
+    if (badge && macro && currentPlan) {
+      const count = currentPlan.modules.filter(m => m.macro === macro).length;
+      badge.textContent = count;
+      badge.classList.remove('cycling-active');
+    }
   });
 }
 
@@ -828,16 +864,10 @@ function stepAnimation(direction) {
  * Event Binding Definitions
  */
 function setupEventListeners() {
-  // Restore view on clicking outside of count badges
+  // Restore cycling badges when clicking anywhere outside of the count badges
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.macro-count-badge')) {
-      for (const m in macroBadgeStates) {
-        delete macroBadgeStates[m];
-      }
-      if (hasSelectedViaBadge) {
-        selectModule(null);
-        hasSelectedViaBadge = false;
-      }
+    if (!e.target.classList.contains('macro-count-badge')) {
+      restoreCyclingBadges();
     }
   });
 
