@@ -659,8 +659,8 @@ function isolateVisibility(clickedMacro, clickedBadge) {
     clickedBadge.textContent = isolatedCurrentIndex;
 
     const instances = viewer.modulesGroup.children.filter(child => child.userData.macro === clickedMacro);
-    if (instances.length > 0 && instances[isolatedCurrentIndex]) {
-      const targetInstance = instances[isolatedCurrentIndex];
+    if (instances.length > 0) {
+      const targetInstance = instances[Math.max(0, isolatedCurrentIndex - 1)];
       viewer.setIsolatedModule(targetInstance);
       selectModule(targetInstance.userData.index, true, true);
     }
@@ -677,7 +677,6 @@ function isolateVisibility(clickedMacro, clickedBadge) {
   if (instances.length === 0) return;
 
   const originalCount = instances.length;
-  const startIndex = originalCount - 1;
 
   // Take snapshot of currently excluded macros
   visibilityIsolationSnapshot = new Set(excludedMacros);
@@ -686,13 +685,13 @@ function isolateVisibility(clickedMacro, clickedBadge) {
 
   isolatedBadgeOriginalCount = originalCount;
   isolatedBadgeElement = clickedBadge;
-  isolatedCurrentIndex = startIndex;
+  isolatedCurrentIndex = originalCount; // Upon first click, make counter = count
 
-  // Decrement the counter in the UI badge
+  // Set the counter text in the UI badge
   clickedBadge.textContent = isolatedCurrentIndex;
 
-  // Isolate only that component[count] in the viewer
-  const targetInstance = instances[isolatedCurrentIndex];
+  // Isolate only that component[counter] in the viewer (1-indexed safety)
+  const targetInstance = instances[Math.max(0, isolatedCurrentIndex - 1)];
   viewer.setIsolatedModule(targetInstance);
 
   // Focus and select this isolated component (without changing display box size)
