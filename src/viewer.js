@@ -218,111 +218,163 @@ export class StationViewer {
           if (response.ok && (!contentType || !contentType.includes('text/html'))) {
             urls.push(checkUrl);
             lodFound = true;
-            break; // Found the highest available LOD, skip checking lower LODs
+            break; // Found the lowest available LOD, skip checking higher LODs
           }
         } catch (e) {
           // Ignore fetch errors
         }
       }
 
-      if (!lodFound) {
-        const fallbackUrl = `/assets/structures/${sf}/${baseName}_data/part_main.dae`;
+      let upLodFound = false;
+      for (let lod = 0; lod <= 3; lod++) {
+        const checkUrl = `/assets/structures/${sf}/${baseName}_data/part_main_up-lod${lod}.dae`;
         try {
-          const response = await fetch(fallbackUrl, { method: 'HEAD' });
+          const response = await fetch(checkUrl, { method: 'HEAD' });
           const contentType = response.headers.get('Content-Type');
           if (response.ok && (!contentType || !contentType.includes('text/html'))) {
-            urls.push(fallbackUrl);
+            urls.push(checkUrl);
+            upLodFound = true;
+            break; // Found the lowest available LOD, skip checking higher LODs
           }
         } catch (e) {
-          // Ignore
+          // Ignore fetch errors
+        }
+      }
+
+      let xrLodFound = false;
+      for (let lod = 4; lod >= 0; lod--) {
+        const checkUrl = `/assets/structures/${sf}/${baseName}_data/part_main_xr-lod${lod}.dae`;
+        try {
+          const response = await fetch(checkUrl, { method: 'HEAD' });
+          const contentType = response.headers.get('Content-Type');
+          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
+            urls.push(checkUrl);
+            xrLodFound = true;
+            break; // Found the first available LOD, checking descending
+          }
+        } catch (e) {
+          // Ignore fetch errors
+        }
+      }
+
+      if (lodFound || upLodFound || xrLodFound) {
+        break;
+      }
+    }
+
+    if (urls.length === 0) {
+      for (const sf of subfolders) {
+        const checkUrl = `/assets/structures/${sf}/${baseName}_data/detail_s_main-lod0.dae`;
+        try {
+          const response = await fetch(checkUrl, { method: 'HEAD' });
+          const contentType = response.headers.get('Content-Type');
+          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
+            urls.push(checkUrl);
+            break;
+          }
+        } catch (e) {
+          // Ignore fetch errors
         }
       }
     }
 
+    const loadedScenes = [];
     for (const url of urls) {
       try {
         const scene = await this.loadColladaModel(url);
         if (scene) {
-            scene.traverse(child => {
-              if (child.isMesh) {
-                // Ensure geometry has proper normals for lighting
-                if (child.geometry) {
-                  try {
-                    child.geometry.computeVertexNormals();
-                  } catch (geomErr) {
-                    // Ignore geometry calculation errors
-                  }
-                }
-
-                // Enable shadow casting/receiving
-                child.castShadow = true;
-                child.receiveShadow = true;
-
-                // Process materials (handles both single material and array of materials)
-                const processMaterial = (mat) => {
-                  if (!mat) {
-                    return new THREE.MeshStandardMaterial({
-                      color: 0x8D99AE,
-                      roughness: 0.6,
-                      metalness: 0.2,
-                      side: THREE.DoubleSide
-                    });
-                  }
-                  
-                  // Check if the original color is black or too dark
-                  const baseColor = new THREE.Color(0x8D99AE); // default metal grey
-                  if (mat.color) {
-                    // If the color is not pure black or extremely dark, preserve it
-                    if (mat.color.r > 0.02 || mat.color.g > 0.02 || mat.color.b > 0.02) {
-                      baseColor.copy(mat.color);
-                    }
-                  }
-                  
-                  // Force convert any material type to MeshStandardMaterial to guarantee lighting response
-                  const newMat = new THREE.MeshStandardMaterial({
-                    color: baseColor,
-                    map: mat.map || null,
-                    normalMap: mat.normalMap || null,
-                    bumpMap: mat.bumpMap || null,
-                    roughness: 0.6,
-                    metalness: 0.2,
-                    opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
-                    transparent: mat.transparent || false,
-                    side: THREE.DoubleSide,
-                    emissive: new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
-                  });
-
-                  // If old material had vertex colors enabled, only keep it if geometry actually supports it
-                  if (mat.vertexColors && child.geometry && child.geometry.attributes.color) {
-                    newMat.vertexColors = true;
-                  } else {
-                    newMat.vertexColors = false;
-                  }
-
-                  newMat.name = mat.name || '';
-
-                  // Clean up old material reference
-                  if (typeof mat.dispose === 'function') {
-                    mat.dispose();
-                  }
-
-                  return newMat;
-                };
-
-                if (Array.isArray(child.material)) {
-                  child.material = child.material.map(processMaterial);
-                } else if (child.material) {
-                  child.material = processMaterial(child.material);
+          scene.traverse(child => {
+            if (child.isMesh) {
+              // Ensure geometry has proper normals for lighting
+              if (child.geometry) {
+                try {
+                  child.geometry.computeVertexNormals();
+                } catch (geomErr) {
+                  // Ignore geometry calculation errors
                 }
               }
-            });
-            return scene;
-          }
+
+              // Enable shadow casting/receiving
+              child.castShadow = true;
+              child.receiveShadow = true;
+
+              // Process materials (handles both single material and array of materials)
+              const processMaterial = (mat) => {
+                if (!mat) {
+                  return new THREE.MeshStandardMaterial({
+                    color: 0x8D99AE,
+                    roughness: 0.6,
+                    metalness: 0.2,
+                    side: THREE.DoubleSide
+                  });
+                }
+                
+                // Check if the original color is black or too dark
+                const baseColor = new THREE.Color(0x8D99AE); // default metal grey
+                if (mat.color) {
+                  // If the color is not pure black or extremely dark, preserve it
+                  if (mat.color.r > 0.02 || mat.color.g > 0.02 || mat.color.b > 0.02) {
+                    baseColor.copy(mat.color);
+                  }
+                }
+                
+                // Force convert any material type to MeshStandardMaterial to guarantee lighting response
+                const newMat = new THREE.MeshStandardMaterial({
+                  color: baseColor,
+                  map: mat.map || null,
+                  normalMap: mat.normalMap || null,
+                  bumpMap: mat.bumpMap || null,
+                  roughness: 0.6,
+                  metalness: 0.2,
+                  opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
+                  transparent: mat.transparent || false,
+                  side: THREE.DoubleSide,
+                  emissive: new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
+                });
+
+                // If old material had vertex colors enabled, only keep it if geometry actually supports it
+                if (mat.vertexColors && child.geometry && child.geometry.attributes.color) {
+                  newMat.vertexColors = true;
+                } else {
+                  newMat.vertexColors = false;
+                }
+
+                newMat.name = mat.name || '';
+
+                // Clean up old material reference
+                if (typeof mat.dispose === 'function') {
+                  mat.dispose();
+                }
+
+                return newMat;
+              };
+
+              if (Array.isArray(child.material)) {
+                child.material = child.material.map(processMaterial);
+              } else if (child.material) {
+                child.material = processMaterial(child.material);
+              }
+            }
+          });
+          loadedScenes.push(scene);
+        }
       } catch (e) {
         // Ignore and check next path
       }
     }
-    return null;
+
+    if (loadedScenes.length === 0) {
+      return null;
+    }
+    if (loadedScenes.length === 1) {
+      return loadedScenes[0];
+    }
+
+    const group = new THREE.Group();
+    for (const scene of loadedScenes) {
+      group.add(scene);
+    }
+    return group;
   }
 
   loadColladaModel(url) {
