@@ -29,57 +29,64 @@ function initMaterials(THREE) {
   if (materialsCache) return materialsCache;
 
   materialsCache = {
-    structure: new THREE.MeshStandardMaterial({
-      color: 0x4A5568,
-      roughness: 0.6,
-      metalness: 0.8
-    }),
-    structureDetail: new THREE.MeshStandardMaterial({
-      color: 0x1A202C,
-      roughness: 0.7,
-      metalness: 0.9
-    }),
-    dockDeck: new THREE.MeshStandardMaterial({
-      color: 0x2D3748,
-      roughness: 0.9,
-      metalness: 0.2
-    }),
-    solarPanel: new THREE.MeshStandardMaterial({
-      color: 0x0F4C81,
-      roughness: 0.1,
-      metalness: 0.9,
-      emissive: 0x0A2A4A,
-      emissiveIntensity: 0.5
-    }),
-    habitatGlass: new THREE.MeshStandardMaterial({
-      color: 0x9D4EDD,
-      transparent: true,
-      opacity: 0.4,
-      roughness: 0.1,
-      metalness: 0.9,
-      emissive: 0x3C096C,
-      emissiveIntensity: 0.8
-    }),
-    emissiveCyan: new THREE.MeshStandardMaterial({
-      color: 0x00F5FF,
-      emissive: 0x00F5FF,
-      emissiveIntensity: 2.0
-    }),
-    emissiveGreen: new THREE.MeshStandardMaterial({
-      color: 0x39FF14,
-      emissive: 0x39FF14,
-      emissiveIntensity: 2.0
-    }),
-    emissiveOrange: new THREE.MeshStandardMaterial({
-      color: 0xFF9F1C,
-      emissive: 0xFF9F1C,
-      emissiveIntensity: 1.5
-    }),
-    emissiveRed: new THREE.MeshStandardMaterial({
-      color: 0xFF3131,
-      emissive: 0xFF3131,
-      emissiveIntensity: 2.5
-    }),
+    structure: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0x4A5568 });
+      m.emissive = new THREE.Color(0x000000);
+      m.emissiveIntensity = 0.0;
+      return m;
+    })(),
+    structureDetail: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0x1A202C });
+      m.emissive = new THREE.Color(0x000000);
+      m.emissiveIntensity = 0.0;
+      return m;
+    })(),
+    dockDeck: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0x2D3748 });
+      m.emissive = new THREE.Color(0x000000);
+      m.emissiveIntensity = 0.0;
+      return m;
+    })(),
+    solarPanel: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0x0F4C81 });
+      m.emissive = new THREE.Color(0x0A2A4A);
+      m.emissiveIntensity = 0.5;
+      return m;
+    })(),
+    habitatGlass: (() => {
+      const m = new THREE.MeshBasicMaterial({
+        color: 0x9D4EDD,
+        transparent: true,
+        opacity: 0.4
+      });
+      m.emissive = new THREE.Color(0x3C096C);
+      m.emissiveIntensity = 0.8;
+      return m;
+    })(),
+    emissiveCyan: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0x00F5FF });
+      m.emissive = new THREE.Color(0x00F5FF);
+      m.emissiveIntensity = 2.0;
+      return m;
+    })(),
+    emissiveGreen: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0x39FF14 });
+      m.emissive = new THREE.Color(0x39FF14);
+      m.emissiveIntensity = 2.0;
+      return m;
+    })(),
+    emissiveOrange: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0xFF9F1C });
+      m.emissive = new THREE.Color(0xFF9F1C);
+      m.emissiveIntensity = 1.5;
+      return m;
+    })(),
+    emissiveRed: (() => {
+      const m = new THREE.MeshBasicMaterial({ color: 0xFF3131 });
+      m.emissive = new THREE.Color(0xFF3131);
+      m.emissiveIntensity = 2.5;
+      return m;
+    })(),
     wireframe: new THREE.MeshBasicMaterial({
       color: 0x8D99AE,
       wireframe: true,

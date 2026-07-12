@@ -340,12 +340,13 @@ export class StationViewer {
               // Process materials (handles both single material and array of materials)
               const processMaterial = (mat) => {
                 if (!mat) {
-                  return new THREE.MeshStandardMaterial({
+                  const fallbackMat = new THREE.MeshBasicMaterial({
                     color: 0x8D99AE,
-                    roughness: 0.6,
-                    metalness: 0.2,
                     side: THREE.DoubleSide
                   });
+                  fallbackMat.emissive = new THREE.Color(0x000000);
+                  fallbackMat.emissiveIntensity = 0.0;
+                  return fallbackMat;
                 }
                 
                 // Check if the original color is black or too dark
@@ -357,19 +358,16 @@ export class StationViewer {
                   }
                 }
                 
-                // Force convert any material type to MeshStandardMaterial to guarantee lighting response
-                const newMat = new THREE.MeshStandardMaterial({
+                // Force convert any material type to MeshBasicMaterial to guarantee lighting response
+                const newMat = new THREE.MeshBasicMaterial({
                   color: baseColor,
                   map: mat.map || null,
-                  normalMap: mat.normalMap || null,
-                  bumpMap: mat.bumpMap || null,
-                  roughness: 0.6,
-                  metalness: 0.2,
                   opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
                   transparent: mat.transparent || false,
-                  side: THREE.DoubleSide,
-                  emissive: new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
+                  side: THREE.DoubleSide
                 });
+                newMat.emissive = new THREE.Color(0x080a12); // subtle dark-nebula emission
+                newMat.emissiveIntensity = 1.0;
 
                 // If old material had vertex colors enabled, only keep it if geometry actually supports it
                 if (mat.vertexColors && child.geometry && child.geometry.attributes.color) {
