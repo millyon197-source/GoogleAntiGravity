@@ -709,6 +709,17 @@ function selectModule(index, focusCamera = true) {
     document.getElementById('det-rot').textContent = `Yaw: ${moduleData.rotation.yaw}° | Pitch: ${moduleData.rotation.pitch}° | Roll: ${moduleData.rotation.roll}°`;
     document.getElementById('det-conn').textContent = moduleData.connection || 'None (Base Node)';
 
+    // Fetch and display bounding dimensions
+    const detDim = document.getElementById('det-dim');
+    if (detDim) {
+      const dimensions = viewer.getModuleDimensions(index);
+      if (dimensions) {
+        detDim.textContent = `Width: ${Math.round(dimensions.x)}m | Height: ${Math.round(dimensions.y)}m | Depth: ${Math.round(dimensions.z)}m`;
+      } else {
+        detDim.textContent = 'Width: 0m | Height: 0m | Depth: 0m';
+      }
+    }
+
     // Dynamically render individual module resources
     const detContainer = document.getElementById('det-resources-container');
     if (detContainer) {
