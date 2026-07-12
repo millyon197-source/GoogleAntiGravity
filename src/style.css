@@ -1466,9 +1466,30 @@ select:hover, select:focus {
   color: var(--text-muted);
   font-family: monospace;
   background: rgba(255, 255, 255, 0.05);
-  padding: 1px 4px;
+  padding: 1px 4.5px;
   border-radius: 3px;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.visibility-row .macro-count-badge:hover {
+  background: rgba(0, 245, 255, 0.18) !important;
+  color: var(--neon-cyan) !important;
+  box-shadow: 0 0 6px rgba(0, 245, 255, 0.4);
+}
+
+.visibility-row .macro-count-badge.isolated-badge-active {
+  background: var(--neon-cyan) !important;
+  color: #040814 !important;
+  font-weight: 700;
+  box-shadow: 0 0 10px var(--neon-cyan);
+  animation: pulse-isolated-badge 1.5s infinite alternate;
+}
+
+@keyframes pulse-isolated-badge {
+  0% { box-shadow: 0 0 4px var(--neon-cyan); }
+  100% { box-shadow: 0 0 12px var(--neon-cyan); }
 }
 
 .module-list-row.excluded-row {

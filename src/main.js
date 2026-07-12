@@ -30,6 +30,10 @@ let activeCategoryFilter = 'all';
 let activeMacroFilter = null;
 const excludedMacros = new Set();
 
+// Visibility Isolation State
+let visibilityIsolationSnapshot = null;
+let activeIsolatedBadge = null;
+
 // Build Sequence Animator state
 let animInterval = null;
 let isAnimating = false;
@@ -483,8 +487,23 @@ function renderVisibilityControls(plan) {
           <input type="checkbox" id="${checkboxId}" ${!isExcluded ? 'checked' : ''}>
           <span class="macro-text-btn" title="Click to zoom/center on these components">${friendlyName}</span>
         </label>
-        <span class="macro-count-badge">${count}</span>
+        <span class="macro-count-badge" title="Click to isolate this module type in 3D viewport (any click outside will restore)">${count}</span>
       `;
+
+      // Bind count badge click for isolation
+      const countBadge = row.querySelector('.macro-count-badge');
+      if (visibilityIsolationSnapshot && !excludedMacros.has(macro) && activeIsolatedBadge && activeIsolatedBadge.getAttribute('data-macro') === macro) {
+        countBadge.classList.add('isolated-badge-active');
+        activeIsolatedBadge = countBadge;
+      }
+      countBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (visibilityIsolationSnapshot && activeIsolatedBadge && activeIsolatedBadge.getAttribute('data-macro') === macro) {
+          restoreVisibility();
+        } else {
+          isolateVisibility(macro, countBadge);
+        }
+      });
 
       // Bind text click to focus camera without toggling if already visible
       const textBtn = row.querySelector('.macro-text-btn');
@@ -621,6 +640,80 @@ function scrollAndHighlightVisibilityComponent(category, macro = null) {
       target.classList.remove('reveal-highlight-cv');
     }, 1500);
   }
+}
+
+function isolateVisibility(clickedMacro, clickedBadge) {
+  if (visibilityIsolationSnapshot) {
+    restoreVisibility();
+  }
+
+  // Take snapshot of currently excluded macros
+  visibilityIsolationSnapshot = new Set(excludedMacros);
+  activeIsolatedBadge = clickedBadge;
+  clickedBadge.setAttribute('data-macro', clickedMacro);
+
+  // Hide all other macros in the scene
+  const allMacros = new Set();
+  currentPlan.modules.forEach(mod => allMacros.add(mod.macro));
+
+  excludedMacros.clear();
+  allMacros.forEach(macro => {
+    if (macro !== clickedMacro) {
+      excludedMacros.add(macro);
+      viewer.setMacroVisibility(macro, false);
+    } else {
+      viewer.setMacroVisibility(macro, true);
+    }
+  });
+
+  // Highlight badge
+  clickedBadge.classList.add('isolated-badge-active');
+
+  // Refresh UI state
+  renderVisibilityControls(currentPlan);
+  calculateAndRenderStats(currentPlan);
+  renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
+  viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
+
+  // Register click listener
+  setTimeout(() => {
+    document.addEventListener('click', handleOutsideIsolatedClick);
+  }, 0);
+}
+
+function handleOutsideIsolatedClick(e) {
+  if (activeIsolatedBadge && activeIsolatedBadge.contains(e.target)) {
+    return;
+  }
+  restoreVisibility();
+}
+
+function restoreVisibility() {
+  if (!visibilityIsolationSnapshot) return;
+
+  // Restore excludedMacros Set content
+  excludedMacros.clear();
+  visibilityIsolationSnapshot.forEach(macro => excludedMacros.add(macro));
+
+  visibilityIsolationSnapshot = null;
+  activeIsolatedBadge = null;
+
+  // Restore viewer mesh visibility states
+  if (currentPlan) {
+    currentPlan.modules.forEach(mod => {
+      const isExcluded = excludedMacros.has(mod.macro);
+      viewer.setMacroVisibility(mod.macro, !isExcluded);
+    });
+  }
+
+  // Remove document click listener
+  document.removeEventListener('click', handleOutsideIsolatedClick);
+
+  // Refresh UI state
+  renderVisibilityControls(currentPlan);
+  calculateAndRenderStats(currentPlan);
+  renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
+  viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
 }
 
 function selectModule(index, focusCamera = true) {
