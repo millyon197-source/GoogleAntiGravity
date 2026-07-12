@@ -576,8 +576,8 @@ export class StationViewer {
     requestAnimationFrame(animateTransition);
   }
 
-  selectModuleByIndex(index) {
-    this.deselect();
+  selectModuleByIndex(index, skipGridAdjustment = false) {
+    this.deselect(skipGridAdjustment);
 
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
@@ -599,27 +599,31 @@ export class StationViewer {
     this.selectionHelperPulseDirection = 1;
 
     // Update plot grid matching the component size, and move grid Y directly under the component
-    const compBox = new THREE.Box3().setFromObject(targetModule);
-    const compSize = compBox.getSize(new THREE.Vector3());
-    const compCenter = compBox.getCenter(new THREE.Vector3());
+    if (!skipGridAdjustment) {
+      const compBox = new THREE.Box3().setFromObject(targetModule);
+      const compSize = compBox.getSize(new THREE.Vector3());
+      const compCenter = compBox.getCenter(new THREE.Vector3());
 
-    const pad = 1.3;
-    const sizeX = Math.max(compSize.x * pad, 80);
-    const sizeZ = Math.max(compSize.z * pad, 80);
-    const sizeY = Math.max(compSize.y * pad, 80);
-    const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
+      const pad = 1.3;
+      const sizeX = Math.max(compSize.x * pad, 80);
+      const sizeZ = Math.max(compSize.z * pad, 80);
+      const sizeY = Math.max(compSize.y * pad, 80);
+      const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
 
-    this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
+      this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
+    }
   }
 
-  deselect() {
+  deselect(skipGridAdjustment = false) {
     if (this.selectionHelper) {
       this.scene.remove(this.selectionHelper);
       this.selectionHelper.dispose();
       this.selectionHelper = null;
     }
     this.resetCameraTarget();
-    this.restoreFullPlanGrid();
+    if (!skipGridAdjustment) {
+      this.restoreFullPlanGrid();
+    }
   }
 
   resetCameraTarget() {

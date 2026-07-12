@@ -35,6 +35,7 @@ let visibilityIsolationSnapshot = null;
 let activeIsolatedBadge = null;
 let isolatedBadgeOriginalCount = null;
 let isolatedBadgeElement = null;
+let isolatedCurrentIndex = null;
 
 // Build Sequence Animator state
 let animInterval = null;
@@ -645,6 +646,28 @@ function scrollAndHighlightVisibilityComponent(category, macro = null) {
 }
 
 function isolateVisibility(clickedMacro, clickedBadge) {
+  // If we are clicking the active isolated badge, cycle and decrement the index
+  if (visibilityIsolationSnapshot && isolatedBadgeElement === clickedBadge) {
+    isolatedCurrentIndex--;
+
+    if (isolatedCurrentIndex < 0) {
+      restoreVisibility();
+      return;
+    }
+
+    // Update the counter text in the UI badge
+    clickedBadge.textContent = isolatedCurrentIndex;
+
+    const instances = viewer.modulesGroup.children.filter(child => child.userData.macro === clickedMacro);
+    if (instances.length > 0 && instances[isolatedCurrentIndex]) {
+      const targetInstance = instances[isolatedCurrentIndex];
+      viewer.setIsolatedModule(targetInstance);
+      selectModule(targetInstance.userData.index, true, true);
+    }
+    return;
+  }
+
+  // Otherwise, start a new isolation cycle (restore first if another badge is active)
   if (visibilityIsolationSnapshot) {
     restoreVisibility();
   }
@@ -654,7 +677,7 @@ function isolateVisibility(clickedMacro, clickedBadge) {
   if (instances.length === 0) return;
 
   const originalCount = instances.length;
-  const decrementedCount = originalCount - 1;
+  const startIndex = originalCount - 1;
 
   // Take snapshot of currently excluded macros
   visibilityIsolationSnapshot = new Set(excludedMacros);
@@ -663,16 +686,17 @@ function isolateVisibility(clickedMacro, clickedBadge) {
 
   isolatedBadgeOriginalCount = originalCount;
   isolatedBadgeElement = clickedBadge;
+  isolatedCurrentIndex = startIndex;
 
   // Decrement the counter in the UI badge
-  clickedBadge.textContent = decrementedCount;
+  clickedBadge.textContent = isolatedCurrentIndex;
 
   // Isolate only that component[count] in the viewer
-  const targetInstance = instances[decrementedCount];
+  const targetInstance = instances[isolatedCurrentIndex];
   viewer.setIsolatedModule(targetInstance);
 
-  // Focus and select this isolated component
-  selectModule(targetInstance.userData.index, true);
+  // Focus and select this isolated component (without changing display box size)
+  selectModule(targetInstance.userData.index, true, true);
 
   // Highlight badge
   clickedBadge.classList.add('isolated-badge-active');
@@ -705,6 +729,7 @@ function restoreVisibility() {
 
   isolatedBadgeOriginalCount = null;
   isolatedBadgeElement = null;
+  isolatedCurrentIndex = null;
 
   // Restore excludedMacros Set content
   excludedMacros.clear();
@@ -729,7 +754,7 @@ function restoreVisibility() {
   viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
 }
 
-function selectModule(index, focusCamera = true) {
+function selectModule(index, focusCamera = true, skipGridAdjustment = false) {
   // Deselect previous
   if (selectedIndex !== null) {
     const prevRow = document.getElementById(`mod-row-${selectedIndex}`);
@@ -799,12 +824,12 @@ function selectModule(index, focusCamera = true) {
     }
 
     // Highlight inside 3D viewer
-    viewer.selectModuleByIndex(index);
+    viewer.selectModuleByIndex(index, skipGridAdjustment);
     viewer.focusCameraOnModule(index, focusCamera);
   } else {
     placeholder.classList.remove('hidden');
     card.classList.add('hidden');
-    viewer.deselect();
+    viewer.deselect(skipGridAdjustment);
   }
 }
 
