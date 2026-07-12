@@ -29,13 +29,8 @@ let selectedIndex = null;
 let activeCategoryFilter = 'all';
 let activeMacroFilter = null;
 const excludedMacros = new Set();
-
-// Visibility Isolation State
-let visibilityIsolationSnapshot = null;
-let activeIsolatedBadge = null;
-let isolatedBadgeOriginalCount = null;
-let isolatedBadgeElement = null;
-let isolatedCurrentIndex = null;
+const macroBadgeStates = {};
+let hasSelectedViaBadge = false;
 
 // Build Sequence Animator state
 let animInterval = null;
@@ -490,23 +485,8 @@ function renderVisibilityControls(plan) {
           <input type="checkbox" id="${checkboxId}" ${!isExcluded ? 'checked' : ''}>
           <span class="macro-text-btn" title="Click to zoom/center on these components">${friendlyName}</span>
         </label>
-        <span class="macro-count-badge" title="Click to isolate this module type in 3D viewport (any click outside will restore)">${count}</span>
+        <span class="macro-count-badge">${count}</span>
       `;
-
-      // Bind count badge click for isolation
-      const countBadge = row.querySelector('.macro-count-badge');
-      if (visibilityIsolationSnapshot && !excludedMacros.has(macro) && activeIsolatedBadge && activeIsolatedBadge.getAttribute('data-macro') === macro) {
-        countBadge.classList.add('isolated-badge-active');
-        activeIsolatedBadge = countBadge;
-      }
-      countBadge.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (visibilityIsolationSnapshot && activeIsolatedBadge && activeIsolatedBadge.getAttribute('data-macro') === macro) {
-          restoreVisibility();
-        } else {
-          isolateVisibility(macro, countBadge);
-        }
-      });
 
       // Bind text click to focus camera without toggling if already visible
       const textBtn = row.querySelector('.macro-text-btn');
@@ -515,6 +495,38 @@ function renderVisibilityControls(plan) {
           e.preventDefault(); // Stop checkbox from toggling if already shown
           viewer.fitCameraToSelection(cat, macro);
           scrollAndHighlightLeftMacro(macro);
+        }
+      });
+
+      // Bind count badge click to select individual instances of the macro
+      const countBadge = row.querySelector('.macro-count-badge');
+      countBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Avoid triggering click outside
+        
+        let state = macroBadgeStates[macro];
+        if (!state) {
+          state = {
+            count: count,
+            counter: count
+          };
+          macroBadgeStates[macro] = state;
+        } else {
+          state.counter--;
+          if (state.counter < 0) {
+            state.counter = state.count; // Reset to count
+          }
+        }
+
+        if (currentPlan && currentPlan.modules) {
+          const matchingModules = currentPlan.modules.filter(m => m.macro === macro);
+          if (matchingModules.length > 0) {
+            let idx = state.counter - 1;
+            if (idx < 0 || idx >= matchingModules.length) {
+              idx = 0;
+            }
+            selectModule(matchingModules[idx].index, true);
+            hasSelectedViaBadge = true;
+          }
         }
       });
 
@@ -645,115 +657,7 @@ function scrollAndHighlightVisibilityComponent(category, macro = null) {
   }
 }
 
-function isolateVisibility(clickedMacro, clickedBadge) {
-  // If we are clicking the active isolated badge, cycle and decrement the index
-  if (visibilityIsolationSnapshot && isolatedBadgeElement === clickedBadge) {
-    isolatedCurrentIndex--;
-
-    if (isolatedCurrentIndex < 0) {
-      restoreVisibility();
-      return;
-    }
-
-    // Update the counter text in the UI badge
-    clickedBadge.textContent = isolatedCurrentIndex;
-
-    const instances = viewer.modulesGroup.children.filter(child => child.userData.macro === clickedMacro);
-    if (instances.length > 0) {
-      const targetInstance = instances[Math.max(0, isolatedCurrentIndex - 1)];
-      viewer.setIsolatedModule(targetInstance);
-      selectModule(targetInstance.userData.index, true, true);
-    }
-    return;
-  }
-
-  // Otherwise, start a new isolation cycle (restore first if another badge is active)
-  if (visibilityIsolationSnapshot) {
-    restoreVisibility();
-  }
-
-  // Get instances in the 3D scene matching this macro
-  const instances = viewer.modulesGroup.children.filter(child => child.userData.macro === clickedMacro);
-  if (instances.length === 0) return;
-
-  const originalCount = instances.length;
-
-  // Take snapshot of currently excluded macros
-  visibilityIsolationSnapshot = new Set(excludedMacros);
-  activeIsolatedBadge = clickedBadge;
-  clickedBadge.setAttribute('data-macro', clickedMacro);
-
-  isolatedBadgeOriginalCount = originalCount;
-  isolatedBadgeElement = clickedBadge;
-  isolatedCurrentIndex = originalCount; // Upon first click, make counter = count
-
-  // Set the counter text in the UI badge
-  clickedBadge.textContent = isolatedCurrentIndex;
-
-  // Isolate only that component[counter] in the viewer (1-indexed safety)
-  const targetInstance = instances[Math.max(0, isolatedCurrentIndex - 1)];
-  viewer.setIsolatedModule(targetInstance);
-
-  // Focus and select this isolated component (without changing display box size)
-  selectModule(targetInstance.userData.index, true, true);
-
-  // Highlight badge
-  clickedBadge.classList.add('isolated-badge-active');
-
-  // Refresh UI state
-  calculateAndRenderStats(currentPlan);
-  renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
-  viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
-
-  // Register click listener
-  setTimeout(() => {
-    document.addEventListener('click', handleOutsideIsolatedClick);
-  }, 0);
-}
-
-function handleOutsideIsolatedClick(e) {
-  if (activeIsolatedBadge && activeIsolatedBadge.contains(e.target)) {
-    return;
-  }
-  restoreVisibility();
-}
-
-function restoreVisibility() {
-  if (!visibilityIsolationSnapshot) return;
-
-  // Restore the saved count on the badge element
-  if (isolatedBadgeElement && isolatedBadgeOriginalCount !== null) {
-    isolatedBadgeElement.textContent = isolatedBadgeOriginalCount;
-  }
-
-  isolatedBadgeOriginalCount = null;
-  isolatedBadgeElement = null;
-  isolatedCurrentIndex = null;
-
-  // Restore excludedMacros Set content
-  excludedMacros.clear();
-  visibilityIsolationSnapshot.forEach(macro => excludedMacros.add(macro));
-
-  visibilityIsolationSnapshot = null;
-  activeIsolatedBadge = null;
-
-  // Clear viewer isolation reference
-  viewer.setIsolatedModule(null);
-
-  // Deselect selected module
-  selectModule(null, false);
-
-  // Remove document click listener
-  document.removeEventListener('click', handleOutsideIsolatedClick);
-
-  // Refresh UI state
-  renderVisibilityControls(currentPlan);
-  calculateAndRenderStats(currentPlan);
-  renderModuleList(currentPlan.modules, document.getElementById('module-search').value);
-  viewer.highlightModulesByFilter(activeCategoryFilter, activeMacroFilter);
-}
-
-function selectModule(index, focusCamera = true, skipGridAdjustment = false) {
+function selectModule(index, focusCamera = true) {
   // Deselect previous
   if (selectedIndex !== null) {
     const prevRow = document.getElementById(`mod-row-${selectedIndex}`);
@@ -823,12 +727,12 @@ function selectModule(index, focusCamera = true, skipGridAdjustment = false) {
     }
 
     // Highlight inside 3D viewer
-    viewer.selectModuleByIndex(index, skipGridAdjustment);
+    viewer.selectModuleByIndex(index);
     viewer.focusCameraOnModule(index, focusCamera);
   } else {
     placeholder.classList.remove('hidden');
     card.classList.add('hidden');
-    viewer.deselect(skipGridAdjustment);
+    viewer.deselect();
   }
 }
 
@@ -924,6 +828,19 @@ function stepAnimation(direction) {
  * Event Binding Definitions
  */
 function setupEventListeners() {
+  // Restore view on clicking outside of count badges
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.macro-count-badge')) {
+      for (const m in macroBadgeStates) {
+        delete macroBadgeStates[m];
+      }
+      if (hasSelectedViaBadge) {
+        selectModule(null);
+        hasSelectedViaBadge = false;
+      }
+    }
+  });
+
   // 1. Plan source selectors
   const sampleSelector = document.getElementById('sample-selector');
   if (sampleSelector) {

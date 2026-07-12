@@ -1463,10 +1463,11 @@ select:hover, select:focus {
 
 .visibility-row .macro-count-badge {
   font-size: 0.65rem;
-  color: var(--text-muted);
+  color: var(--neon-cyan);
   font-family: monospace;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 1px 4.5px;
+  background: rgba(0, 245, 255, 0.08);
+  border: 1px solid rgba(0, 245, 255, 0.2);
+  padding: 1px 5px;
   border-radius: 3px;
   flex-shrink: 0;
   cursor: pointer;
@@ -1474,22 +1475,9 @@ select:hover, select:focus {
 }
 
 .visibility-row .macro-count-badge:hover {
-  background: rgba(0, 245, 255, 0.18) !important;
-  color: var(--neon-cyan) !important;
+  background: var(--neon-cyan);
+  color: #040814;
   box-shadow: 0 0 6px rgba(0, 245, 255, 0.4);
-}
-
-.visibility-row .macro-count-badge.isolated-badge-active {
-  background: var(--neon-cyan) !important;
-  color: #040814 !important;
-  font-weight: 700;
-  box-shadow: 0 0 10px var(--neon-cyan);
-  animation: pulse-isolated-badge 1.5s infinite alternate;
-}
-
-@keyframes pulse-isolated-badge {
-  0% { box-shadow: 0 0 4px var(--neon-cyan); }
-  100% { box-shadow: 0 0 12px var(--neon-cyan); }
 }
 
 .module-list-row.excluded-row {
