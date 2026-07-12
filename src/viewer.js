@@ -29,7 +29,6 @@ export class StationViewer {
     this.wireframeMode = false;
     this.ghostMode = false;
     this.hiddenMacros = new Set();
-    this.isolatedModule = null;
     this.currentPlan = null;
     this.currentBuildProgressPercentage = 100;
     this.highlightHelpers = [];
@@ -576,8 +575,8 @@ export class StationViewer {
     requestAnimationFrame(animateTransition);
   }
 
-  selectModuleByIndex(index, skipGridAdjustment = false) {
-    this.deselect(skipGridAdjustment);
+  selectModuleByIndex(index) {
+    this.deselect();
 
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
@@ -599,31 +598,27 @@ export class StationViewer {
     this.selectionHelperPulseDirection = 1;
 
     // Update plot grid matching the component size, and move grid Y directly under the component
-    if (!skipGridAdjustment) {
-      const compBox = new THREE.Box3().setFromObject(targetModule);
-      const compSize = compBox.getSize(new THREE.Vector3());
-      const compCenter = compBox.getCenter(new THREE.Vector3());
+    const compBox = new THREE.Box3().setFromObject(targetModule);
+    const compSize = compBox.getSize(new THREE.Vector3());
+    const compCenter = compBox.getCenter(new THREE.Vector3());
 
-      const pad = 1.3;
-      const sizeX = Math.max(compSize.x * pad, 80);
-      const sizeZ = Math.max(compSize.z * pad, 80);
-      const sizeY = Math.max(compSize.y * pad, 80);
-      const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
+    const pad = 1.3;
+    const sizeX = Math.max(compSize.x * pad, 80);
+    const sizeZ = Math.max(compSize.z * pad, 80);
+    const sizeY = Math.max(compSize.y * pad, 80);
+    const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
 
-      this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
-    }
+    this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
   }
 
-  deselect(skipGridAdjustment = false) {
+  deselect() {
     if (this.selectionHelper) {
       this.scene.remove(this.selectionHelper);
       this.selectionHelper.dispose();
       this.selectionHelper = null;
     }
     this.resetCameraTarget();
-    if (!skipGridAdjustment) {
-      this.restoreFullPlanGrid();
-    }
+    this.restoreFullPlanGrid();
   }
 
   resetCameraTarget() {
@@ -658,18 +653,31 @@ export class StationViewer {
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
 
-    const center = new THREE.Vector3();
-    targetModule.getWorldPosition(center);
+    // Calculate bounding box of this module
+    const box = new THREE.Box3().setFromObject(targetModule);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
 
-    // Animate camera and control target shift
+    // Calculate appropriate camera distance to fit this component's size
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = this.camera.fov * (Math.PI / 180);
+    let cameraDist = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+    cameraDist *= 1.35; // pad factor
+    cameraDist = Math.max(100, Math.min(cameraDist, 8000)); // clamp safety
+
     const duration = 800; // ms
     const startCam = this.camera.position.clone();
     const startTar = this.controls.target.clone();
 
     // Target positions
     const endTar = center.clone();
-    // Offset camera slightly relative to module center (only if focusCameraPosition is true)
-    const endCam = focusCameraPosition ? center.clone().add(new THREE.Vector3(150, 100, 200)) : startCam;
+    
+    // Retain camera viewing direction relative to target
+    const direction = new THREE.Vector3().subVectors(this.camera.position, this.controls.target).normalize();
+    if (direction.lengthSq() < 0.01) {
+      direction.set(0.7, 0.5, 0.7).normalize();
+    }
+    const endCam = focusCameraPosition ? center.clone().add(direction.multiplyScalar(cameraDist)) : startCam;
 
     const startTime = performance.now();
 
@@ -717,12 +725,7 @@ export class StationViewer {
     }
 
     this.modulesGroup.children.forEach(child => {
-      let targetVisibility = false;
-      if (this.isolatedModule) {
-        targetVisibility = (child === this.isolatedModule);
-      } else {
-        targetVisibility = activeVisibleSet.has(child);
-      }
+      const targetVisibility = activeVisibleSet.has(child);
 
       if (targetVisibility) {
         child.visible = true;
@@ -758,11 +761,6 @@ export class StationViewer {
     if (this.selectionHelper) {
       this.selectionHelper.update();
     }
-  }
-
-  setIsolatedModule(moduleInstance) {
-    this.isolatedModule = moduleInstance;
-    this.setBuildProgress(this.currentBuildProgressPercentage);
   }
 
   setMacroVisibility(macroName, isVisible) {
