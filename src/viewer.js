@@ -121,21 +121,59 @@ export class StationViewer {
 
 
   createGridAndBounds() {
-    // 10km grid helper (scaled representation of build plot, e.g. 500m increments)
-    const gridSize = 3000;
-    const gridDivisions = 30;
+    this.rebuildGridAndBounds(3000, 3000, 3000, 0, 0, 0, -50);
+  }
+
+  rebuildGridAndBounds(sizeX, sizeZ, sizeY, centerX, centerY, centerZ, gridY) {
+    if (this.gridHelper) {
+      this.scene.remove(this.gridHelper);
+      this.gridHelper.dispose();
+    }
+    if (this.plotBounds) {
+      this.scene.remove(this.plotBounds);
+      this.plotBounds.geometry.dispose();
+      if (Array.isArray(this.plotBounds.material)) {
+        this.plotBounds.material.forEach(m => m.dispose());
+      } else {
+        this.plotBounds.material.dispose();
+      }
+    }
+
+    // 1. Grid Helper
+    const gridSize = Math.max(sizeX, sizeZ, 80);
+    const gridDivisions = Math.max(10, Math.floor(gridSize / 100));
     this.gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x3B4E8C, 0x1A204C);
-    this.gridHelper.position.y = -50;
+    this.gridHelper.position.set(centerX, gridY, centerZ);
     this.scene.add(this.gridHelper);
 
-    // Build Plot boundaries box (simulating X4 station building plot)
-    const boundsGeo = new THREE.BoxGeometry(gridSize, gridSize, gridSize);
+    // 2. Plot Bounds
+    const boundsGeo = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
     const edges = new THREE.EdgesGeometry(boundsGeo);
     this.plotBounds = new THREE.LineSegments(
-      edges, 
+      edges,
       new THREE.LineBasicMaterial({ color: 0x1E295D, transparent: true, opacity: 0.15 })
     );
+    this.plotBounds.position.set(centerX, centerY, centerZ);
     this.scene.add(this.plotBounds);
+  }
+
+  restoreFullPlanGrid() {
+    if (!this.modulesGroup || this.modulesGroup.children.length === 0) {
+      this.rebuildGridAndBounds(3000, 3000, 3000, 0, 0, 0, -50);
+      return;
+    }
+
+    const box = new THREE.Box3().setFromObject(this.modulesGroup);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    const pad = 1.2;
+    const sizeX = Math.max(size.x * pad, 3000);
+    const sizeY = Math.max(size.y * pad, 3000);
+    const sizeZ = Math.max(size.z * pad, 3000);
+    const gridY = box.min.y - 10;
+
+    this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, center.x, center.y, center.z, gridY);
   }
 
   async loadStationPlan(planData) {
@@ -190,6 +228,7 @@ export class StationViewer {
 
     // Auto-center camera to fit the loaded station bounds
     this.fitCameraToStation();
+    this.restoreFullPlanGrid();
   }
 
   async loadModuleMesh(mod) {
@@ -557,6 +596,19 @@ export class StationViewer {
 
     // Pulse selection helper visual indicator
     this.selectionHelperPulseDirection = 1;
+
+    // Update plot grid matching the component size, and move grid Y directly under the component
+    const compBox = new THREE.Box3().setFromObject(targetModule);
+    const compSize = compBox.getSize(new THREE.Vector3());
+    const compCenter = compBox.getCenter(new THREE.Vector3());
+
+    const pad = 1.3;
+    const sizeX = Math.max(compSize.x * pad, 80);
+    const sizeZ = Math.max(compSize.z * pad, 80);
+    const sizeY = Math.max(compSize.y * pad, 80);
+    const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
+
+    this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
   }
 
   deselect() {
@@ -566,6 +618,7 @@ export class StationViewer {
       this.selectionHelper = null;
     }
     this.resetCameraTarget();
+    this.restoreFullPlanGrid();
   }
 
   resetCameraTarget() {
