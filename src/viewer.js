@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
+import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { createProceduralModule, getModuleCategory } from './modules.js';
 
 export class StationViewer {
@@ -20,6 +21,7 @@ export class StationViewer {
     this.starfield = null;
     this.gridHelper = null;
     this.plotBounds = null;
+    this.lightsDatabase = null;
 
     this.animationFrameId = null;
     this.clock = new THREE.Clock();
@@ -40,6 +42,16 @@ export class StationViewer {
   init() {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
+
+    // Initialize area light shader uniforms support
+    try {
+      RectAreaLightUniformsLib.init();
+    } catch (e) {
+      console.warn('Could not initialize RectAreaLightUniformsLib:', e);
+    }
+    
+    // Load X4 component lights database
+    this.initLights();
 
     // 1. Scene setup
     this.scene = new THREE.Scene();
@@ -194,6 +206,10 @@ export class StationViewer {
         moduleGroup = createProceduralModule(mod.macro, THREE);
       }
 
+      // Apply game-authentic light fixtures if present
+      const compName = mod.macro.replace('_macro', '');
+      this.applyLightsToModule(moduleGroup, compName);
+
       // Position coordinates (convert standard X4 coordinates if needed)
       moduleGroup.position.set(mod.position.x, mod.position.y, mod.position.z);
 
@@ -229,6 +245,72 @@ export class StationViewer {
     // Auto-center camera to fit the loaded station bounds
     this.fitCameraToStation();
     this.restoreFullPlanGrid();
+  }
+
+  async initLights() {
+    try {
+      const response = await fetch('/assets/lights_summary.json');
+      if (response.ok) {
+        this.lightsDatabase = await response.json();
+        console.log('[*] Successfully loaded X4 game lighting database.');
+      } else {
+        console.warn('[!] Could not load X4 lighting database, falling back to default scene lighting.');
+      }
+    } catch (err) {
+      console.error('[!] Error loading X4 lighting database:', err);
+    }
+  }
+
+  applyLightsToModule(moduleGroup, compName) {
+    if (!this.lightsDatabase || !this.lightsDatabase[compName]) return;
+
+    const lightsList = this.lightsDatabase[compName];
+    lightsList.forEach(lightData => {
+      const { x4Type, color, intensity, distance, width, height, position, quaternion, size } = lightData;
+      const threeColor = new THREE.Color(color);
+      let light = null;
+
+      switch (x4Type) {
+        case 'omni':
+          const pointIntensity = intensity * 1.5;
+          light = new THREE.PointLight(threeColor, pointIntensity, distance || 0);
+          light.decay = 2.0;
+          break;
+
+        case 'arealight':
+          light = new THREE.RectAreaLight(
+            threeColor,
+            intensity,
+            width || 10.0,
+            height || 10.0
+          );
+          break;
+
+        case 'box':
+          const boxRange = distance || (size ? Math.max(size.x, size.y, size.z) * 1.5 : 100);
+          light = new THREE.PointLight(threeColor, intensity, boxRange);
+          light.decay = 2.0;
+          break;
+      }
+
+      if (light) {
+        if (position) {
+          light.position.set(position.x, position.y, position.z);
+        }
+        if (quaternion && (x4Type === 'arealight')) {
+          light.quaternion.set(
+            quaternion.qx,
+            quaternion.qy,
+            quaternion.qz,
+            quaternion.qw
+          );
+        }
+        
+        light.castShadow = false; // Disable shadows on component lights for high performance
+        light.userData = { isX4Light: true };
+        moduleGroup.add(light);
+      }
+    });
   }
 
   async loadModuleMesh(mod) {
