@@ -404,8 +404,8 @@ export class StationViewer {
                   opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
                   transparent: mat.transparent || false,
                   side: THREE.DoubleSide,
-                  emissive: 0x080a12, // subtle dark-nebula emission so it is never pitch-black
-                  emissiveIntensity: 1.0
+                  emissive: 0xCCCCCC, // light gray emission
+                  emissiveIntensity: 0.15
                 });
 
                 // If old material had vertex colors enabled, only keep it if geometry actually supports it
