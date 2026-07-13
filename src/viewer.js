@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { createProceduralModule, getModuleCategory } from './modules.js';
 
 export class StationViewer {
@@ -21,9 +20,6 @@ export class StationViewer {
     this.starfield = null;
     this.gridHelper = null;
     this.plotBounds = null;
-    this.lightsDatabase = null;
-    this.activeSelectedLights = [];
-    this.glowingMaterials = {};
 
     this.animationFrameId = null;
     this.clock = new THREE.Clock();
@@ -44,16 +40,6 @@ export class StationViewer {
   init() {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
-
-    // Initialize area light shader uniforms support
-    try {
-      RectAreaLightUniformsLib.init();
-    } catch (e) {
-      console.warn('Could not initialize RectAreaLightUniformsLib:', e);
-    }
-    
-    // Load X4 component lights database
-    this.initLights();
 
     // 1. Scene setup
     this.scene = new THREE.Scene();
@@ -208,10 +194,6 @@ export class StationViewer {
         moduleGroup = createProceduralModule(mod.macro, THREE);
       }
 
-      // Apply game-authentic light fixtures if present
-      const compName = mod.macro.replace('_macro', '');
-      this.applyLightsToModule(moduleGroup, compName);
-
       // Position coordinates (convert standard X4 coordinates if needed)
       moduleGroup.position.set(mod.position.x, mod.position.y, mod.position.z);
 
@@ -247,51 +229,6 @@ export class StationViewer {
     // Auto-center camera to fit the loaded station bounds
     this.fitCameraToStation();
     this.restoreFullPlanGrid();
-  }
-
-  async initLights() {
-    try {
-      const response = await fetch('/assets/lights_summary.json');
-      if (response.ok) {
-        this.lightsDatabase = await response.json();
-        console.log('[*] Successfully loaded X4 game lighting database.');
-      } else {
-        console.warn('[!] Could not load X4 lighting database, falling back to default scene lighting.');
-      }
-    } catch (err) {
-      console.error('[!] Error loading X4 lighting database:', err);
-    }
-  }
-
-  getGlowingMaterial(colorHex) {
-    if (!this.glowingMaterials) this.glowingMaterials = {};
-    if (!this.glowingMaterials[colorHex]) {
-      this.glowingMaterials[colorHex] = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(colorHex),
-        toneMapped: false
-      });
-    }
-    return this.glowingMaterials[colorHex];
-  }
-
-  applyLightsToModule(moduleGroup, compName) {
-    if (!this.lightsDatabase || !this.lightsDatabase[compName]) return;
-
-    const lightsList = this.lightsDatabase[compName];
-    
-    // Use low-poly shared sphere geometries for light source visual indicators
-    const glowGeo = new THREE.SphereGeometry(1.2, 4, 4);
-
-    lightsList.forEach(lightData => {
-      const { color, position } = lightData;
-      if (position) {
-        const glowMat = this.getGlowingMaterial(color);
-        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-        glowMesh.position.set(position.x, position.y, position.z);
-        glowMesh.userData = { isX4LightIndicator: true };
-        moduleGroup.add(glowMesh);
-      }
-    });
   }
 
   async loadModuleMesh(mod) {
@@ -679,38 +616,6 @@ export class StationViewer {
     const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
 
     this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
-
-    // Spawn real PointLights for the selected module (cap at 16 to avoid WebGL MAX_FRAGMENT_UNIFORM_VECTORS shader limits)
-    if (targetModule.userData.macro) {
-      const compName = targetModule.userData.macro.replace('_macro', '');
-      if (this.lightsDatabase && this.lightsDatabase[compName]) {
-        const lightsList = this.lightsDatabase[compName];
-        
-        // Sort by intensity descending and limit to top 16
-        const sortedLights = [...lightsList]
-          .sort((a, b) => b.intensity - a.intensity)
-          .slice(0, 16);
-
-        sortedLights.forEach(lightData => {
-          const { color, intensity, distance, position } = lightData;
-          const threeColor = new THREE.Color(color);
-          
-          // Create PointLight (scaled up slightly for dynamic scene impact)
-          const light = new THREE.PointLight(threeColor, intensity * 2.0, distance || 150);
-          light.decay = 2.0;
-          light.castShadow = false;
-
-          // Compute absolute position in world space
-          const localPos = new THREE.Vector3(position.x, position.y, position.z);
-          localPos.applyMatrix4(targetModule.matrixWorld);
-          light.position.copy(localPos);
-
-          light.userData = { isX4SelectionLight: true };
-          this.scene.add(light);
-          this.activeSelectedLights.push(light);
-        });
-      }
-    }
   }
 
   deselect() {
@@ -719,21 +624,8 @@ export class StationViewer {
       this.selectionHelper.dispose();
       this.selectionHelper = null;
     }
-    this.clearActiveSelectedLights();
     this.resetCameraTarget();
     this.restoreFullPlanGrid();
-  }
-
-  clearActiveSelectedLights() {
-    if (this.activeSelectedLights) {
-      this.activeSelectedLights.forEach(light => {
-        this.scene.remove(light);
-        if (typeof light.dispose === 'function') {
-          light.dispose();
-        }
-      });
-      this.activeSelectedLights = [];
-    }
   }
 
   resetCameraTarget() {
