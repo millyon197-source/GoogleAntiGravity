@@ -337,54 +337,13 @@ export class StationViewer {
               child.castShadow = true;
               child.receiveShadow = true;
 
-              const createCustomBasicMaterial = (params) => {
-                const color = params.color !== undefined ? params.color : 0xffffff;
-                const opacity = params.opacity !== undefined ? params.opacity : 1.0;
-                const transparent = params.transparent || false;
-
-                const mat = new THREE.MeshBasicMaterial({
-                  color: color,
-                  opacity: opacity,
-                  transparent: transparent,
-                  side: params.side !== undefined ? params.side : THREE.FrontSide,
-                  toneMapped: false
-                });
-
-                mat.emissive = new THREE.Color(params.emissive !== undefined ? params.emissive : 0x000000);
-                mat.emissiveIntensity = params.emissiveIntensity !== undefined ? params.emissiveIntensity : 1.0;
-
-                mat.onBeforeCompile = (shader) => {
-                  shader.uniforms.emissive = { value: mat.emissive };
-                  shader.uniforms.emissiveIntensity = { value: mat.emissiveIntensity };
-
-                  shader.vertexShader = shader.vertexShader.replace(
-                    '#include <common>',
-                    `#include <common>
-                     uniform vec3 emissive;
-                     uniform float emissiveIntensity;`
-                  );
-                  shader.fragmentShader = shader.fragmentShader.replace(
-                    '#include <common>',
-                    `#include <common>
-                     uniform vec3 emissive;
-                     uniform float emissiveIntensity;`
-                  );
-
-                  shader.fragmentShader = shader.fragmentShader.replace(
-                    '#include <opaque_fragment>',
-                    `#include <opaque_fragment>
-                     gl_FragColor.rgb += emissive * emissiveIntensity;`
-                  );
-                };
-
-                return mat;
-              };
-
               // Process materials (handles both single material and array of materials)
               const processMaterial = (mat) => {
                 if (!mat) {
-                  return createCustomBasicMaterial({
+                  return new THREE.MeshStandardMaterial({
                     color: 0x8D99AE,
+                    roughness: 0.6,
+                    metalness: 0.2,
                     side: THREE.DoubleSide
                   });
                 }
@@ -398,14 +357,18 @@ export class StationViewer {
                   }
                 }
                 
-                // Force convert any material type to MeshBasicMaterial with toneMapped false
-                const newMat = createCustomBasicMaterial({
+                // Force convert any material type to MeshStandardMaterial to guarantee lighting response
+                const newMat = new THREE.MeshStandardMaterial({
                   color: baseColor,
+                  map: mat.map || null,
+                  normalMap: mat.normalMap || null,
+                  bumpMap: mat.bumpMap || null,
+                  roughness: 0.6,
+                  metalness: 0.2,
                   opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
                   transparent: mat.transparent || false,
                   side: THREE.DoubleSide,
-                  emissive: 0xCCCCCC, // light gray emission
-                  emissiveIntensity: 0.3
+                  emissive: new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
                 });
 
                 // If old material had vertex colors enabled, only keep it if geometry actually supports it

@@ -25,91 +25,57 @@ export const CATEGORY_NAMES = {
 // Material presets for procedural rendering
 let materialsCache = null;
 
-function createCustomBasicMaterial(THREE, params) {
-  const color = params.color !== undefined ? params.color : 0xffffff;
-  const opacity = params.opacity !== undefined ? params.opacity : 1.0;
-  const transparent = params.transparent || false;
-  
-  const mat = new THREE.MeshBasicMaterial({
-    color: color,
-    opacity: opacity,
-    transparent: transparent,
-    side: params.side !== undefined ? params.side : THREE.FrontSide,
-    toneMapped: false
-  });
-
-  // Attach emissive and emissiveIntensity to avoid standard Three.js webgl renderer null exceptions
-  mat.emissive = new THREE.Color(params.emissive !== undefined ? params.emissive : 0x000000);
-  mat.emissiveIntensity = params.emissiveIntensity !== undefined ? params.emissiveIntensity : 1.0;
-
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.emissive = { value: mat.emissive };
-    shader.uniforms.emissiveIntensity = { value: mat.emissiveIntensity };
-
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <common>',
-      `#include <common>
-       uniform vec3 emissive;
-       uniform float emissiveIntensity;`
-    );
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <common>',
-      `#include <common>
-       uniform vec3 emissive;
-       uniform float emissiveIntensity;`
-    );
-
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <opaque_fragment>',
-      `#include <opaque_fragment>
-       gl_FragColor.rgb += emissive * emissiveIntensity;`
-    );
-  };
-
-  return mat;
-}
-
 function initMaterials(THREE) {
   if (materialsCache) return materialsCache;
 
   materialsCache = {
-    structure: createCustomBasicMaterial(THREE, {
-      color: 0x4A5568
+    structure: new THREE.MeshStandardMaterial({
+      color: 0x4A5568,
+      roughness: 0.6,
+      metalness: 0.8
     }),
-    structureDetail: createCustomBasicMaterial(THREE, {
-      color: 0x1A202C
+    structureDetail: new THREE.MeshStandardMaterial({
+      color: 0x1A202C,
+      roughness: 0.7,
+      metalness: 0.9
     }),
-    dockDeck: createCustomBasicMaterial(THREE, {
-      color: 0x2D3748
+    dockDeck: new THREE.MeshStandardMaterial({
+      color: 0x2D3748,
+      roughness: 0.9,
+      metalness: 0.2
     }),
-    solarPanel: createCustomBasicMaterial(THREE, {
+    solarPanel: new THREE.MeshStandardMaterial({
       color: 0x0F4C81,
+      roughness: 0.1,
+      metalness: 0.9,
       emissive: 0x0A2A4A,
       emissiveIntensity: 0.5
     }),
-    habitatGlass: createCustomBasicMaterial(THREE, {
+    habitatGlass: new THREE.MeshStandardMaterial({
       color: 0x9D4EDD,
       transparent: true,
       opacity: 0.4,
+      roughness: 0.1,
+      metalness: 0.9,
       emissive: 0x3C096C,
       emissiveIntensity: 0.8
     }),
-    emissiveCyan: createCustomBasicMaterial(THREE, {
+    emissiveCyan: new THREE.MeshStandardMaterial({
       color: 0x00F5FF,
       emissive: 0x00F5FF,
       emissiveIntensity: 2.0
     }),
-    emissiveGreen: createCustomBasicMaterial(THREE, {
+    emissiveGreen: new THREE.MeshStandardMaterial({
       color: 0x39FF14,
       emissive: 0x39FF14,
       emissiveIntensity: 2.0
     }),
-    emissiveOrange: createCustomBasicMaterial(THREE, {
+    emissiveOrange: new THREE.MeshStandardMaterial({
       color: 0xFF9F1C,
       emissive: 0xFF9F1C,
       emissiveIntensity: 1.5
     }),
-    emissiveRed: createCustomBasicMaterial(THREE, {
+    emissiveRed: new THREE.MeshStandardMaterial({
       color: 0xFF3131,
       emissive: 0xFF3131,
       emissiveIntensity: 2.5
