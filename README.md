@@ -1,6 +1,6 @@
 # X4: Foundations XMF to DAE Converter
 
-This repository provides an automated command-line tool written in Python 3 to convert X4: Foundations `.xmf` (static mesh) files into standard `.dae` (Collada) format for editing in Blender and other 3D modeling programs.
+This repository includes an automated command-line tool written in Python 3 to convert X4: Foundations `.xmf` (static mesh) files into standard `.dae` (Collada) format for editing in Blender and other 3D modeling programs.
 
 It automates and extends Egosoft's official catalog extractor (`XRCatTool.exe`) and the community's legacy `XRConvertersMain.exe` to enable direct conversion of loose mesh files.
 

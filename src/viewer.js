@@ -249,31 +249,31 @@ export class StationViewer {
     const urls = [];
     for (const sf of subfolders) {
       let lodFound = false;
-      for (let lod = 0; lod <= 4; lod++) {
-        const checkUrl = `/assets/structures/${sf}/${baseName}_data/part_main-lod${lod}.dae`;
+      
+        const checkUrl = `/assets1/structures/${sf}/${baseName}_data/part_main-lod0.dae`;
         try {
           const response = await fetch(checkUrl, { method: 'HEAD' });
           const contentType = response.headers.get('Content-Type');
           if (response.ok && (!contentType || !contentType.includes('text/html'))) {
             urls.push(checkUrl);
             lodFound = true;
-            break; // Found the lowest available LOD, skip checking higher LODs
+            break; // Found the highest available LOD, skip checking lowest LODs
           }
         } catch (e) {
           // Ignore fetch errors
         }
-      }
+      
 
       let upLodFound = false;
       for (let lod = 0; lod <= 3; lod++) {
-        const checkUrl = `/assets/structures/${sf}/${baseName}_data/part_main_up-lod${lod}.dae`;
+        const checkUrl = `/assets1/structures/${sf}/${baseName}_data_up/part_main-lod${lod}.dae`;
         try {
           const response = await fetch(checkUrl, { method: 'HEAD' });
           const contentType = response.headers.get('Content-Type');
           if (response.ok && (!contentType || !contentType.includes('text/html'))) {
             urls.push(checkUrl);
             upLodFound = true;
-            break; // Found the lowest available LOD, skip checking higher LODs
+            break; // Found the highes available LOD, skip checking lower LODs
           }
         } catch (e) {
           // Ignore fetch errors
@@ -281,15 +281,15 @@ export class StationViewer {
       }
 
       let xrLodFound = false;
-      for (let lod = 4; lod >= 0; lod--) {
-        const checkUrl = `/assets/structures/${sf}/${baseName}_data/part_main_xr-lod${lod}.dae`;
+      for (let lod = 0; lod <= 4; lod++) {
+        const checkUrl = `/assets1/structures/${sf}/${baseName}_data_details/part_main-lod${lod}.dae`;
         try {
           const response = await fetch(checkUrl, { method: 'HEAD' });
           const contentType = response.headers.get('Content-Type');
           if (response.ok && (!contentType || !contentType.includes('text/html'))) {
             urls.push(checkUrl);
             xrLodFound = true;
-            break; // Found the first available LOD, checking descending
+            break; // Found the highest available LOD, skip checking lower LODs
           }
         } catch (e) {
           // Ignore fetch errors
