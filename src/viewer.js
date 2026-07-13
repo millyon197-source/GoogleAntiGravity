@@ -405,7 +405,7 @@ export class StationViewer {
                   transparent: mat.transparent || false,
                   side: THREE.DoubleSide,
                   emissive: 0xCCCCCC, // light gray emission
-                  emissiveIntensity: 0.15
+                  emissiveIntensity: 0.3
                 });
 
                 // If old material had vertex colors enabled, only keep it if geometry actually supports it
