@@ -22,6 +22,8 @@ export class StationViewer {
     this.gridHelper = null;
     this.plotBounds = null;
     this.lightsDatabase = null;
+    this.activeSelectedLights = [];
+    this.glowingMaterials = {};
 
     this.animationFrameId = null;
     this.clock = new THREE.Clock();
@@ -261,54 +263,33 @@ export class StationViewer {
     }
   }
 
+  getGlowingMaterial(colorHex) {
+    if (!this.glowingMaterials) this.glowingMaterials = {};
+    if (!this.glowingMaterials[colorHex]) {
+      this.glowingMaterials[colorHex] = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(colorHex),
+        toneMapped: false
+      });
+    }
+    return this.glowingMaterials[colorHex];
+  }
+
   applyLightsToModule(moduleGroup, compName) {
     if (!this.lightsDatabase || !this.lightsDatabase[compName]) return;
 
     const lightsList = this.lightsDatabase[compName];
+    
+    // Use low-poly shared sphere geometries for light source visual indicators
+    const glowGeo = new THREE.SphereGeometry(1.2, 4, 4);
+
     lightsList.forEach(lightData => {
-      const { x4Type, color, intensity, distance, width, height, position, quaternion, size } = lightData;
-      const threeColor = new THREE.Color(color);
-      let light = null;
-
-      switch (x4Type) {
-        case 'omni':
-          const pointIntensity = intensity * 1.5;
-          light = new THREE.PointLight(threeColor, pointIntensity, distance || 0);
-          light.decay = 2.0;
-          break;
-
-        case 'arealight':
-          light = new THREE.RectAreaLight(
-            threeColor,
-            intensity,
-            width || 10.0,
-            height || 10.0
-          );
-          break;
-
-        case 'box':
-          const boxRange = distance || (size ? Math.max(size.x, size.y, size.z) * 1.5 : 100);
-          light = new THREE.PointLight(threeColor, intensity, boxRange);
-          light.decay = 2.0;
-          break;
-      }
-
-      if (light) {
-        if (position) {
-          light.position.set(position.x, position.y, position.z);
-        }
-        if (quaternion && (x4Type === 'arealight')) {
-          light.quaternion.set(
-            quaternion.qx,
-            quaternion.qy,
-            quaternion.qz,
-            quaternion.qw
-          );
-        }
-        
-        light.castShadow = false; // Disable shadows on component lights for high performance
-        light.userData = { isX4Light: true };
-        moduleGroup.add(light);
+      const { color, position } = lightData;
+      if (position) {
+        const glowMat = this.getGlowingMaterial(color);
+        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+        glowMesh.position.set(position.x, position.y, position.z);
+        glowMesh.userData = { isX4LightIndicator: true };
+        moduleGroup.add(glowMesh);
       }
     });
   }
@@ -698,6 +679,38 @@ export class StationViewer {
     const gridY = compBox.min.y; // Move Z axis (Y ground plane) directly under the component
 
     this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, compCenter.x, compCenter.y, compCenter.z, gridY);
+
+    // Spawn real PointLights for the selected module (cap at 16 to avoid WebGL MAX_FRAGMENT_UNIFORM_VECTORS shader limits)
+    if (targetModule.userData.macro) {
+      const compName = targetModule.userData.macro.replace('_macro', '');
+      if (this.lightsDatabase && this.lightsDatabase[compName]) {
+        const lightsList = this.lightsDatabase[compName];
+        
+        // Sort by intensity descending and limit to top 16
+        const sortedLights = [...lightsList]
+          .sort((a, b) => b.intensity - a.intensity)
+          .slice(0, 16);
+
+        sortedLights.forEach(lightData => {
+          const { color, intensity, distance, position } = lightData;
+          const threeColor = new THREE.Color(color);
+          
+          // Create PointLight (scaled up slightly for dynamic scene impact)
+          const light = new THREE.PointLight(threeColor, intensity * 2.0, distance || 150);
+          light.decay = 2.0;
+          light.castShadow = false;
+
+          // Compute absolute position in world space
+          const localPos = new THREE.Vector3(position.x, position.y, position.z);
+          localPos.applyMatrix4(targetModule.matrixWorld);
+          light.position.copy(localPos);
+
+          light.userData = { isX4SelectionLight: true };
+          this.scene.add(light);
+          this.activeSelectedLights.push(light);
+        });
+      }
+    }
   }
 
   deselect() {
@@ -706,8 +719,21 @@ export class StationViewer {
       this.selectionHelper.dispose();
       this.selectionHelper = null;
     }
+    this.clearActiveSelectedLights();
     this.resetCameraTarget();
     this.restoreFullPlanGrid();
+  }
+
+  clearActiveSelectedLights() {
+    if (this.activeSelectedLights) {
+      this.activeSelectedLights.forEach(light => {
+        this.scene.remove(light);
+        if (typeof light.dispose === 'function') {
+          light.dispose();
+        }
+      });
+      this.activeSelectedLights = [];
+    }
   }
 
   resetCameraTarget() {
