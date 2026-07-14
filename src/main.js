@@ -527,28 +527,14 @@ function renderVisibilityControls(plan) {
         const displayIndex = cycleCounter % cycleCount;
         const targetModule = cycleModules[displayIndex];
         if (targetModule) {
+          // Display that component as if selected
           selectModule(targetModule.index, true);
-          setTimeout(() => {
-            viewer.checkAndAdjustLOSForIndex(targetModule.index);
-          }, 800);
         }
       });
       const textBtn = row.querySelector('.macro-text-btn');
       textBtn.addEventListener('click', (e) => {
         if (!isExcluded) {
           e.preventDefault(); // Stop checkbox from toggling if already shown
-          
-          if (count === 1) {
-            const singleMod = currentPlan.modules.find(m => m.macro === macro);
-            if (singleMod) {
-              selectModule(singleMod.index, true);
-              setTimeout(() => {
-                viewer.checkAndAdjustLOSForIndex(singleMod.index);
-              }, 800);
-              return;
-            }
-          }
-
           viewer.fitCameraToSelection(cat, macro);
           scrollAndHighlightLeftMacro(macro);
         }

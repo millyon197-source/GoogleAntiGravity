@@ -684,7 +684,64 @@ export class StationViewer {
     if (direction.lengthSq() < 0.01) {
       direction.set(0.7, 0.5, 0.7).normalize();
     }
-    const endCam = focusCameraPosition ? center.clone().add(direction.multiplyScalar(cameraDist)) : startCam;
+    
+    // Helper to check if a camera position is blocked by other visible meshes
+    const checkBlocked = (camPos) => {
+      const dir = new THREE.Vector3().subVectors(center, camPos).normalize();
+      const raycaster = new THREE.Raycaster(camPos, dir);
+      const intersects = raycaster.intersectObjects(this.modulesGroup.children, true);
+      
+      for (const hit of intersects) {
+        let hitObj = hit.object;
+        while (hitObj && hitObj.parent !== this.modulesGroup) {
+          hitObj = hitObj.parent;
+        }
+        if (hitObj) {
+          if (hitObj === targetModule) {
+            return false; // Hit our target module first! LOS is clear!
+          } else {
+            return true; // Hit another module first! Blocked!
+          }
+        }
+      }
+      return false;
+    };
+
+    let finalEndCam = focusCameraPosition ? center.clone().add(direction.multiplyScalar(cameraDist)) : startCam;
+
+    if (focusCameraPosition) {
+      const defaultBlocked = checkBlocked(finalEndCam);
+      if (defaultBlocked) {
+        // Standard ISO direction test
+        const isoDirections = [
+          new THREE.Vector3(1, 0.8, 1).normalize(),
+          new THREE.Vector3(-1, 0.8, 1).normalize(),
+          new THREE.Vector3(1, 0.8, -1).normalize(),
+          new THREE.Vector3(-1, 0.8, -1).normalize(),
+          new THREE.Vector3(1, -0.8, 1).normalize(),
+          new THREE.Vector3(-1, -0.8, 1).normalize(),
+          new THREE.Vector3(1, -0.8, -1).normalize(),
+          new THREE.Vector3(-1, -0.8, -1).normalize()
+        ];
+        
+        let foundClear = false;
+        for (const testDir of isoDirections) {
+          const testPos = center.clone().add(testDir.clone().multiplyScalar(cameraDist));
+          if (!checkBlocked(testPos)) {
+            finalEndCam = testPos;
+            foundClear = true;
+            break;
+          }
+        }
+        
+        if (!foundClear) {
+          // Fall back to first ISO preset
+          finalEndCam = center.clone().add(isoDirections[0].clone().multiplyScalar(cameraDist));
+        }
+      }
+    }
+
+    const endCam = finalEndCam;
 
     const startTime = performance.now();
 
@@ -926,124 +983,6 @@ export class StationViewer {
 
     // 5. Render Scene
     this.renderer.render(this.scene, this.camera);
-  }
-
-  checkAndAdjustLOSForIndex(index) {
-    const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
-    if (!targetModule) return;
-    this.adjustCameraForLOS(targetModule);
-  }
-
-  adjustCameraForLOS(targetModule) {
-    if (!targetModule || !this.camera || !this.controls) return;
-
-    const targetBox = new THREE.Box3().setFromObject(targetModule);
-    const targetCenter = new THREE.Vector3();
-    targetBox.getCenter(targetCenter);
-
-    const targetSize = new THREE.Vector3();
-    targetBox.getSize(targetSize);
-    const radius = targetSize.length() * 0.5;
-
-    const targetDir = new THREE.Vector3().subVectors(targetCenter, this.camera.position).normalize();
-    const initialDistance = this.camera.position.distanceTo(targetCenter);
-
-    const checkOcclusion = (camPos) => {
-      const rayDirection = new THREE.Vector3().subVectors(targetCenter, camPos).normalize();
-      this.raycaster.set(camPos, rayDirection);
-
-      const intersects = this.raycaster.intersectObjects(this.modulesGroup.children, true);
-      if (intersects.length > 0) {
-        let firstIntersect = null;
-        for (let i = 0; i < intersects.length; i++) {
-          let obj = intersects[i].object;
-          while (obj.parent && obj.parent !== this.modulesGroup) {
-            obj = obj.parent;
-          }
-          if (obj.visible) {
-            firstIntersect = obj;
-            break;
-          }
-        }
-
-        if (firstIntersect === targetModule) {
-          return false;
-        }
-
-        if (firstIntersect && firstIntersect !== targetModule) {
-          const hitDist = intersects[0].distance;
-          const targetDist = camPos.distanceTo(targetCenter);
-          if (hitDist < targetDist - 2.0) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-
-    if (checkOcclusion(this.camera.position)) {
-      console.debug("Target module is occluded! Finding a clear line of sight...");
-
-      let clearAngleFound = false;
-      const originalDistance = Math.max(initialDistance, radius * 2.5);
-
-      const pitchSteps = [0, Math.PI / 6, -Math.PI / 6, Math.PI / 4, -Math.PI / 4];
-      const yawSteps = 16;
-
-      for (let pIdx = 0; pIdx < pitchSteps.length; pIdx++) {
-        const pitch = pitchSteps[pIdx];
-        for (let yIdx = 0; yIdx < yawSteps; yIdx++) {
-          const yaw = (yIdx / yawSteps) * Math.PI * 2;
-
-          const candidateOffset = new THREE.Vector3(
-            Math.sin(yaw) * Math.cos(pitch),
-            Math.sin(pitch),
-            Math.cos(yaw) * Math.cos(pitch)
-          ).multiplyScalar(originalDistance);
-
-          const candidateCamPos = targetCenter.clone().add(candidateOffset);
-
-          if (!checkOcclusion(candidateCamPos)) {
-            this.smoothMoveCameraTo(candidateCamPos, targetCenter);
-            clearAngleFound = true;
-            console.debug(`Clear line of sight found at yaw: ${yaw}, pitch: ${pitch}`);
-            break;
-          }
-        }
-        if (clearAngleFound) break;
-      }
-
-      if (!clearAngleFound) {
-        console.debug("All standard orbits occluded. Moving camera closer to target center...");
-        const closeCamPos = targetCenter.clone().add(targetDir.clone().multiplyScalar(-Math.max(radius * 1.8, 40)));
-        this.smoothMoveCameraTo(closeCamPos, targetCenter);
-      }
-    } else {
-      console.debug("Target module is fully visible. No viewport adjustments needed.");
-    }
-  }
-
-  smoothMoveCameraTo(endCam, endTar) {
-    const duration = 750;
-    const startCam = this.camera.position.clone();
-    const startTar = this.controls.target.clone();
-    const startTime = performance.now();
-
-    const animateTransition = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1.0);
-      const ease = progress * (2 - progress);
-
-      this.camera.position.lerpVectors(startCam, endCam, ease);
-      this.controls.target.lerpVectors(startTar, endTar, ease);
-      this.controls.update();
-
-      if (progress < 1.0) {
-        requestAnimationFrame(animateTransition);
-      }
-    };
-
-    requestAnimationFrame(animateTransition);
   }
 
   destroy() {
