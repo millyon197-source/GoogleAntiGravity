@@ -454,6 +454,7 @@ function renderVisibilityControls(plan) {
     const catTitle = catHeader.querySelector('.visibility-cat-title');
     catTitle.addEventListener('click', () => {
       viewer.fitCameraToSelection(cat);
+      selectClosestCategoryModuleToCenter(cat);
     });
 
     // Bind Category Toggle click
@@ -479,6 +480,7 @@ function renderVisibilityControls(plan) {
       // Auto-focus category if shown
       if (allExcluded) {
         viewer.fitCameraToSelection(cat);
+        selectClosestCategoryModuleToCenter(cat);
       }
     });
 
@@ -537,6 +539,7 @@ function renderVisibilityControls(plan) {
           e.preventDefault(); // Stop checkbox from toggling if already shown
           viewer.fitCameraToSelection(cat, macro);
           scrollAndHighlightLeftMacro(macro);
+          selectClosestModuleToCenter(macro);
         }
       });
 
@@ -563,6 +566,7 @@ function renderVisibilityControls(plan) {
         if (isVisible) {
           viewer.fitCameraToSelection(cat, macro);
           scrollAndHighlightLeftMacro(macro);
+          selectClosestModuleToCenter(macro);
         }
       });
 
@@ -607,6 +611,75 @@ function filterVisibilityControls(searchVal) {
       header.style.display = 'none';
     }
   });
+}
+
+function selectClosestModuleToCenter(macro) {
+  if (!currentPlan) return;
+  const visibleMembers = currentPlan.modules.filter(m => m.macro === macro);
+  if (visibleMembers.length === 0) return;
+
+  let sumX = 0, sumY = 0, sumZ = 0;
+  visibleMembers.forEach(m => {
+    sumX += m.position.x;
+    sumY += m.position.y;
+    sumZ += m.position.z;
+  });
+  const centerX = sumX / visibleMembers.length;
+  const centerY = sumY / visibleMembers.length;
+  const centerZ = sumZ / visibleMembers.length;
+
+  let closestMember = null;
+  let minDist = Infinity;
+  visibleMembers.forEach(m => {
+    const dx = m.position.x - centerX;
+    const dy = m.position.y - centerY;
+    const dz = m.position.z - centerZ;
+    const distSq = dx*dx + dy*dy + dz*dz;
+    if (distSq < minDist) {
+      minDist = distSq;
+      closestMember = m;
+    }
+  });
+
+  if (closestMember) {
+    selectModule(closestMember.index, false);
+  }
+}
+
+function selectClosestCategoryModuleToCenter(category) {
+  if (!currentPlan) return;
+  const visibleMembers = currentPlan.modules.filter(m => {
+    const cat = getModuleCategory(m.macro);
+    return cat === category && !excludedMacros.has(m.macro);
+  });
+  if (visibleMembers.length === 0) return;
+
+  let sumX = 0, sumY = 0, sumZ = 0;
+  visibleMembers.forEach(m => {
+    sumX += m.position.x;
+    sumY += m.position.y;
+    sumZ += m.position.z;
+  });
+  const centerX = sumX / visibleMembers.length;
+  const centerY = sumY / visibleMembers.length;
+  const centerZ = sumZ / visibleMembers.length;
+
+  let closestMember = null;
+  let minDist = Infinity;
+  visibleMembers.forEach(m => {
+    const dx = m.position.x - centerX;
+    const dy = m.position.y - centerY;
+    const dz = m.position.z - centerZ;
+    const distSq = dx*dx + dy*dy + dz*dz;
+    if (distSq < minDist) {
+      minDist = distSq;
+      closestMember = m;
+    }
+  });
+
+  if (closestMember) {
+    selectModule(closestMember.index, false);
+  }
 }
 
 function scrollAndHighlightLeftCategory(category) {
