@@ -1025,12 +1025,20 @@ select:hover, select:focus {
 .selection-card {
   min-height: 180px;
   max-height: 310px;
+  display: flex;
+  flex-direction: column;
 }
 
 .select-body {
   padding: 12px;
   position: relative;
   height: 100%;
+}
+
+.selection-card .select-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .placeholder-content {
