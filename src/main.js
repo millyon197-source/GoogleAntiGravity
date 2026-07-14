@@ -707,7 +707,6 @@ function selectModule(index, focusCamera = true) {
 
     document.getElementById('det-pos').textContent = `X: ${Math.round(moduleData.position.x)}m | Y: ${Math.round(moduleData.position.y)}m | Z: ${Math.round(moduleData.position.z)}m`;
     document.getElementById('det-rot').textContent = `Yaw: ${moduleData.rotation.yaw}° | Pitch: ${moduleData.rotation.pitch}° | Roll: ${moduleData.rotation.roll}°`;
-    document.getElementById('det-conn').textContent = moduleData.connection || 'None (Base Node)';
 
     // Fetch and display bounding dimensions
     const detDim = document.getElementById('det-dim');
