@@ -869,6 +869,7 @@ select:hover, select:focus {
 /* Search Dashboard Widget */
 .search-card {
   margin-bottom: 0;
+  flex: 0 0 auto;
 }
 .search-body {
   padding: 10px;
@@ -1340,8 +1341,11 @@ select:hover, select:focus {
 
 /* Component Visibility Styles */
 .visibility-card {
+  height: 185px;
+  min-height: 185px;
   max-height: 185px;
   margin-bottom: 0;
+  flex: 0 0 auto;
 }
 
 .card-action-btn {
