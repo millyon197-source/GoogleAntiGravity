@@ -697,12 +697,6 @@ function selectModule(index, focusCamera = true) {
     const costs = estimateModuleCosts(moduleData.macro);
 
     document.getElementById('det-title').textContent = friendlyName;
-    
-    const catTag = document.getElementById('det-category');
-    catTag.textContent = CATEGORY_NAMES[cat];
-    catTag.style.backgroundColor = color + '20';
-    catTag.style.borderColor = color;
-    catTag.style.color = color;
 
     document.getElementById('det-pos').textContent = `X: ${Math.round(moduleData.position.x)}m | Y: ${Math.round(moduleData.position.y)}m | Z: ${Math.round(moduleData.position.z)}m`;
     document.getElementById('det-rot').textContent = `Yaw: ${moduleData.rotation.yaw}° | Pitch: ${moduleData.rotation.pitch}° | Roll: ${moduleData.rotation.roll}°`;
