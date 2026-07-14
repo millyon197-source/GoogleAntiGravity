@@ -498,16 +498,16 @@ function renderVisibilityControls(plan) {
       const checkboxId = `vis-chk-${macro.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
       row.innerHTML = `
-        <label for="${checkboxId}">
+        <label for="${checkboxId}" title="Toggle visibility of ${friendlyName}">
           <input type="checkbox" id="${checkboxId}" ${!isExcluded ? 'checked' : ''}>
-          <span class="macro-text-btn" title="Click to zoom/center on these components">${friendlyName}</span>
+          <span class="macro-text-btn" title="Click to zoom/center on ${friendlyName}">${friendlyName}</span>
         </label>
         <span class="macro-count-badge">${count}</span>
       `;
 
       // Click handler on macro-count-badge to cycle inspect matching components
       const badge = row.querySelector('.macro-count-badge');
-      badge.setAttribute('title', 'Click to cycle inspect these modules');
+      badge.setAttribute('title', `Click to cycle inspect ${friendlyName}`);
       badge.addEventListener('click', (e) => {
         e.stopPropagation(); // Avoid triggering label or other row clicks
         
