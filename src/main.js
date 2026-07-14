@@ -1020,6 +1020,30 @@ function setupEventListeners() {
     });
   }
 
+  // Minimize / Maximize toggle for Build Sequence Animator
+  const animatorHub = document.getElementById('animator-hub');
+  const animToggleBtn = document.getElementById('btn-anim-toggle');
+  if (animatorHub && animToggleBtn) {
+    const toggleMinimize = (e) => {
+      e.stopPropagation();
+      const isMinimized = animatorHub.classList.toggle('minimized');
+      animToggleBtn.textContent = isMinimized ? '➕' : '➖';
+      animToggleBtn.title = isMinimized ? 'Maximize Simulation' : 'Minimize Simulation';
+    };
+    animToggleBtn.addEventListener('click', toggleMinimize);
+
+    const animHeader = animatorHub.querySelector('.animator-header');
+    if (animHeader) {
+      animHeader.addEventListener('click', () => {
+        if (animatorHub.classList.contains('minimized')) {
+          animatorHub.classList.remove('minimized');
+          animToggleBtn.textContent = '➖';
+          animToggleBtn.title = 'Minimize Simulation';
+        }
+      });
+    }
+  }
+
   // 6. Close details card button
   const closeDetailsBtn = document.getElementById('btn-close-details');
   if (closeDetailsBtn) {
