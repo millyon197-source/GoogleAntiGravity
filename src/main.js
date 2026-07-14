@@ -697,7 +697,6 @@ function selectModule(index, focusCamera = true) {
     const costs = estimateModuleCosts(moduleData.macro);
 
     document.getElementById('det-title').textContent = friendlyName;
-    document.getElementById('det-macro').textContent = moduleData.macro;
     
     const catTag = document.getElementById('det-category');
     catTag.textContent = CATEGORY_NAMES[cat];
