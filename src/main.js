@@ -569,6 +569,44 @@ function renderVisibilityControls(plan) {
       container.appendChild(row);
     });
   });
+
+  const searchInput = document.getElementById('module-search');
+  if (searchInput && searchInput.value) {
+    filterVisibilityControls(searchInput.value);
+  }
+}
+
+function filterVisibilityControls(searchVal) {
+  const container = document.getElementById('visibility-controls-container');
+  if (!container) return;
+
+  const query = searchVal.trim().toLowerCase();
+
+  const headers = container.querySelectorAll('.visibility-cat-header');
+  headers.forEach(header => {
+    const cat = header.getAttribute('data-category');
+    const rows = container.querySelectorAll(`.visibility-row[data-category="${cat}"]`);
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const textBtn = row.querySelector('.macro-text-btn');
+      if (textBtn) {
+        const name = textBtn.textContent.toLowerCase();
+        if (name.includes(query)) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      }
+    });
+
+    if (visibleCount > 0 || query === '') {
+      header.style.display = '';
+    } else {
+      header.style.display = 'none';
+    }
+  });
 }
 
 function scrollAndHighlightLeftCategory(category) {
@@ -981,6 +1019,7 @@ function setupEventListeners() {
     searchInput.addEventListener('input', (e) => {
       if (currentPlan) {
         renderModuleList(currentPlan.modules, e.target.value);
+        filterVisibilityControls(e.target.value);
       }
     });
   }
