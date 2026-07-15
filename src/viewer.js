@@ -144,6 +144,7 @@ export class StationViewer {
     const gridDivisions = Math.max(10, Math.floor(gridSize / 100));
     this.gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x3B4E8C, 0x1A204C);
     this.gridHelper.position.set(centerX, gridY, centerZ);
+    this.gridHelper.visible = this.showGrid;
     this.scene.add(this.gridHelper);
 
     // 2. Plot Bounds
@@ -154,6 +155,7 @@ export class StationViewer {
       new THREE.LineBasicMaterial({ color: 0x1E295D, transparent: true, opacity: 0.15 })
     );
     this.plotBounds.position.set(centerX, centerY, centerZ);
+    this.plotBounds.visible = this.showGrid;
     this.scene.add(this.plotBounds);
   }
 
@@ -588,8 +590,21 @@ export class StationViewer {
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
 
-    // Clear any selection/filter helper box overlays
-    this.clearFilterHighlights();
+    // Create a bounding box selection helper
+    const selectionBox = new THREE.BoxHelper(targetModule, 0xFFFF00);
+    selectionBox.name = 'selection_helper';
+    
+    // Enhance selection helper visual thickness/style
+    selectionBox.material.linewidth = 2; // (Note: linewidth > 1 depends on browser support, but good default)
+    selectionBox.material.depthTest = false; // Always render on top
+    selectionBox.material.transparent = true;
+    selectionBox.material.opacity = 0.95;
+
+    this.scene.add(selectionBox);
+    this.selectionHelper = selectionBox;
+
+    // Pulse selection helper visual indicator
+    this.selectionHelperPulseDirection = 1;
 
     // Update plot grid matching the component size, and move grid Y directly under the component
     const compBox = new THREE.Box3().setFromObject(targetModule);
