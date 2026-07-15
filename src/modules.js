@@ -1,6 +1,7 @@
 /**
  * Module metadata, classification, and procedural 3D graphics generator.
  */
+import { MODULES_COST_DB, NAME_TO_MACRO_DB, MACRO_TO_NAME_DB } from './modules-cost-db.js';
 
 // Colors for each module category
 export const CATEGORY_COLORS = {
@@ -115,6 +116,9 @@ export function getModuleCategory(macroName) {
  * Translate internal macro names into readable game-like titles
  */
 export function getFriendlyName(macroName) {
+  if (MACRO_TO_NAME_DB[macroName]) {
+    return MACRO_TO_NAME_DB[macroName];
+  }
   const parts = macroName.replace('_macro', '').split('_');
   
   // Format individual tokens
@@ -141,6 +145,9 @@ export function getFriendlyName(macroName) {
  * Generate mock resource construction costs for visual depth
  */
 export function estimateModuleCosts(macroName) {
+  if (MODULES_COST_DB[macroName]) {
+    return { ...MODULES_COST_DB[macroName] };
+  }
   const category = getModuleCategory(macroName);
   const name = macroName.toLowerCase();
   
@@ -587,4 +594,26 @@ export function createProceduralModule(macroName, THREE) {
   };
 
   return group;
+}
+
+/**
+ * Translate a friendly component name to its X4 macro name using the static database mapping.
+ */
+export function translateNameToMacro(name) {
+  if (!name) return null;
+  const key = name.toLowerCase().trim();
+
+  // Direct exact lookup
+  if (NAME_TO_MACRO_DB[key]) {
+    return NAME_TO_MACRO_DB[key];
+  }
+
+  // Fallback substring matching
+  for (const dbName in NAME_TO_MACRO_DB) {
+    if (dbName.includes(key) || key.includes(dbName)) {
+      return NAME_TO_MACRO_DB[dbName];
+    }
+  }
+
+  return null;
 }
