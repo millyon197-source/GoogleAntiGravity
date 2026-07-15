@@ -203,17 +203,6 @@ export function estimateModuleCosts(macroName) {
     }
   }
 
-  // If defense platforms or habitats, add weapons and shields systems
-  if (category === 'defense') {
-    costs.shieldComponents = Math.round(250 * scale);
-    costs.turretComponents = Math.round(300 * scale);
-    costs.advancedElectronics = Math.round(120 * scale);
-  } else if (category === 'docks' && scale > 1.5) {
-    // Large piers/docks also have defensive turrets
-    costs.shieldComponents = Math.round(100 * scale);
-    costs.turretComponents = Math.round(120 * scale);
-  }
-
   return costs;
 }
 

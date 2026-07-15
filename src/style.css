@@ -1192,37 +1192,27 @@ select:hover, select:focus {
 }
 
 .mini-cost-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: rgba(0,0,0,0.25);
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--panel-border);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: rgba(0,0,0,0.2);
+  padding: 6px;
+  border-radius: 6px;
 }
 
 .cost-item {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  padding: 4px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
-}
-
-.cost-item:last-child {
-  border-bottom: none;
+  flex-direction: column;
+  font-size: 0.7rem;
 }
 
 .cost-item .lbl {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.6rem;
+  margin-bottom: 1px;
 }
-
 .cost-item .val {
   font-weight: 700;
-  font-size: 0.82rem;
 }
 
 /* Modal dialog custom styling */
