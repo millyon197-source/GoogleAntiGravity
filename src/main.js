@@ -101,7 +101,10 @@ async function loadPlanFromXml(xmlText) {
 function updatePlanMetadata(plan) {
   document.getElementById('plan-name').textContent = plan.name;
   document.getElementById('plan-desc').textContent = plan.description;
-  document.getElementById('plan-id').textContent = plan.id;
+  const fullId = plan.id || '';
+  const planIdEl = document.getElementById('plan-id');
+  planIdEl.textContent = fullId.length > 8 ? '...' + fullId.slice(-8) : fullId;
+  planIdEl.title = fullId;
 }
 
 function calculateAndRenderStats(plan) {
