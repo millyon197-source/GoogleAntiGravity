@@ -533,10 +533,15 @@ function renderVisibilityControls(plan) {
           selectModule(targetModule.index, true);
         }
       });
-      const textBtn = row.querySelector('.macro-text-btn');
-      textBtn.addEventListener('click', (e) => {
+      row.addEventListener('click', (e) => {
+        if (e.target.classList.contains('macro-count-badge')) {
+          return;
+        }
+        if (e.target.tagName === 'INPUT') {
+          return;
+        }
         if (!isExcluded) {
-          e.preventDefault(); // Stop checkbox from toggling if already shown
+          e.preventDefault();
           viewer.fitCameraToSelection(cat, macro);
           scrollAndHighlightLeftMacro(macro);
           selectClosestModuleToCenter(macro);
@@ -550,6 +555,13 @@ function renderVisibilityControls(plan) {
           excludedMacros.delete(macro);
         } else {
           excludedMacros.add(macro);
+          // If currently selected module is of this type, clear the selection details
+          if (selectedIndex !== null) {
+            const selectedMod = currentPlan.modules.find(m => m.index === selectedIndex);
+            if (selectedMod && selectedMod.macro === macro) {
+              selectModule(null);
+            }
+          }
         }
 
         // Update 3D viewport meshes
@@ -615,7 +627,7 @@ function filterVisibilityControls(searchVal) {
 
 function selectClosestModuleToCenter(macro) {
   if (!currentPlan) return;
-  const visibleMembers = currentPlan.modules.filter(m => m.macro === macro);
+  const visibleMembers = currentPlan.modules.filter(m => m.macro === macro && !excludedMacros.has(m.macro));
   if (visibleMembers.length === 0) return;
 
   let sumX = 0, sumY = 0, sumZ = 0;
