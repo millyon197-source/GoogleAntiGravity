@@ -585,17 +585,11 @@ export class StationViewer {
   selectModuleByIndex(index) {
     this.deselect();
 
-    // Clear any highlight helpers that exist
-    if (this.highlightHelpers) {
-      this.highlightHelpers.forEach(helper => {
-        this.scene.remove(helper);
-        helper.dispose();
-      });
-      this.highlightHelpers = [];
-    }
-
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
+
+    // Clear any selection/filter helper box overlays
+    this.clearFilterHighlights();
 
     // Update plot grid matching the component size, and move grid Y directly under the component
     const compBox = new THREE.Box3().setFromObject(targetModule);
@@ -616,13 +610,6 @@ export class StationViewer {
       this.scene.remove(this.selectionHelper);
       this.selectionHelper.dispose();
       this.selectionHelper = null;
-    }
-    if (this.highlightHelpers) {
-      this.highlightHelpers.forEach(helper => {
-        this.scene.remove(helper);
-        helper.dispose();
-      });
-      this.highlightHelpers = [];
     }
     this.resetCameraTarget();
     this.restoreFullPlanGrid();
