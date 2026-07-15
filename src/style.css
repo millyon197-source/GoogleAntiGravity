@@ -1083,9 +1083,11 @@ select:hover, select:focus {
 }
 
 .selection-card .select-body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .placeholder-content {
@@ -1117,6 +1119,16 @@ select:hover, select:focus {
   display: flex;
   flex-direction: column;
   position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.details-scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
 }
 
 .close-card-btn {
