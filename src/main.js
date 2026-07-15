@@ -280,16 +280,16 @@ function calculateAndRenderStats(plan) {
         hasAnyCosts = true;
         const meta = RESOURCE_METADATA[key];
         
-        const row = document.createElement('div');
-        row.className = 'resource-row';
-        row.innerHTML = `
-          <div class="res-info">
-            <span class="res-name">${meta.name}</span>
-            <span class="res-desc">${meta.desc}</span>
-          </div>
-          <span class="res-val ${meta.colorClass}">${amount.toLocaleString()}</span>
+        const card = document.createElement('div');
+        const colorClass = meta.colorClass;
+        const themeColor = colorClass.split('-')[1]; // get cyan, purple, or amber
+        card.className = `resource-component-card border-${themeColor}`;
+        card.innerHTML = `
+          <span class="res-name">${meta.name}</span>
+          <span class="res-val ${colorClass}">${amount.toLocaleString()}</span>
+          <span class="res-desc">${meta.desc}</span>
         `;
-        container.appendChild(row);
+        container.appendChild(card);
       }
     });
 

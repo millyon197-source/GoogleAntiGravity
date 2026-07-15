@@ -517,43 +517,65 @@ select:hover, select:focus {
 
 /* Resources Box */
 #resources-list-container {
-  max-height: 160px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  max-height: 200px;
   overflow-y: auto;
   padding-right: 6px;
 }
 
-.resource-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
-}
-
-.resource-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.res-info {
+.resource-component-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.res-name {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #fff;
+.resource-component-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
 }
 
-.res-desc {
-  font-size: 0.65rem;
-  color: var(--text-muted);
+.resource-component-card.border-cyan {
+  border-left: 2px solid var(--neon-cyan);
 }
 
-.res-val {
-  font-size: 1.05rem;
+.resource-component-card.border-purple {
+  border-left: 2px solid var(--neon-violet);
+}
+
+.resource-component-card.border-amber {
+  border-left: 2px solid var(--neon-amber);
+}
+
+.resource-component-card .res-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.resource-component-card .res-val {
+  font-size: 1.15rem;
   font-weight: 700;
+  font-family: 'Outfit', monospace;
+  margin-bottom: 2px;
+}
+
+.resource-component-card .res-desc {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  line-height: 1.2;
 }
 
 /* Viewport Area */
