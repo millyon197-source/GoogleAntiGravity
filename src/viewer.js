@@ -585,24 +585,17 @@ export class StationViewer {
   selectModuleByIndex(index) {
     this.deselect();
 
+    // Clear any highlight helpers that exist
+    if (this.highlightHelpers) {
+      this.highlightHelpers.forEach(helper => {
+        this.scene.remove(helper);
+        helper.dispose();
+      });
+      this.highlightHelpers = [];
+    }
+
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
-
-    // Create a bounding box selection helper
-    const selectionBox = new THREE.BoxHelper(targetModule, 0xFFFF00);
-    selectionBox.name = 'selection_helper';
-    
-    // Enhance selection helper visual thickness/style
-    selectionBox.material.linewidth = 2; // (Note: linewidth > 1 depends on browser support, but good default)
-    selectionBox.material.depthTest = false; // Always render on top
-    selectionBox.material.transparent = true;
-    selectionBox.material.opacity = 0.95;
-
-    this.scene.add(selectionBox);
-    this.selectionHelper = selectionBox;
-
-    // Pulse selection helper visual indicator
-    this.selectionHelperPulseDirection = 1;
 
     // Update plot grid matching the component size, and move grid Y directly under the component
     const compBox = new THREE.Box3().setFromObject(targetModule);
@@ -623,6 +616,13 @@ export class StationViewer {
       this.scene.remove(this.selectionHelper);
       this.selectionHelper.dispose();
       this.selectionHelper = null;
+    }
+    if (this.highlightHelpers) {
+      this.highlightHelpers.forEach(helper => {
+        this.scene.remove(helper);
+        helper.dispose();
+      });
+      this.highlightHelpers = [];
     }
     this.resetCameraTarget();
     this.restoreFullPlanGrid();
