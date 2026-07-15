@@ -1028,25 +1028,6 @@ select:hover, select:focus {
   border-bottom-color: rgba(0, 245, 255, 0.15);
 }
 
-.col-index {
-  width: 40px;
-  text-align: center;
-}
-.index-badge {
-  background: rgba(255,255,255,0.05);
-  border-radius: 4px;
-  padding: 2px 4px;
-  font-weight: 500;
-  font-size: 0.7rem;
-  color: var(--text-primary);
-  border: 1px solid rgba(255,255,255,0.05);
-}
-
-.selected .index-badge {
-  background: var(--neon-cyan);
-  color: #040814;
-  border-color: var(--neon-cyan);
-}
 
 .col-name {
   max-width: 140px;

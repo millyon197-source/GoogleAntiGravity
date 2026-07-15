@@ -375,7 +375,6 @@ function renderModuleList(modules, filterText = '') {
     }
 
     tr.innerHTML = `
-      <td class="col-index"><span class="index-badge">${mod.index}</span></td>
       <td class="col-name">
         <div class="name-friendly">${friendlyName}</div>
         <div class="name-macro">${mod.macro}</div>
