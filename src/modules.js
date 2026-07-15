@@ -149,8 +149,8 @@ export function estimateModuleCosts(macroName) {
   const isBoron = name.includes('_bor_');
   
   // Set scale based on module sizing
-  const scale = name.includes('_l_') || name.includes('03') || name.includes('pier') ? 2.5 :
-                name.includes('_m_') || name.includes('02') ? 1.5 : 1.0;
+  const scale = name.includes('_l_') || name.includes('03') || name.includes('pier') ? 1.5772 :
+                name.includes('_m_') || name.includes('02') ? 1.5 : 1.428571;
 
   // Initialize resources template
   const costs = {
