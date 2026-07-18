@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { createProceduralModule, getModuleCategory } from './modules.js';
+import { DAE_REGISTRY } from './dae-registry.js';
 
 export class StationViewer {
   constructor(containerElement, onModuleSelectedCallback) {
@@ -234,89 +235,11 @@ export class StationViewer {
   }
 
   async loadModuleMesh(mod) {
-    const baseName = mod.macro.replace('_macro', '');
-    const category = getModuleCategory(mod.macro);
-    
-    // Subfolder mappings based on standard game file structure
-    let subfolders = [];
-    if (category === 'docks') subfolders.push('dock');
-    else if (category === 'production') subfolders.push('production');
-    else if (category === 'storage') subfolders.push('storage');
-    else if (category === 'habitation') subfolders.push('habitation');
-    else if (category === 'defense') subfolders.push('defense');
-    else if (category === 'structure') subfolders.push('connection', 'structures');
-    
-    subfolders.push(category);
-
-    const urls = [];
-    for (const sf of subfolders) {
-      let lodFound = false;
-      
-        const checkUrl = `/assets1/structures/${sf}/${baseName}_data/part_main-lod0.dae`;
-        try {
-          const response = await fetch(checkUrl, { method: 'HEAD' });
-          const contentType = response.headers.get('Content-Type');
-          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
-            urls.push(checkUrl);
-            lodFound = true;
-            break; // Found the highest available LOD, skip checking lowest LODs
-          }
-        } catch (e) {
-          // Ignore fetch errors
-        }
-      
-
-      let upLodFound = false;
-      for (let lod = 0; lod <= 3; lod++) {
-        const checkUrl = `/assets1/structures/${sf}/${baseName}_data_up/part_main-lod${lod}.dae`;
-        try {
-          const response = await fetch(checkUrl, { method: 'HEAD' });
-          const contentType = response.headers.get('Content-Type');
-          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
-            urls.push(checkUrl);
-            upLodFound = true;
-            break; // Found the highes available LOD, skip checking lower LODs
-          }
-        } catch (e) {
-          // Ignore fetch errors
-        }
-      }
-
-      let xrLodFound = false;
-      for (let lod = 0; lod <= 4; lod++) {
-        const checkUrl = `/assets1/structures/${sf}/${baseName}_data_details/part_main-lod${lod}.dae`;
-        try {
-          const response = await fetch(checkUrl, { method: 'HEAD' });
-          const contentType = response.headers.get('Content-Type');
-          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
-            urls.push(checkUrl);
-            xrLodFound = true;
-            break; // Found the highest available LOD, skip checking lower LODs
-          }
-        } catch (e) {
-          // Ignore fetch errors
-        }
-      }
-
-      if (lodFound || upLodFound || xrLodFound) {
-        break;
-      }
-    }
+    const baseName = mod.macro.replace('_macro', '').toLowerCase();
+    const urls = DAE_REGISTRY[baseName] || [];
 
     if (urls.length === 0) {
-      for (const sf of subfolders) {
-        const checkUrl = `/assets/structures/${sf}/${baseName}_data/detail_s_main-lod0.dae`;
-        try {
-          const response = await fetch(checkUrl, { method: 'HEAD' });
-          const contentType = response.headers.get('Content-Type');
-          if (response.ok && (!contentType || !contentType.includes('text/html'))) {
-            urls.push(checkUrl);
-            break;
-          }
-        } catch (e) {
-          // Ignore fetch errors
-        }
-      }
+      return null;
     }
 
     const loadedScenes = [];
