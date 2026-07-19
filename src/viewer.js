@@ -276,6 +276,10 @@ export class StationViewer {
                              parentName.includes('bounding_box') ||
                              parentName.includes('collision');
 
+              if (isBBox) {
+                child.visible = false;
+              }
+
               // Process materials (handles both single material and array of materials)
               const processMaterial = (mat) => {
                 if (!mat) {
@@ -1021,7 +1025,8 @@ function isTextureOrEffectMesh(child) {
   const textureEffectKeywords = [
     'decal', 'fx_', 'light', 'exhaust', 'flare', 'glow', 
     'sprite', 'alpha', 'anim_', 'arrow', 'cross', 'elevator',
-    'poslight', 'sign', 'billboard', 'lens', 'corona'
+    'poslight', 'sign', 'billboard', 'lens', 'corona',
+    'bbox', 'boundingbox', 'bounding_box', 'collision', 'collision_box', 'collisionbox'
   ];
 
   return namesToCheck.some(name => 
