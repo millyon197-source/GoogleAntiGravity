@@ -263,13 +263,29 @@ export class StationViewer {
               child.castShadow = true;
               child.receiveShadow = true;
 
+              const childName = (child.name || '').toLowerCase();
+              const parentName = (child.parent && child.parent.name || '').toLowerCase();
+              const isBBox = childName.includes('bbox') || 
+                             childName.includes('boundingbox') || 
+                             childName.includes('bounding_box') || 
+                             childName.includes('collision') ||
+                             childName.includes('collision_box') ||
+                             childName.includes('collisionbox') ||
+                             parentName.includes('bbox') ||
+                             parentName.includes('boundingbox') ||
+                             parentName.includes('bounding_box') ||
+                             parentName.includes('collision');
+
               // Process materials (handles both single material and array of materials)
               const processMaterial = (mat) => {
                 if (!mat) {
                   return new THREE.MeshStandardMaterial({
-                    color: 0x8D99AE,
-                    roughness: 0.6,
-                    metalness: 0.2,
+                    color: isBBox ? 0x00F5FF : 0x8D99AE,
+                    roughness: isBBox ? 0.8 : 0.6,
+                    metalness: isBBox ? 0.1 : 0.2,
+                    opacity: isBBox ? 0.15 : 1.0,
+                    transparent: isBBox ? true : false,
+                    wireframe: isBBox ? true : false,
                     side: THREE.DoubleSide
                   });
                 }
@@ -285,16 +301,17 @@ export class StationViewer {
                 
                 // Force convert any material type to MeshStandardMaterial to guarantee lighting response
                 const newMat = new THREE.MeshStandardMaterial({
-                  color: baseColor,
-                  map: mat.map || null,
-                  normalMap: mat.normalMap || null,
-                  bumpMap: mat.bumpMap || null,
-                  roughness: 0.6,
-                  metalness: 0.2,
-                  opacity: mat.opacity !== undefined ? mat.opacity : 1.0,
-                  transparent: mat.transparent || false,
+                  color: isBBox ? 0x00F5FF : baseColor,
+                  map: isBBox ? null : (mat.map || null),
+                  normalMap: isBBox ? null : (mat.normalMap || null),
+                  bumpMap: isBBox ? null : (mat.bumpMap || null),
+                  roughness: isBBox ? 0.8 : 0.6,
+                  metalness: isBBox ? 0.1 : 0.2,
+                  opacity: isBBox ? 0.15 : (mat.opacity !== undefined ? mat.opacity : 1.0),
+                  transparent: isBBox ? true : (mat.transparent || false),
+                  wireframe: isBBox ? true : false,
                   side: THREE.DoubleSide,
-                  emissive: new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
+                  emissive: isBBox ? new THREE.Color(0x002233) : new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
                 });
 
                 // If old material had vertex colors enabled, only keep it if geometry actually supports it
@@ -395,10 +412,13 @@ export class StationViewer {
 
       if (matches) {
         const helper = new THREE.BoxHelper(child, 0x00F5FF);
-        helper.material.linewidth = 2;
-        helper.material.depthTest = false;
-        helper.material.transparent = true;
-        helper.material.opacity = 0.8;
+        helper.material = new THREE.LineBasicMaterial({
+          color: 0x00F5FF,
+          transparent: true,
+          opacity: 0.8,
+          depthTest: false,
+          linewidth: 2
+        });
         this.scene.add(helper);
         this.highlightHelpers.push(helper);
       }
@@ -576,10 +596,13 @@ export class StationViewer {
     selectionBox.name = 'selection_helper';
     
     // Enhance selection helper visual thickness/style
-    selectionBox.material.linewidth = 2; // (Note: linewidth > 1 depends on browser support, but good default)
-    selectionBox.material.depthTest = false; // Always render on top
-    selectionBox.material.transparent = true;
-    selectionBox.material.opacity = 0.95;
+    selectionBox.material = new THREE.LineBasicMaterial({
+      color: 0xFFFF00,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
+      linewidth: 2
+    });
 
     this.scene.add(selectionBox);
     this.selectionHelper = selectionBox;
