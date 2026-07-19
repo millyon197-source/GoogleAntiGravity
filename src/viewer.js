@@ -407,7 +407,19 @@ export class StationViewer {
   fitCameraToStation() {
     if (this.modulesGroup.children.length === 0) return;
 
-    const box = new THREE.Box3().setFromObject(this.modulesGroup);
+    const box = new THREE.Box3();
+    let hasStructuralMesh = false;
+    this.modulesGroup.traverse(child => {
+      if (child.isMesh && !isTextureOrEffectMesh(child)) {
+        box.expandByObject(child);
+        hasStructuralMesh = true;
+      }
+    });
+
+    if (!hasStructuralMesh) {
+      box.setFromObject(this.modulesGroup);
+    }
+
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
@@ -429,7 +441,19 @@ export class StationViewer {
 
   getStationMeasurements() {
     if (!this.modulesGroup || this.modulesGroup.children.length === 0) return null;
-    const box = new THREE.Box3().setFromObject(this.modulesGroup);
+    const box = new THREE.Box3();
+    let hasStructuralMesh = false;
+    this.modulesGroup.traverse(child => {
+      if (child.isMesh && !isTextureOrEffectMesh(child)) {
+        box.expandByObject(child);
+        hasStructuralMesh = true;
+      }
+    });
+
+    if (!hasStructuralMesh) {
+      box.setFromObject(this.modulesGroup);
+    }
+
     return box.getSize(new THREE.Vector3());
   }
 
@@ -439,7 +463,7 @@ export class StationViewer {
     // Find all meshes matching category and/or macro
     const matchingMeshes = [];
     this.modulesGroup.traverse(child => {
-      if (child.isMesh && child.visible) {
+      if (child.isMesh && child.visible && !isTextureOrEffectMesh(child)) {
         // Find top level module object index
         let hitObj = child;
         let moduleIdx = hitObj.userData.moduleIndex;
@@ -509,8 +533,21 @@ export class StationViewer {
   getModuleDimensions(index) {
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return null;
-    const compBox = new THREE.Box3().setFromObject(targetModule);
-    return compBox.getSize(new THREE.Vector3());
+    
+    const box = new THREE.Box3();
+    let hasStructuralMesh = false;
+    targetModule.traverse(child => {
+      if (child.isMesh && !isTextureOrEffectMesh(child)) {
+        box.expandByObject(child);
+        hasStructuralMesh = true;
+      }
+    });
+
+    if (!hasStructuralMesh) {
+      box.setFromObject(targetModule);
+    }
+
+    return box.getSize(new THREE.Vector3());
   }
 
   selectModuleByIndex(index) {
@@ -925,4 +962,31 @@ export class StationViewer {
     }
     this.deselect();
   }
+}
+
+function isTextureOrEffectMesh(child) {
+  if (!child || !child.isMesh) return false;
+  
+  const namesToCheck = [];
+  if (child.name) namesToCheck.push(child.name.toLowerCase());
+  if (child.parent && child.parent.name) namesToCheck.push(child.parent.name.toLowerCase());
+  if (child.material) {
+    if (Array.isArray(child.material)) {
+      child.material.forEach(m => {
+        if (m.name) namesToCheck.push(m.name.toLowerCase());
+      });
+    } else if (child.material.name) {
+      namesToCheck.push(child.material.name.toLowerCase());
+    }
+  }
+
+  const textureEffectKeywords = [
+    'decal', 'fx_', 'light', 'exhaust', 'flare', 'glow', 
+    'sprite', 'alpha', 'anim_', 'arrow', 'cross', 'elevator',
+    'poslight', 'sign', 'billboard', 'lens', 'corona'
+  ];
+
+  return namesToCheck.some(name => 
+    textureEffectKeywords.some(keyword => name.includes(keyword))
+  );
 }
