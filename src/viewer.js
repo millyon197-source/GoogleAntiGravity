@@ -666,6 +666,7 @@ export class StationViewer {
 
   selectModuleByIndex(index, resizeGridAndBounds = false) {
     this.deselect(false);
+    this.clearFilterHighlights();
 
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return;
