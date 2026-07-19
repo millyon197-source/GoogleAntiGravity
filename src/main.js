@@ -417,7 +417,7 @@ function renderModuleList(modules, filterText = '') {
     `;
 
     tr.addEventListener('click', () => {
-      selectModule(mod.index, true); // True means center camera in 3D
+      selectModule(mod.index, false); // Do not resize or zoom
     });
 
     tbody.appendChild(tr);
@@ -851,11 +851,11 @@ function progressToNextComponent() {
 
   const nextModule = currentPlan.modules.find(m => m.macro === nextMacro);
   if (nextModule) {
-    selectModule(nextModule.index, true);
+    selectModule(nextModule.index, false); // Do not resize or zoom
   }
 }
 
-function selectModule(index, focusCamera = true) {
+function selectModule(index, focusCamera = false) {
   // Deselect previous
   if (selectedIndex !== null) {
     const prevRow = document.getElementById(`mod-row-${selectedIndex}`);
@@ -936,7 +936,7 @@ function selectModule(index, focusCamera = true) {
     }
 
     // Highlight inside 3D viewer
-    viewer.selectModuleByIndex(index);
+    viewer.selectModuleByIndex(index, focusCamera);
     viewer.focusCameraOnModule(index, focusCamera);
 
     // Scroll and center panels on the selected module's macro
