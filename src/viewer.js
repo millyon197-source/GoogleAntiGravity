@@ -278,6 +278,7 @@ export class StationViewer {
 
   async loadModuleMesh(mod) {
     let baseName = mod.macro.replace('_macro', '').toLowerCase();
+    const origBaseName = baseName;
 
     if (!DAE_REGISTRY[baseName] && baseName.startsWith('prod_')) {
       const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir'];
@@ -293,7 +294,12 @@ export class StationViewer {
       }
     }
 
+    if (baseName !== origBaseName) {
+      sendLogToVSC(`[*] Translated production macro baseName: ${origBaseName} -> ${baseName}`, 'log');
+    }
+
     const urls = DAE_REGISTRY[baseName] || [];
+    sendLogToVSC(`[*] DAE urls for ${mod.macro} (baseName: ${baseName}): found ${urls.length} URLs`, 'log');
 
     if (urls.length === 0) {
       return null;
@@ -302,8 +308,10 @@ export class StationViewer {
     const loadedScenes = [];
     for (const url of urls) {
       try {
+        sendLogToVSC(`  [*] Attempting to load Collada model: ${url}`, 'log');
         const sceneTemplate = await this.loadColladaModel(url);
         if (sceneTemplate) {
+          sendLogToVSC(`  [+] Successfully loaded: ${url}`, 'log');
           const scene = sceneTemplate.clone();
           scene.scale.set(1, 1, 1);
           scene.traverse(child => {
@@ -403,6 +411,7 @@ export class StationViewer {
           loadedScenes.push(scene);
         }
       } catch (e) {
+        sendLogToVSC(`  [-] Failed to load ${url}: ${e.message || e}`, 'warn');
         // Ignore and check next path
       }
     }
