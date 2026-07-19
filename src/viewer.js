@@ -212,8 +212,10 @@ export class StationViewer {
 
       let moduleGroup = await this.loadModuleMesh(mod);
       if (!moduleGroup) {
-        // Fallback to procedural module representation
+        console.warn(`[!] DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`);
         moduleGroup = createProceduralModule(mod.macro, THREE);
+      } else {
+        console.log(`[+] Loaded DAE mesh for ${mod.macro}`);
       }
 
       // Position coordinates (convert standard X4 coordinates if needed)
