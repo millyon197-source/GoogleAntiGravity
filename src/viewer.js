@@ -277,7 +277,22 @@ export class StationViewer {
   }
 
   async loadModuleMesh(mod) {
-    const baseName = mod.macro.replace('_macro', '').toLowerCase();
+    let baseName = mod.macro.replace('_macro', '').toLowerCase();
+
+    if (!DAE_REGISTRY[baseName] && baseName.startsWith('prod_')) {
+      const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir'];
+      for (const fac of factions) {
+        const prefix = `prod_${fac}_`;
+        if (baseName.startsWith(prefix)) {
+          const genName = baseName.replace(prefix, 'prod_gen_');
+          if (DAE_REGISTRY[genName]) {
+            baseName = genName;
+            break;
+          }
+        }
+      }
+    }
+
     const urls = DAE_REGISTRY[baseName] || [];
 
     if (urls.length === 0) {
