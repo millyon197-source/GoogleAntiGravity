@@ -247,6 +247,7 @@ export class StationViewer {
       try {
         const scene = await this.loadColladaModel(url);
         if (scene) {
+          scene.scale.set(0.01, 0.01, 0.01);
           scene.traverse(child => {
             if (child.isMesh) {
               // Ensure geometry has proper normals for lighting
@@ -536,15 +537,29 @@ export class StationViewer {
     
     const box = new THREE.Box3();
     let hasStructuralMesh = false;
+
+    targetModule.updateMatrixWorld(true);
+    const invWorldMatrix = new THREE.Matrix4().copy(targetModule.matrixWorld).invert();
+
     targetModule.traverse(child => {
       if (child.isMesh && !isTextureOrEffectMesh(child)) {
-        box.expandByObject(child);
-        hasStructuralMesh = true;
+        if (child.geometry) {
+          if (!child.geometry.boundingBox) {
+            child.geometry.computeBoundingBox();
+          }
+          const geomBox = child.geometry.boundingBox.clone();
+          const localMat = child.matrixWorld.clone().premultiply(invWorldMatrix);
+          geomBox.applyMatrix4(localMat);
+          box.union(geomBox);
+          hasStructuralMesh = true;
+        }
       }
     });
 
     if (!hasStructuralMesh) {
-      box.setFromObject(targetModule);
+      // Fallback
+      const fallbackBox = new THREE.Box3().setFromObject(targetModule);
+      return fallbackBox.getSize(new THREE.Vector3());
     }
 
     return box.getSize(new THREE.Vector3());
