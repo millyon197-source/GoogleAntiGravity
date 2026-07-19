@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { createProceduralModule, getModuleCategory } from './modules.js';
+import { createProceduralModule, getModuleCategory, getFriendlyName } from './modules.js';
 import { DAE_REGISTRY } from './dae-registry.js';
 
 export class StationViewer {
@@ -34,6 +34,7 @@ export class StationViewer {
     this.currentBuildProgressPercentage = 100;
     this.highlightHelpers = [];
     this.colladaLoader = new ColladaLoader();
+    this.colladaCache = new Map();
 
     this.init();
   }
@@ -190,7 +191,25 @@ export class StationViewer {
 
     console.log(`[*] Loading ${planData.modules.length} station modules...`);
 
+    // Display the loader banner
+    const loaderBanner = document.getElementById('model-loader-status');
+    const loaderText = document.getElementById('model-loader-text');
+    if (loaderBanner && loaderText) {
+      loaderBanner.style.display = 'flex';
+      loaderText.textContent = `Preparing to load ${planData.modules.length} modules...`;
+    }
+
+    const total = planData.modules.length;
+    let completed = 0;
+
     const loadPromises = planData.modules.map(async (mod) => {
+      const friendlyName = getFriendlyName(mod.macro);
+      
+      // Update loading text when module loading starts or progresses
+      if (loaderText) {
+        loaderText.textContent = `Loading: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+      }
+
       let moduleGroup = await this.loadModuleMesh(mod);
       if (!moduleGroup) {
         // Fallback to procedural module representation
@@ -221,6 +240,11 @@ export class StationViewer {
         }
       });
 
+      completed++;
+      if (loaderText) {
+        loaderText.textContent = `Loaded: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+      }
+
       return moduleGroup;
     });
 
@@ -228,6 +252,11 @@ export class StationViewer {
     loadedGroups.forEach(group => {
       this.modulesGroup.add(group);
     });
+
+    // Hide the loader banner
+    if (loaderBanner) {
+      loaderBanner.style.display = 'none';
+    }
 
     // Auto-center camera to fit the loaded station bounds
     this.fitCameraToStation();
@@ -245,8 +274,9 @@ export class StationViewer {
     const loadedScenes = [];
     for (const url of urls) {
       try {
-        const scene = await this.loadColladaModel(url);
-        if (scene) {
+        const sceneTemplate = await this.loadColladaModel(url);
+        if (sceneTemplate) {
+          const scene = sceneTemplate.clone();
           scene.scale.set(1, 1, 1);
           scene.traverse(child => {
             if (child.isMesh) {
@@ -364,7 +394,10 @@ export class StationViewer {
   }
 
   loadColladaModel(url) {
-    return new Promise((resolve, reject) => {
+    if (this.colladaCache.has(url)) {
+      return this.colladaCache.get(url);
+    }
+    const loadPromise = new Promise((resolve, reject) => {
       this.colladaLoader.load(
         url,
         (collada) => resolve(collada.scene),
@@ -372,6 +405,8 @@ export class StationViewer {
         (err) => reject(err)
       );
     });
+    this.colladaCache.set(url, loadPromise);
+    return loadPromise;
   }
 
   clear() {
