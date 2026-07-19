@@ -222,11 +222,12 @@ export class StationViewer {
       }
 
       let moduleGroup = await this.loadModuleMesh(mod);
+      let isDAEResolved = false;
       if (!moduleGroup) {
         sendLogToVSC(`[!] DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
         moduleGroup = createProceduralModule(mod.macro, THREE);
       } else {
-        sendLogToVSC(`[+] Loaded DAE mesh for ${mod.macro}`, 'log');
+        isDAEResolved = true;
       }
 
       // Position coordinates (convert standard X4 coordinates if needed)
@@ -255,7 +256,8 @@ export class StationViewer {
 
       completed++;
       if (loaderText) {
-        loaderText.textContent = `Loaded: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+        const typeStr = isDAEResolved ? 'DAE' : 'Procedural';
+        loaderText.textContent = `Loaded [${typeStr}]: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
       }
 
       return moduleGroup;
@@ -294,12 +296,7 @@ export class StationViewer {
       }
     }
 
-    if (baseName !== origBaseName) {
-      sendLogToVSC(`[*] Translated production macro baseName: ${origBaseName} -> ${baseName}`, 'log');
-    }
-
     const urls = DAE_REGISTRY[baseName] || [];
-    sendLogToVSC(`[*] DAE urls for ${mod.macro} (baseName: ${baseName}): found ${urls.length} URLs`, 'log');
 
     if (urls.length === 0) {
       return null;
@@ -308,10 +305,8 @@ export class StationViewer {
     const loadedScenes = [];
     for (const url of urls) {
       try {
-        sendLogToVSC(`  [*] Attempting to load Collada model: ${url}`, 'log');
         const sceneTemplate = await this.loadColladaModel(url);
         if (sceneTemplate) {
-          sendLogToVSC(`  [+] Successfully loaded: ${url}`, 'log');
           const scene = sceneTemplate.clone();
           scene.scale.set(1, 1, 1);
           scene.traverse(child => {
