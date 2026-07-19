@@ -52,7 +52,11 @@ function initApp() {
 
   // 1. Initialize viewer
   viewer = new StationViewer(container, (index) => {
-    selectModule(index, false); // Clicked in 3D, select in UI list but don't focus camera (to avoid disorienting user)
+    if (index === null) {
+      progressToNextComponent();
+    } else {
+      selectModule(index, false); // Clicked in 3D, select in UI list but don't focus camera (to avoid disorienting user)
+    }
   });
 
   // 2. Set up event listeners
@@ -817,6 +821,40 @@ function scrollAndHighlightVisibilityComponent(category, macro = null) {
   }
 }
 
+function progressToNextComponent() {
+  if (!currentPlan || !currentPlan.modules || currentPlan.modules.length === 0) return;
+
+  const container = document.getElementById('visibility-controls-container');
+  if (!container) return;
+
+  const allRows = Array.from(container.querySelectorAll('.visibility-row'));
+  const visibleRows = allRows.filter(row => row.style.display !== 'none');
+  if (visibleRows.length === 0) return;
+
+  let nextMacro = null;
+
+  if (selectedIndex !== null) {
+    const prevMod = currentPlan.modules.find(m => m.index === selectedIndex);
+    if (prevMod) {
+      const currentMacro = prevMod.macro;
+      const currentIndex = visibleRows.findIndex(row => row.getAttribute('data-macro') === currentMacro);
+      if (currentIndex !== -1) {
+        const nextIndex = (currentIndex + 1) % visibleRows.length;
+        nextMacro = visibleRows[nextIndex].getAttribute('data-macro');
+      }
+    }
+  }
+
+  if (!nextMacro) {
+    nextMacro = visibleRows[0].getAttribute('data-macro');
+  }
+
+  const nextModule = currentPlan.modules.find(m => m.macro === nextMacro);
+  if (nextModule) {
+    selectModule(nextModule.index, true);
+  }
+}
+
 function selectModule(index, focusCamera = true) {
   // Deselect previous
   if (selectedIndex !== null) {
@@ -900,6 +938,10 @@ function selectModule(index, focusCamera = true) {
     // Highlight inside 3D viewer
     viewer.selectModuleByIndex(index);
     viewer.focusCameraOnModule(index, focusCamera);
+
+    // Scroll and center panels on the selected module's macro
+    scrollAndHighlightVisibilityComponent(cat, moduleData.macro);
+    scrollAndHighlightLeftMacro(moduleData.macro);
   } else {
     placeholder.classList.remove('hidden');
     card.classList.add('hidden');

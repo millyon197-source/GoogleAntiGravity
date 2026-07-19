@@ -124,5 +124,999 @@ export const SAMPLES = {
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
   </plan>
+</plans>`,
+
+  allModulesPlan: `<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+  <plan id="showcase_all_modules" name="All Modules Showcase" description="A vertical stack of all 247 modules, separated by their bounding boxes.">
+    <entry index="1" macro="struct_arg_base_01_macro">
+      <position x="0" y="0" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="2" macro="struct_arg_base_02_macro">
+      <position x="0" y="130" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="3" macro="struct_arg_base_03_macro">
+      <position x="0" y="260" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="4" macro="struct_arg_cross_01_macro">
+      <position x="0" y="407" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="5" macro="struct_arg_vertical_01_macro">
+      <position x="0" y="554" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="6" macro="struct_arg_vertical_02_macro">
+      <position x="0" y="684" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="7" macro="defence_arg_claim_01_macro">
+      <position x="0" y="814" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="8" macro="defence_arg_disc_01_macro">
+      <position x="0" y="999" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="9" macro="defence_arg_tube_01_macro">
+      <position x="0" y="1184" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="10" macro="dockarea_arg_m_station_01_macro">
+      <position x="0" y="1335" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="11" macro="dockarea_arg_m_station_01_hightech_macro">
+      <position x="0" y="1506" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="12" macro="dockarea_arg_m_station_01_lowtech_macro">
+      <position x="0" y="1677" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="13" macro="dockarea_arg_m_station_02_macro">
+      <position x="0" y="1848" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="14" macro="dockarea_arg_m_station_02_hightech_macro">
+      <position x="0" y="2019" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="15" macro="dockarea_arg_m_station_02_lowtech_macro">
+      <position x="0" y="2190" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="16" macro="dockarea_arg_m_02_tradestation_01_macro">
+      <position x="0" y="2361" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="17" macro="hab_arg_l_01_macro">
+      <position x="0" y="2640" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="18" macro="hab_arg_m_01_macro">
+      <position x="0" y="2988" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="19" macro="hab_arg_s_01_macro">
+      <position x="0" y="3270" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="20" macro="pier_arg_harbor_01_macro">
+      <position x="0" y="3474" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="21" macro="pier_arg_harbor_02_macro">
+      <position x="0" y="3630" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="22" macro="pier_arg_harbor_03_macro">
+      <position x="0" y="3786" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="23" macro="prod_arg_foodrations_macro">
+      <position x="0" y="3947" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="24" macro="prod_arg_meat_macro">
+      <position x="0" y="4115" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="25" macro="prod_arg_medicalsupplies_macro">
+      <position x="0" y="4282" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="26" macro="prod_arg_spacefuel_macro">
+      <position x="0" y="4449" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="27" macro="prod_arg_wheat_macro">
+      <position x="0" y="4617" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="28" macro="storage_arg_l_container_01_macro">
+      <position x="0" y="4848" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="29" macro="storage_arg_m_container_01_macro">
+      <position x="0" y="5119" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="30" macro="storage_arg_s_container_01_macro">
+      <position x="0" y="5339" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="31" macro="storage_arg_l_liquid_01_macro">
+      <position x="0" y="5584" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="32" macro="storage_arg_m_liquid_01_macro">
+      <position x="0" y="5855" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="33" macro="storage_arg_s_liquid_01_macro">
+      <position x="0" y="6076" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="34" macro="storage_arg_l_solid_01_macro">
+      <position x="0" y="6321" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="35" macro="storage_arg_m_solid_01_macro">
+      <position x="0" y="6592" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="36" macro="storage_arg_s_solid_01_macro">
+      <position x="0" y="6812" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="37" macro="buildmodule_gen_ships_m_dockarea_01_macro">
+      <position x="0" y="6995" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="38" macro="buildmodule_gen_ships_l_macro">
+      <position x="0" y="7155" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="39" macro="buildmodule_gen_ships_xl_macro">
+      <position x="0" y="7294" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="40" macro="buildmodule_gen_equip_m_dockarea_01_macro">
+      <position x="0" y="7445" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="41" macro="buildmodule_gen_equip_l_macro">
+      <position x="0" y="7604" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="42" macro="buildmodule_gen_equip_xl_macro">
+      <position x="0" y="7743" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="43" macro="proc_gen_scrapworks_macro">
+      <position x="0" y="7873" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="44" macro="prod_gen_advancedcomposites_macro">
+      <position x="0" y="8022" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="45" macro="prod_gen_advancedelectronics_macro">
+      <position x="0" y="8189" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="46" macro="prod_gen_antimattercells_macro">
+      <position x="0" y="8357" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="47" macro="prod_gen_antimatterconverters_macro">
+      <position x="0" y="8524" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="48" macro="prod_gen_claytronics_macro">
+      <position x="0" y="8691" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="49" macro="prod_gen_dronecomponents_macro">
+      <position x="0" y="8859" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="50" macro="prod_gen_energycells_macro">
+      <position x="0" y="9026" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="51" macro="prod_gen_engineparts_macro">
+      <position x="0" y="9194" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="52" macro="prod_gen_fieldcoils_macro">
+      <position x="0" y="9361" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="53" macro="prod_gen_graphene_macro">
+      <position x="0" y="9528" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="54" macro="prod_gen_hullparts_macro">
+      <position x="0" y="9696" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="55" macro="prod_gen_microchips_macro">
+      <position x="0" y="9863" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="56" macro="prod_gen_missilecomponents_macro">
+      <position x="0" y="10031" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="57" macro="prod_gen_plasmaconductors_macro">
+      <position x="0" y="10198" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="58" macro="prod_gen_quantumtubes_macro">
+      <position x="0" y="10365" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="59" macro="prod_gen_refinedmetals_macro">
+      <position x="0" y="10533" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="60" macro="prod_gen_scanningarrays_macro">
+      <position x="0" y="10700" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="61" macro="prod_gen_scrap_recycler_macro">
+      <position x="0" y="10868" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="62" macro="prod_gen_shieldcomponents_macro">
+      <position x="0" y="11035" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="63" macro="prod_gen_siliconwafers_macro">
+      <position x="0" y="11202" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="64" macro="prod_gen_smartchips_macro">
+      <position x="0" y="11370" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="65" macro="prod_gen_spices_macro">
+      <position x="0" y="11537" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="66" macro="prod_gen_superfluidcoolant_macro">
+      <position x="0" y="11705" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="67" macro="prod_gen_turretcomponents_macro">
+      <position x="0" y="11872" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="68" macro="prod_gen_water_macro">
+      <position x="0" y="12039" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="69" macro="prod_gen_weaponcomponents_macro">
+      <position x="0" y="12207" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="70" macro="struct_par_base_01_macro">
+      <position x="0" y="12356" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="71" macro="struct_par_base_02_macro">
+      <position x="0" y="12486" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="72" macro="struct_par_base_03_macro">
+      <position x="0" y="12616" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="73" macro="struct_par_cross_01_macro">
+      <position x="0" y="12763" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="74" macro="struct_par_cross_02_macro">
+      <position x="0" y="12927" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="75" macro="struct_par_cross_03_macro">
+      <position x="0" y="13091" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="76" macro="struct_par_vertical_01_macro">
+      <position x="0" y="13238" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="77" macro="struct_par_vertical_02_macro">
+      <position x="0" y="13368" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="78" macro="defence_par_claim_01_macro">
+      <position x="0" y="13498" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="79" macro="defence_par_disc_01_macro">
+      <position x="0" y="13683" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="80" macro="defence_par_tube_01_macro">
+      <position x="0" y="13868" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="81" macro="hab_par_l_01_macro">
+      <position x="0" y="14126" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="82" macro="hab_par_m_01_macro">
+      <position x="0" y="14474" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="83" macro="hab_par_s_01_macro">
+      <position x="0" y="14756" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="84" macro="pier_par_harbor_01_macro">
+      <position x="0" y="14960" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="85" macro="pier_par_harbor_02_macro">
+      <position x="0" y="15116" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="86" macro="pier_par_harbor_03_macro">
+      <position x="0" y="15271" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="87" macro="prod_par_majadust_macro">
+      <position x="0" y="15433" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="88" macro="prod_par_majasnails_macro">
+      <position x="0" y="15600" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="89" macro="prod_par_medicalsupplies_macro">
+      <position x="0" y="15768" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="90" macro="prod_par_sojabeans_macro">
+      <position x="0" y="15935" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="91" macro="prod_par_sojahusk_macro">
+      <position x="0" y="16103" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="92" macro="storage_par_l_container_01_macro">
+      <position x="0" y="16334" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="93" macro="storage_par_m_container_01_macro">
+      <position x="0" y="16604" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="94" macro="storage_par_s_container_01_macro">
+      <position x="0" y="16825" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="95" macro="storage_par_l_liquid_01_macro">
+      <position x="0" y="17070" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="96" macro="storage_par_m_liquid_01_macro">
+      <position x="0" y="17341" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="97" macro="storage_par_s_liquid_01_macro">
+      <position x="0" y="17562" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="98" macro="storage_par_l_solid_01_macro">
+      <position x="0" y="17807" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="99" macro="storage_par_m_solid_01_macro">
+      <position x="0" y="18077" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="100" macro="storage_par_s_solid_01_macro">
+      <position x="0" y="18298" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="101" macro="struct_tel_base_01_macro">
+      <position x="0" y="18461" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="102" macro="struct_tel_base_02_macro">
+      <position x="0" y="18591" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="103" macro="struct_tel_base_03_macro">
+      <position x="0" y="18721" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="104" macro="struct_tel_cross_01_macro">
+      <position x="0" y="18868" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="105" macro="struct_tel_vertical_01_macro">
+      <position x="0" y="19015" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="106" macro="struct_tel_vertical_02_macro">
+      <position x="0" y="19145" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="107" macro="defence_tel_claim_01_macro">
+      <position x="0" y="19275" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="108" macro="defence_tel_disc_01_macro">
+      <position x="0" y="19460" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="109" macro="defence_tel_tube_01_macro">
+      <position x="0" y="19645" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="110" macro="hab_tel_l_01_macro">
+      <position x="0" y="19903" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="111" macro="hab_tel_m_01_macro">
+      <position x="0" y="20251" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="112" macro="hab_tel_s_01_macro">
+      <position x="0" y="20533" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="113" macro="pier_tel_harbor_01_macro">
+      <position x="0" y="20737" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="114" macro="pier_tel_harbor_02_macro">
+      <position x="0" y="20893" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="115" macro="pier_tel_harbor_03_macro">
+      <position x="0" y="21049" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="116" macro="prod_tel_advancedcomposites_macro">
+      <position x="0" y="21210" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="117" macro="prod_tel_engineparts_macro">
+      <position x="0" y="21378" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="118" macro="prod_tel_hullparts_macro">
+      <position x="0" y="21545" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="119" macro="prod_tel_medicalsupplies_macro">
+      <position x="0" y="21712" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="120" macro="prod_tel_nostropoil_macro">
+      <position x="0" y="21880" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="121" macro="prod_tel_scanningarrays_macro">
+      <position x="0" y="22047" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="122" macro="prod_tel_spaceweed_macro">
+      <position x="0" y="22215" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="123" macro="prod_tel_sunriseflowers_macro">
+      <position x="0" y="22382" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="124" macro="prod_tel_swampplant_macro">
+      <position x="0" y="22549" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="125" macro="prod_tel_teladianium_macro">
+      <position x="0" y="22717" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="126" macro="storage_tel_l_container_01_macro">
+      <position x="0" y="22948" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="127" macro="storage_tel_m_container_01_macro">
+      <position x="0" y="23219" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="128" macro="storage_tel_s_container_01_macro">
+      <position x="0" y="23440" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="129" macro="storage_tel_l_liquid_01_macro">
+      <position x="0" y="23684" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="130" macro="storage_tel_m_liquid_01_macro">
+      <position x="0" y="23955" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="131" macro="storage_tel_s_liquid_01_macro">
+      <position x="0" y="24176" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="132" macro="storage_tel_l_solid_01_macro">
+      <position x="0" y="24421" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="133" macro="storage_tel_m_solid_01_macro">
+      <position x="0" y="24692" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="134" macro="storage_tel_s_solid_01_macro">
+      <position x="0" y="24913" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="135" macro="struct_spl_base_01_macro">
+      <position x="0" y="25075" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="136" macro="struct_spl_base_02_macro">
+      <position x="0" y="25205" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="137" macro="struct_spl_base_03_macro">
+      <position x="0" y="25335" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="138" macro="struct_spl_cross_01_macro">
+      <position x="0" y="25482" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="139" macro="struct_spl_vertical_01_macro">
+      <position x="0" y="25629" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="140" macro="struct_spl_vertical_02_macro">
+      <position x="0" y="25759" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="141" macro="defence_spl_claim_01_macro">
+      <position x="0" y="25889" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="142" macro="defence_spl_disc_01_macro">
+      <position x="0" y="26074" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="143" macro="defence_spl_tube_01_macro">
+      <position x="0" y="26259" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="144" macro="hab_spl_l_01_macro">
+      <position x="0" y="26517" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="145" macro="hab_spl_m_01_macro">
+      <position x="0" y="26866" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="146" macro="hab_spl_s_01_macro">
+      <position x="0" y="27147" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="147" macro="pier_spl_harbor_01_macro">
+      <position x="0" y="27351" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="148" macro="pier_spl_harbor_02_macro">
+      <position x="0" y="27507" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="149" macro="pier_spl_harbor_03_macro">
+      <position x="0" y="27663" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="150" macro="prod_spl_cheltmeat_macro">
+      <position x="0" y="27825" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="151" macro="prod_spl_medicalsupplies_macro">
+      <position x="0" y="27992" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="152" macro="prod_spl_scruffinfruit_macro">
+      <position x="0" y="28159" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="153" macro="storage_spl_l_container_01_macro">
+      <position x="0" y="28390" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="154" macro="storage_spl_m_container_01_macro">
+      <position x="0" y="28661" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="155" macro="storage_spl_s_container_01_macro">
+      <position x="0" y="28882" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="156" macro="storage_spl_l_liquid_01_macro">
+      <position x="0" y="29127" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="157" macro="storage_spl_m_liquid_01_macro">
+      <position x="0" y="29398" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="158" macro="storage_spl_s_liquid_01_macro">
+      <position x="0" y="29618" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="159" macro="storage_spl_l_solid_01_macro">
+      <position x="0" y="29863" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="160" macro="storage_spl_m_solid_01_macro">
+      <position x="0" y="30134" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="161" macro="storage_spl_s_solid_01_macro">
+      <position x="0" y="30355" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="162" macro="buildmodule_ter_ships_m_dockarea_01_macro">
+      <position x="0" y="30538" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="163" macro="buildmodule_ter_ships_l_macro">
+      <position x="0" y="30698" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="164" macro="buildmodule_ter_ships_xl_macro">
+      <position x="0" y="30837" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="165" macro="struct_ter_base_01_macro">
+      <position x="0" y="30967" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="166" macro="struct_ter_base_02_macro">
+      <position x="0" y="31097" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="167" macro="struct_ter_base_03_macro">
+      <position x="0" y="31227" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="168" macro="struct_ter_cross_01_macro">
+      <position x="0" y="31374" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="169" macro="struct_ter_vertical_01_macro">
+      <position x="0" y="31521" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="170" macro="struct_ter_vertical_02_macro">
+      <position x="0" y="31651" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="171" macro="defence_ter_claim_01_macro">
+      <position x="0" y="31781" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="172" macro="defence_ter_disc_01_macro">
+      <position x="0" y="31966" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="173" macro="defence_ter_tube_01_macro">
+      <position x="0" y="32151" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="174" macro="dockarea_ter_m_station_01_hightech_macro">
+      <position x="0" y="32301" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="175" macro="buildmodule_ter_equip_m_dockarea_01_macro">
+      <position x="0" y="32472" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="176" macro="buildmodule_ter_equip_l_macro">
+      <position x="0" y="32632" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="177" macro="buildmodule_ter_equip_xl_macro">
+      <position x="0" y="32771" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="178" macro="hab_ter_l_01_macro">
+      <position x="0" y="33029" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="179" macro="hab_ter_m_01_macro">
+      <position x="0" y="33377" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="180" macro="hab_ter_s_01_macro">
+      <position x="0" y="33659" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="181" macro="pier_ter_harbor_01_macro">
+      <position x="0" y="33863" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="182" macro="pier_ter_harbor_02_macro">
+      <position x="0" y="34019" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="183" macro="pier_ter_harbor_03_macro">
+      <position x="0" y="34175" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="184" macro="pier_ter_harbor_04_macro">
+      <position x="0" y="34330" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="185" macro="pier_ter_tradestation_01_macro">
+      <position x="0" y="34486" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="186" macro="prod_ter_computronicsubstrate_macro">
+      <position x="0" y="34648" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="187" macro="prod_ter_energycells_macro">
+      <position x="0" y="34815" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="188" macro="prod_ter_medicalsupplies_macro">
+      <position x="0" y="34983" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="189" macro="prod_ter_metallicmicrolattice_macro">
+      <position x="0" y="35150" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="190" macro="prod_ter_proteinpaste_macro">
+      <position x="0" y="35317" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="191" macro="prod_ter_scrap_recycler_macro">
+      <position x="0" y="35485" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="192" macro="prod_ter_siliconcarbide_macro">
+      <position x="0" y="35652" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="193" macro="prod_ter_stimulants_macro">
+      <position x="0" y="35820" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="194" macro="prod_ter_mre_macro">
+      <position x="0" y="35987" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="195" macro="storage_ter_l_container_01_macro">
+      <position x="0" y="36218" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="196" macro="storage_ter_m_container_01_macro">
+      <position x="0" y="36489" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="197" macro="storage_ter_s_container_01_macro">
+      <position x="0" y="36710" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="198" macro="storage_ter_l_liquid_01_macro">
+      <position x="0" y="36955" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="199" macro="storage_ter_m_liquid_01_macro">
+      <position x="0" y="37225" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="200" macro="storage_ter_s_liquid_01_macro">
+      <position x="0" y="37446" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="201" macro="storage_ter_l_solid_01_macro">
+      <position x="0" y="37691" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="202" macro="storage_ter_m_solid_01_macro">
+      <position x="0" y="37962" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="203" macro="storage_ter_s_solid_01_macro">
+      <position x="0" y="38183" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="204" macro="hab_pir_l_01_macro">
+      <position x="0" y="38473" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="205" macro="hab_pir_m_01_macro">
+      <position x="0" y="38822" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="206" macro="hab_pir_s_01_macro">
+      <position x="0" y="39103" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="207" macro="storage_pir_l_condensate_01_macro">
+      <position x="0" y="39377" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="208" macro="buildmodule_bor_ships_m_dockarea_01_macro">
+      <position x="0" y="39610" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="209" macro="buildmodule_bor_ships_l_macro">
+      <position x="0" y="39769" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="210" macro="buildmodule_bor_ships_xl_macro">
+      <position x="0" y="39908" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="211" macro="struct_bor_base_01_macro">
+      <position x="0" y="40038" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="212" macro="struct_bor_base_02_macro">
+      <position x="0" y="40168" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="213" macro="struct_bor_base_03_macro">
+      <position x="0" y="40298" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="214" macro="struct_bor_base_04_macro">
+      <position x="0" y="40428" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="215" macro="struct_bor_base_05_macro">
+      <position x="0" y="40558" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="216" macro="struct_bor_cross_01_macro">
+      <position x="0" y="40705" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="217" macro="struct_bor_cross_02_macro">
+      <position x="0" y="40869" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="218" macro="struct_bor_vertical_01_macro">
+      <position x="0" y="41016" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="219" macro="struct_bor_vertical_02_macro">
+      <position x="0" y="41146" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="220" macro="defence_bor_claim_01_macro">
+      <position x="0" y="41276" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="221" macro="defence_bor_disc_01_macro">
+      <position x="0" y="41461" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="222" macro="defence_bor_tube_01_macro">
+      <position x="0" y="41646" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="223" macro="dockarea_bor_m_station_01_standard_macro">
+      <position x="0" y="41797" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="224" macro="buildmodule_bor_equip_m_dockarea_01_macro">
+      <position x="0" y="41968" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="225" macro="buildmodule_bor_equip_l_macro">
+      <position x="0" y="42128" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="226" macro="buildmodule_bor_equip_xl_macro">
+      <position x="0" y="42267" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="227" macro="hab_bor_l_01_macro">
+      <position x="0" y="42525" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="228" macro="hab_bor_m_01_macro">
+      <position x="0" y="42873" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="229" macro="hab_bor_s_01_macro">
+      <position x="0" y="43155" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="230" macro="pier_bor_harbor_01_macro">
+      <position x="0" y="43359" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="231" macro="pier_bor_harbor_02_macro">
+      <position x="0" y="43515" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="232" macro="pier_bor_harbor_03_macro">
+      <position x="0" y="43671" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="233" macro="pier_bor_harbor_04_macro">
+      <position x="0" y="43826" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="234" macro="pier_bor_tradestation_01_macro">
+      <position x="0" y="43982" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="235" macro="prod_bor_bofu_macro">
+      <position x="0" y="44144" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="236" macro="prod_bor_bogas_macro">
+      <position x="0" y="44311" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="237" macro="prod_bor_medicalsupplies_macro">
+      <position x="0" y="44479" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="238" macro="prod_bor_plankton_macro">
+      <position x="0" y="44646" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="239" macro="storage_bor_l_container_01_macro">
+      <position x="0" y="44877" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="240" macro="storage_bor_m_container_01_macro">
+      <position x="0" y="45148" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="241" macro="storage_bor_s_container_01_macro">
+      <position x="0" y="45369" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="242" macro="storage_bor_l_liquid_01_macro">
+      <position x="0" y="45613" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="243" macro="storage_bor_m_liquid_01_macro">
+      <position x="0" y="45884" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="244" macro="storage_bor_s_liquid_01_macro">
+      <position x="0" y="46105" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="245" macro="storage_bor_l_solid_01_macro">
+      <position x="0" y="46350" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="246" macro="storage_bor_m_solid_01_macro">
+      <position x="0" y="46621" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+    <entry index="247" macro="storage_bor_s_solid_01_macro">
+      <position x="0" y="46842" z="0"/>
+      <rotation yaw="0" pitch="0" roll="0"/>
+    </entry>
+  </plan>
 </plans>`
 };

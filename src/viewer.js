@@ -984,6 +984,10 @@ export class StationViewer {
       if (moduleIdx !== undefined && this.onModuleSelected) {
         this.onModuleSelected(moduleIdx);
       }
+    } else {
+      if (this.onModuleSelected) {
+        this.onModuleSelected(null);
+      }
     }
   }
 
