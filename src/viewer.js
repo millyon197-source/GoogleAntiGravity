@@ -247,6 +247,7 @@ export class StationViewer {
       try {
         const scene = await this.loadColladaModel(url);
         if (scene) {
+          scene.scale.set(1, 1, 1);
           scene.traverse(child => {
             if (child.isMesh) {
               // Ensure geometry has proper normals for lighting
