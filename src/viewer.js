@@ -4,6 +4,17 @@ import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { createProceduralModule, getModuleCategory, getFriendlyName } from './modules.js';
 import { DAE_REGISTRY } from './dae-registry.js';
 
+function sendLogToVSC(msg, type = 'log') {
+  if (type === 'warn') {
+    console.warn(msg);
+  } else if (type === 'error') {
+    console.error(msg);
+  } else {
+    console.log(msg);
+  }
+  fetch(`/api/log?msg=${encodeURIComponent(msg)}&type=${type}`).catch(() => {});
+}
+
 export class StationViewer {
   constructor(containerElement, onModuleSelectedCallback) {
     this.container = containerElement;
@@ -212,10 +223,10 @@ export class StationViewer {
 
       let moduleGroup = await this.loadModuleMesh(mod);
       if (!moduleGroup) {
-        console.warn(`[!] DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`);
+        sendLogToVSC(`[!] DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
         moduleGroup = createProceduralModule(mod.macro, THREE);
       } else {
-        console.log(`[+] Loaded DAE mesh for ${mod.macro}`);
+        sendLogToVSC(`[+] Loaded DAE mesh for ${mod.macro}`, 'log');
       }
 
       // Position coordinates (convert standard X4 coordinates if needed)
