@@ -427,6 +427,12 @@ export class StationViewer {
     this.controls.update();
   }
 
+  getStationMeasurements() {
+    if (!this.modulesGroup || this.modulesGroup.children.length === 0) return null;
+    const box = new THREE.Box3().setFromObject(this.modulesGroup);
+    return box.getSize(new THREE.Vector3());
+  }
+
   fitCameraToSelection(categoryFilter, macroFilter = null) {
     if (!this.currentPlan) return;
 

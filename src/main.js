@@ -76,6 +76,18 @@ function loadSample(sampleKey) {
 }
 
 async function loadPlanFromXml(xmlText) {
+  // Clear all panels silently before loading different model
+  clearAllPanels(true);
+
+  // Show loading status in the station plan profile panel
+  document.getElementById('plan-name').textContent = 'Loading...';
+  document.getElementById('plan-desc').textContent = 'Loading station models and assets...';
+  const planIdEl = document.getElementById('plan-id');
+  if (planIdEl) {
+    planIdEl.textContent = 'Loading...';
+    planIdEl.title = 'Loading...';
+  }
+
   const planData = parseConstructionPlan(xmlText);
   currentPlan = planData;
   selectedIndex = null;
@@ -94,6 +106,9 @@ async function loadPlanFromXml(xmlText) {
   renderModuleList(planData.modules);
   resetAnimator();
   viewer.highlightModulesByFilter('all', null);
+
+  // Recalculate model measurements based on loaded Three.js meshes
+  recalculateMeasurements();
 
   showNotification(`Successfully loaded plan "${planData.name}" with ${planData.modules.length} modules!`, 'success');
 }
@@ -301,17 +316,27 @@ function calculateAndRenderStats(plan) {
     }
   }
 
-  // Bounding size estimate
+  // Recalculate model measurements
+  recalculateMeasurements();
+}
+
+function recalculateMeasurements() {
   const sizeX = document.getElementById('stat-size-x');
   const sizeY = document.getElementById('stat-size-y');
   const sizeZ = document.getElementById('stat-size-z');
+  if (!sizeX || !sizeY || !sizeZ) return;
 
-  if (modules.length > 0) {
+  const measurements = (viewer && typeof viewer.getStationMeasurements === 'function') ? viewer.getStationMeasurements() : null;
+  if (measurements) {
+    sizeX.textContent = Math.round(measurements.x) + 'm';
+    sizeY.textContent = Math.round(measurements.y) + 'm';
+    sizeZ.textContent = Math.round(measurements.z) + 'm';
+  } else if (currentPlan && currentPlan.modules && currentPlan.modules.length > 0) {
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
     let minZ = Infinity, maxZ = -Infinity;
 
-    modules.forEach(m => {
+    currentPlan.modules.forEach(m => {
       minX = Math.min(minX, m.position.x);
       maxX = Math.max(maxX, m.position.x);
       minY = Math.min(minY, m.position.y);
@@ -1293,7 +1318,7 @@ function showNotification(message, type = 'info') {
 /**
  * Clear all station data, list panels, and Three.js 3D viewport meshes.
  */
-function clearAllPanels() {
+function clearAllPanels(silent = false) {
   const emptyPlan = {
     name: '-',
     description: 'Upload or select a station plan to begin visual analysis.',
@@ -1349,5 +1374,7 @@ function clearAllPanels() {
   if (badge) badge.textContent = '100%';
   if (countSpan) countSpan.textContent = '0 / 0';
 
-  showNotification('All panels and viewport cleared.', 'info');
+  if (!silent) {
+    showNotification('All panels and viewport cleared.', 'info');
+  }
 }
