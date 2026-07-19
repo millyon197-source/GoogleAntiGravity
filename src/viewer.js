@@ -219,15 +219,16 @@ export class StationViewer {
       // Update loading text when module loading starts or progresses
       if (loaderText) {
         loaderText.textContent = `Loading: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       let moduleGroup = await this.loadModuleMesh(mod);
-      let isDAEResolved = false;
+      let isDae = false;
       if (!moduleGroup) {
         sendLogToVSC(`[!] DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
         moduleGroup = createProceduralModule(mod.macro, THREE);
       } else {
-        isDAEResolved = true;
+        isDae = true;
       }
 
       // Position coordinates (convert standard X4 coordinates if needed)
@@ -256,8 +257,9 @@ export class StationViewer {
 
       completed++;
       if (loaderText) {
-        const typeStr = isDAEResolved ? 'DAE' : 'Procedural';
-        loaderText.textContent = `Loaded [${typeStr}]: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+        const typeStr = isDae ? 'DAE' : 'Procedural';
+        loaderText.textContent = `Loaded: ${friendlyName} (${typeStr}) (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       return moduleGroup;
@@ -296,7 +298,12 @@ export class StationViewer {
       }
     }
 
+    if (baseName !== origBaseName) {
+      sendLogToVSC(`[*] Translated production macro baseName: ${origBaseName} -> ${baseName}`, 'log');
+    }
+
     const urls = DAE_REGISTRY[baseName] || [];
+    sendLogToVSC(`[*] DAE urls for ${mod.macro} (baseName: ${baseName}): found ${urls.length} URLs`, 'log');
 
     if (urls.length === 0) {
       return null;
@@ -305,6 +312,7 @@ export class StationViewer {
     const loadedScenes = [];
     for (const url of urls) {
       try {
+        sendLogToVSC(`  [*] Attempting to load Collada model: ${url}`, 'log');
         const sceneTemplate = await this.loadColladaModel(url);
         if (sceneTemplate) {
           const scene = sceneTemplate.clone();
