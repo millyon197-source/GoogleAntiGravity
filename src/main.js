@@ -53,7 +53,7 @@ function initApp() {
   // 1. Initialize viewer
   viewer = new StationViewer(container, (index) => {
     if (index === null) {
-      progressToNextComponent();
+      // Do nothing: continue the component displayed and its orientation without stepping to next component
     } else {
       selectModule(index, false); // Clicked in 3D, select in UI list but don't focus camera (to avoid disorienting user)
     }

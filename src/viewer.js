@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { createProceduralModule, getModuleCategory, getFriendlyName } from './modules.js';
 import { DAE_REGISTRY } from './dae-registry.js';
+import { MACRO_TO_NAME_DB } from './modules-cost-db.js';
 
 function sendLogToVSC(msg, type = 'log') {
   if (type === 'warn') {
@@ -102,6 +103,11 @@ export class StationViewer {
     // Ambient fill light (cool nebula glow) - High Ambient
     const ambientLight = new THREE.AmbientLight(0x22294A, 5.0);
     this.scene.add(ambientLight);
+
+    // Camera headlight (omni light attached to camera to illuminate whatever side the camera is facing)
+    const cameraLight = new THREE.PointLight(0xffffff, 2.5, 4000);
+    this.camera.add(cameraLight);
+    this.scene.add(this.camera);
 
     // Planetary blue-indigo glow from below - Brightened
     const hemisphereLight = new THREE.HemisphereLight(0x3B4E8C, 0x060814, 2.0);
@@ -225,14 +231,23 @@ export class StationViewer {
       let moduleGroup = await this.loadModuleMesh(mod);
       let isDae = false;
       if (!moduleGroup) {
-        sendLogToVSC(`[!] DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
+        sendLogToVSC(`[!]Loading: ${friendlyName} DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
         moduleGroup = createProceduralModule(mod.macro, THREE);
+        const baseFriendlyName = MACRO_TO_NAME_DB[mod.macro] || friendlyName;
+        if (!baseFriendlyName.endsWith(' (Procedural)')) {
+          MACRO_TO_NAME_DB[mod.macro] = baseFriendlyName + ' (Procedural)';
+        }
       } else {
         isDae = true;
       }
 
       // Position coordinates (convert standard X4 coordinates if needed)
       moduleGroup.position.set(mod.position.x, mod.position.y, mod.position.z);
+
+      // Add omni light (PointLight) inside the component group to illuminate all sides
+      const omniLight = new THREE.PointLight(0xffffff, 2.5, 0, 1.0);
+      omniLight.position.set(0, 0, 0);
+      moduleGroup.add(omniLight);
 
       // Rotations are in degrees: yaw (Y), pitch (X), roll (Z)
       // Apply correct rotation order 'YXZ' which corresponds to X4's rotation sequence
@@ -258,7 +273,8 @@ export class StationViewer {
       completed++;
       if (loaderText) {
         const typeStr = isDae ? 'DAE' : 'Procedural';
-        loaderText.textContent = `Loaded: ${friendlyName} (${typeStr}) (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+        if(!isDae)
+          loaderText.textContent = `Loaded: ${friendlyName} (${typeStr}) (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 
@@ -269,6 +285,10 @@ export class StationViewer {
     loadedGroups.forEach(group => {
       this.modulesGroup.add(group);
     });
+
+    // Increase visual depth to maximum depth (far clipping plane) to avoid clipping large station plans
+    this.camera.far = 1000000;
+    this.camera.updateProjectionMatrix();
 
     // Hide the loader banner
     if (loaderBanner) {
@@ -284,35 +304,49 @@ export class StationViewer {
     let baseName = mod.macro.replace('_macro', '').toLowerCase();
     const origBaseName = baseName;
 
-    if (!DAE_REGISTRY[baseName] && baseName.startsWith('prod_')) {
-      const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir'];
-      for (const fac of factions) {
-        const prefix = `prod_${fac}_`;
-        if (baseName.startsWith(prefix)) {
-          const genName = baseName.replace(prefix, 'prod_gen_');
-          if (DAE_REGISTRY[genName]) {
-            baseName = genName;
-            break;
+    if (!DAE_REGISTRY[baseName]) {
+      const prefixes = ['prod_', 'buildmodule_', 'landmarks_'];
+      let foundGen = false;
+      for (const pref of prefixes) {
+        if (foundGen) break;
+        if (baseName.startsWith(pref)) {
+          const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir'];
+          for (const fac of factions) {
+            const prefix = `${pref}${fac}_`;
+            if (baseName.startsWith(prefix)) {
+              const genName = baseName.replace(prefix, `${pref}gen_`);
+              if (DAE_REGISTRY[genName]) {
+                baseName = genName;
+                foundGen = true;
+                break;
+              }
+            }
           }
         }
       }
     }
 
-    if (baseName !== origBaseName) {
-      sendLogToVSC(`[*] Translated production macro baseName: ${origBaseName} -> ${baseName}`, 'log');
-    }
+//    if (baseName !== origBaseName) {
+//      sendLogToVSC(`[*] Translated production macro baseName: ${origBaseName} -> ${baseName}`, 'log');
+//    }
 
     const urls = DAE_REGISTRY[baseName] || [];
-    sendLogToVSC(`[*] DAE urls for ${mod.macro} (baseName: ${baseName}): found ${urls.length} URLs`, 'log');
+    const uniqueUrls = [];
+    for (const url of urls) {
+      const fileName = url.substring(url.lastIndexOf('/') + 1).toLowerCase();
+        uniqueUrls.push(url);
+    }
 
-    if (urls.length === 0) {
+ //   sendLogToVSC(`[*] DAE urls for ${mod.macro} (baseName: ${baseName}): found ${urls.length} URLs )`, 'log');
+
+    if (uniqueUrls.length === 0) {
       return null;
     }
 
     const loadedScenes = [];
-    for (const url of urls) {
+    for (const url of uniqueUrls) {
       try {
-        sendLogToVSC(`  [*] Attempting to load Collada model: ${url}`, 'log');
+//        sendLogToVSC(`  [*] Attempting to load Collada model: ${url}`, 'log');
         const sceneTemplate = await this.loadColladaModel(url);
         if (sceneTemplate) {
           const scene = sceneTemplate.clone();
@@ -346,7 +380,7 @@ export class StationViewer {
                              parentName.includes('collision');
 
               if (isBBox) {
-                child.visible = false;
+                child.visible = false;    
               }
 
               // Process materials (handles both single material and array of materials)
@@ -715,7 +749,6 @@ export class StationViewer {
       this.selectionHelper.dispose();
       this.selectionHelper = null;
     }
-    this.resetCameraTarget();
     if (restoreGrid) {
       this.restoreFullPlanGrid();
     }

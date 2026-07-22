@@ -614,7 +614,7 @@ export const MODULES_COST_DB = {
     "energyCells": 592,
     "hullParts": 1087
   },
-  "prod_tel_swampplant_macro": {
+  "prod_tel_swampplants_macro": {
     "claytronics": 639,
     "energyCells": 1277,
     "hullParts": 2338
@@ -1400,7 +1400,7 @@ export const NAME_TO_MACRO_DB = {
   "teladi scanning array production": "prod_tel_scanningarrays_macro",
   "spaceweed production": "prod_tel_spaceweed_macro",
   "sunrise flower production": "prod_tel_sunriseflowers_macro",
-  "swamp plant production": "prod_tel_swampplant_macro",
+  "swamp plant production": "prod_tel_swampplants_macro",
   "teladianium production": "prod_tel_teladianium_macro",
   "teladi l container storage": "storage_tel_l_container_01_macro",
   "teladi m container storage": "storage_tel_m_container_01_macro",
@@ -1650,7 +1650,7 @@ export const MACRO_TO_NAME_DB = {
   "prod_tel_scanningarrays_macro": "Teladi Scanning Array Production",
   "prod_tel_spaceweed_macro": "Spaceweed Production",
   "prod_tel_sunriseflowers_macro": "Sunrise Flower Production",
-  "prod_tel_swampplant_macro": "Swamp Plant Production",
+  "prod_tel_swampplants_macro": "Swamp Plant Production",
   "prod_tel_teladianium_macro": "Teladianium Production",
   "storage_tel_l_container_01_macro": "Teladi L Container Storage",
   "storage_tel_m_container_01_macro": "Teladi M Container Storage",

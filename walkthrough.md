@@ -26,3 +26,11 @@ Finally, I updated the file [src/dae-registry.js](file:///d:/Ai/X4/GoogleAntiGra
 - Commented them out using double forward slashes (`// `).
 - **Commented Line Count**: **914** lines were commented out.
 - Verified that `src/dae-registry.js` remains syntactically valid.
+
+## Copying to assests1 & Logging to additionalCOH.txt
+
+I searched recursively for all `part_main-lod0.dae` files in [assets/structures/](file:///d:/Ai/X4/GoogleAntiGravity/assets/structures):
+- Verified if each file already existed under [assests1/](file:///d:/Ai/X4/GoogleAntiGravity/assests1).
+- Recreated missing subdirectories and copied **379** `part_main-lod0.dae` files to [assests1/structures/](file:///d:/Ai/X4/GoogleAntiGravity/assests1/structures).
+- Appended each copied web-style path (e.g., `/assests1/structures/.../part_main-lod0.dae`) to [additionalCOH.txt](file:///d:/Ai/X4/GoogleAntiGravity/additionalCOH.txt) formatted with CR/LF (`\r\n`) line endings.
+
