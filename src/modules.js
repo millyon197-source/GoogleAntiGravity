@@ -10,7 +10,7 @@ export const CATEGORY_COLORS = {
   storage: '#00B4D8',     // Bright Cyan/Blue
   habitation: '#9D4EDD',  // Purple
   defense: '#E63946',     // Red
-  structure: '#8D99AE'    // Slate Grey
+  structure: '#00A86B'    // Jade Green
 };
 
 // Nice user-friendly names for categories
@@ -97,7 +97,7 @@ function initMaterials(THREE) {
  */
 export function getModuleCategory(macroName) {
   const name = macroName.toLowerCase();
-  if (name.includes('dock') || name.includes('pier')) {
+  if (name.includes('dock') || name.includes('pier') || name.includes('buildmodule') || name.includes('equip_') || name.includes('ships_')) {
     return 'docks';
   } else if (name.includes('prod_') || name.includes('factory') || name.includes('farm') || name.includes('refined')) {
     return 'production';
@@ -105,7 +105,7 @@ export function getModuleCategory(macroName) {
     return 'storage';
   } else if (name.includes('hab_') || name.includes('habitation') || name.includes('population') || name.includes('crew')) {
     return 'habitation';
-  } else if (name.includes('defense') || name.includes('def_') || name.includes('disc') || name.includes('bridge_admin') || name.includes('platform_defence')) {
+  } else if (name.includes('defense') || name.includes('defence') || name.includes('def_') || name.includes('disc') || name.includes('claim') || name.includes('tube') || name.includes('bridge_admin') || name.includes('platform_defence')) {
     return 'defense';
   } else {
     return 'structure';

@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
-import { createProceduralModule, getModuleCategory, getFriendlyName } from './modules.js';
+import { MeshLoader } from './mesh-loader.js';
+import { createProceduralModule, getModuleCategory, getFriendlyName, CATEGORY_COLORS } from './modules.js';
 import DAE_HASH_TABLE from '../dae_hash_table.json';
 import { MACRO_TO_NAME_DB } from './modules-cost-db.js';
 
@@ -92,20 +93,25 @@ export class StationViewer {
     this.selectionHelper = null;
     this.starfield = null;
     this.gridHelper = null;
+    this.majorGridHelper = null;
     this.plotBounds = null;
+    this.orientationHelper = null;
 
     this.animationFrameId = null;
     this.clock = new THREE.Clock();
 
     // Configuration settings
     this.showGrid = true;
+    this.showOrientation = false;
     this.wireframeMode = false;
     this.ghostMode = false;
     this.hiddenMacros = new Set();
     this.currentPlan = null;
     this.currentBuildProgressPercentage = 100;
     this.highlightHelpers = [];
+    this.isColorized = true;
     this.colladaLoader = new ColladaLoader();
+    this.meshLoader = new MeshLoader('./src/mesh-worker.js');
     this.colladaCache = new Map();
 
     this.init();
@@ -118,7 +124,6 @@ export class StationViewer {
     // 1. Scene setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x060814); // Deep space blue/black
-    this.scene.fog = new THREE.FogExp2(0x060814, 0.00015); // Subtle space fog
 
     // 2. Camera setup
     this.camera = new THREE.PerspectiveCamera(60, width / height, 1, 30000);
@@ -139,7 +144,7 @@ export class StationViewer {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
-    this.controls.maxDistance = 10000;
+    this.controls.maxDistance = 2000000;
     this.controls.minDistance = 10;
 
     // 5. Lighting
@@ -154,6 +159,16 @@ export class StationViewer {
     // 9. Event Listeners
     window.addEventListener('resize', this.onWindowResize.bind(this));
     this.renderer.domElement.addEventListener('pointerdown', this.onPointerDown.bind(this));
+    this.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      console.warn('[!] WebGL context lost. Attempting restore...');
+    });
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+      console.log('[*] WebGL context restored.');
+      if (this.currentPlan) {
+        this.loadStationPlan(this.currentPlan);
+      }
+    });
 
     // 10. Start Animation Loop
     this.animate();
@@ -164,8 +179,8 @@ export class StationViewer {
     const ambientLight = new THREE.AmbientLight(0x22294A, 5.0);
     this.scene.add(ambientLight);
 
-    // Camera headlight (omni light attached to camera to illuminate whatever side the camera is facing)
-    const cameraLight = new THREE.PointLight(0xffffff, 2.5, 4000);
+    // Camera headlight (directional light attached to camera with zero distance falloff)
+    const cameraLight = new THREE.DirectionalLight(0xffffff, 1.5);
     this.camera.add(cameraLight);
     this.scene.add(this.camera);
 
@@ -175,16 +190,16 @@ export class StationViewer {
 
     // Primary solar key light (intense white-orange star light) - Brightened
     const sunLight = new THREE.DirectionalLight(0xFFEADB, 3.8);
-    sunLight.position.set(1000, 800, 1000);
+    sunLight.position.set(100000, 80000, 100000);
     sunLight.castShadow = true;
     
     // Configure shadow map size for high quality
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 100;
-    sunLight.shadow.camera.far = 5000;
+    sunLight.shadow.camera.far = 500000;
     
-    const d = 1000;
+    const d = 50000;
     sunLight.shadow.camera.left = -d;
     sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d;
@@ -194,20 +209,65 @@ export class StationViewer {
 
     // Opposing fill light to brighten the dark shadow sides of the modules
     const fillLight = new THREE.DirectionalLight(0x6B7DFF, 4.0);
-    fillLight.position.set(-1000, -800, -1000);
+    fillLight.position.set(-100000, -80000, -100000);
     this.scene.add(fillLight);
   }
 
+
+  setMajorGridSize(sizeVal, isExplicit = true) {
+    this.majorGridSize = parseInt(sizeVal, 10);
+    this.isUserGridSizeExplicit = isExplicit;
+    this.showGrid = (this.majorGridSize > 0);
+    this.restoreFullPlanGrid();
+  }
+
+  createGridLayer(gridSize, step, color, opacity, yOffset, renderOrder, centerX, gridY, centerZ) {
+    const divisions = Math.round(gridSize / step);
+    const grid = new THREE.GridHelper(gridSize, divisions, color, color);
+    grid.position.set(centerX, gridY + yOffset, centerZ);
+    grid.visible = this.showGrid;
+    grid.renderOrder = renderOrder;
+
+    const configureMaterial = (mat) => {
+      mat.depthWrite = false;
+      mat.transparent = true;
+      mat.opacity = opacity;
+      mat.polygonOffset = true;
+      mat.polygonOffsetFactor = -renderOrder;
+      mat.polygonOffsetUnits = -renderOrder * 2;
+    };
+
+    if (Array.isArray(grid.material)) {
+      grid.material.forEach(configureMaterial);
+    } else {
+      configureMaterial(grid.material);
+    }
+
+    this.scene.add(grid);
+    if (!this.gridLayers) this.gridLayers = [];
+    this.gridLayers.push(grid);
+    return grid;
+  }
 
   createGridAndBounds() {
     this.rebuildGridAndBounds(3000, 3000, 3000, 0, 0, 0, -50);
   }
 
   rebuildGridAndBounds(sizeX, sizeZ, sizeY, centerX, centerY, centerZ, gridY) {
-    if (this.gridHelper) {
-      this.scene.remove(this.gridHelper);
-      this.gridHelper.dispose();
+    // Clean up previous grid layers
+    if (this.gridLayers) {
+      this.gridLayers.forEach(grid => {
+        this.scene.remove(grid);
+        grid.geometry.dispose();
+        if (Array.isArray(grid.material)) {
+          grid.material.forEach(m => m.dispose());
+        } else {
+          grid.material.dispose();
+        }
+      });
     }
+    this.gridLayers = [];
+
     if (this.plotBounds) {
       this.scene.remove(this.plotBounds);
       this.plotBounds.geometry.dispose();
@@ -216,26 +276,216 @@ export class StationViewer {
       } else {
         this.plotBounds.material.dispose();
       }
+      this.plotBounds = null;
     }
 
-    // 1. Grid Helper
-    const gridSize = Math.max(sizeX, sizeZ, 80);
-    const gridDivisions = Math.max(10, Math.floor(gridSize / 100));
-    this.gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x3B4E8C, 0x1A204C);
-    this.gridHelper.position.set(centerX, gridY, centerZ);
-    this.gridHelper.visible = this.showGrid;
-    this.scene.add(this.gridHelper);
+    // Evaluate estimated bounding envelope if user hasn't explicitly locked grid size
+    if (!this.isUserGridSizeExplicit && this.majorGridSize !== 0) {
+      const maxDim = Math.max(sizeX, sizeZ, sizeY);
+      if (sizeX > 10000 || sizeY > 10000 || sizeZ > 10000) {
+        this.majorGridSize = 5000;
+      } else if (maxDim > 5000) {
+        this.majorGridSize = 1000;
+      } else {
+        this.majorGridSize = 500;
+      }
 
-    // 2. Plot Bounds
+      // Sync UI selector element
+      if (typeof document !== 'undefined') {
+        const gridSizeSelector = document.getElementById('grid-size-selector');
+        if (gridSizeSelector) {
+          gridSizeSelector.value = this.majorGridSize.toString();
+        }
+      }
+    }
+
+    if (this.majorGridSize === undefined) {
+      this.majorGridSize = 500;
+    }
+
+    if (this.majorGridSize === 0 || !this.showGrid) {
+      return;
+    }
+
+    const selectedStep = this.majorGridSize || 500;
+    const maxDim = Math.max(sizeX, sizeZ, selectedStep * 2, 1000);
+    const gridSize = Math.ceil(maxDim / selectedStep) * selectedStep;
+
+    if (selectedStep === 5000) {
+      // 5000m Major (Selected Boldest)
+      this.createGridLayer(gridSize, 5000, 0x00F5FF, 0.85, 0.40, 4, centerX, gridY, centerZ);
+      // 1000m Sub-Grid (Less intense)
+      this.createGridLayer(gridSize, 1000, 0x3B6FA5, 0.55, 0.25, 3, centerX, gridY, centerZ);
+      // 500m Sub-Grid (Lower intensity)
+      this.createGridLayer(gridSize, 500, 0x2E4070, 0.40, 0.10, 2, centerX, gridY, centerZ);
+      // 100m Minor Grid (Least value)
+      this.createGridLayer(gridSize, 100, 0x1E2F56, 0.25, 0.00, 1, centerX, gridY, centerZ);
+    } else if (selectedStep === 1000) {
+      // 1000m Major (Selected Boldest)
+      this.createGridLayer(gridSize, 1000, 0x00F5FF, 0.85, 0.30, 3, centerX, gridY, centerZ);
+      // 500m Sub-Grid (Less intense)
+      this.createGridLayer(gridSize, 500, 0x3B6FA5, 0.55, 0.15, 2, centerX, gridY, centerZ);
+      // 100m Minor Grid (Least value)
+      this.createGridLayer(gridSize, 100, 0x1E2F56, 0.30, 0.00, 1, centerX, gridY, centerZ);
+    } else {
+      // 500m Major (Selected Boldest)
+      this.createGridLayer(gridSize, 500, 0x00F5FF, 0.85, 0.20, 2, centerX, gridY, centerZ);
+      // 100m Minor Grid (Least value)
+      this.createGridLayer(gridSize, 100, 0x2E4070, 0.45, 0.00, 1, centerX, gridY, centerZ);
+    }
+
+    if (this.orientationHelper) {
+      this.scene.remove(this.orientationHelper);
+      this.orientationHelper.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+      this.orientationHelper = null;
+    }
+
+    // 3. Plot Bounds Box
     const boundsGeo = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
     const edges = new THREE.EdgesGeometry(boundsGeo);
-    this.plotBounds = new THREE.LineSegments(
-      edges,
-      new THREE.LineBasicMaterial({ color: 0x1E295D, transparent: true, opacity: 0.15 })
-    );
+    const boundsMat = new THREE.LineBasicMaterial({
+      color: 0x00F5FF,
+      transparent: true,
+      opacity: 0.25,
+      depthWrite: false
+    });
+    this.plotBounds = new THREE.LineSegments(edges, boundsMat);
     this.plotBounds.position.set(centerX, centerY, centerZ);
     this.plotBounds.visible = this.showGrid;
+    this.plotBounds.renderOrder = 5;
     this.scene.add(this.plotBounds);
+
+    // 4. Doubled 3-Axis 3D Orientation Helper just outside the Front-Right Bounding Box Corner
+    // Doubled scale (min 1000m, max 3600m)
+    const maxBoundDim = Math.max(sizeX, sizeZ, sizeY);
+    const arrowLen = Math.min(3600, Math.max(1000, maxBoundDim * 0.30));
+
+    const cornerX = centerX + sizeX / 2 + arrowLen * 0.40;
+    const cornerZ = centerZ + sizeZ / 2 + arrowLen * 0.40;
+    const cornerY = gridY + 15;
+
+    this.orientationHelper = new THREE.Group();
+    this.orientationHelper.position.set(cornerX, cornerY, cornerZ);
+
+    const setupArrowMat = (arrow) => {
+      if (arrow.line && arrow.line.material) {
+        arrow.line.material.depthWrite = false;
+        arrow.line.material.transparent = true;
+      }
+      if (arrow.cone && arrow.cone.material) {
+        arrow.cone.material.depthWrite = false;
+        arrow.cone.material.transparent = true;
+      }
+      arrow.renderOrder = 6;
+    };
+
+    // 1) Forward Direction Arrow (+Z) - Bold Cyan
+    const fwdDir = new THREE.Vector3(0, 0, 1);
+    const fwdArrow = new THREE.ArrowHelper(
+      fwdDir,
+      new THREE.Vector3(0, 0, 0),
+      arrowLen,
+      0x00F5FF,
+      arrowLen * 0.30,
+      arrowLen * 0.15
+    );
+    setupArrowMat(fwdArrow);
+    this.orientationHelper.add(fwdArrow);
+
+    const fwdLabel = this.createDirectionLabelSprite('+Z (FORWARD)', '#00F5FF');
+    fwdLabel.position.set(0, arrowLen * 0.30, arrowLen * 1.20);
+    fwdLabel.scale.set(arrowLen * 1.0, arrowLen * 0.35, 1);
+    fwdLabel.renderOrder = 7;
+    this.orientationHelper.add(fwdLabel);
+
+    // 2) Right Direction Arrow (+X) - Vibrant Amber/Orange
+    const rightDir = new THREE.Vector3(1, 0, 0);
+    const rightArrow = new THREE.ArrowHelper(
+      rightDir,
+      new THREE.Vector3(0, 0, 0),
+      arrowLen,
+      0xFF9F1C,
+      arrowLen * 0.30,
+      arrowLen * 0.15
+    );
+    setupArrowMat(rightArrow);
+    this.orientationHelper.add(rightArrow);
+
+    const rightLabel = this.createDirectionLabelSprite('+X (RIGHT)', '#FF9F1C');
+    rightLabel.position.set(arrowLen * 1.20, arrowLen * 0.30, 0);
+    rightLabel.scale.set(arrowLen * 1.0, arrowLen * 0.35, 1);
+    rightLabel.renderOrder = 7;
+    this.orientationHelper.add(rightLabel);
+
+    // 3) Up Direction Arrow (+Y) - Emerald Green
+    const upDir = new THREE.Vector3(0, 1, 0);
+    const upArrow = new THREE.ArrowHelper(
+      upDir,
+      new THREE.Vector3(0, 0, 0),
+      arrowLen,
+      0x00FF88,
+      arrowLen * 0.30,
+      arrowLen * 0.15
+    );
+    setupArrowMat(upArrow);
+    this.orientationHelper.add(upArrow);
+
+    const upLabel = this.createDirectionLabelSprite('+Y (UP)', '#00FF88');
+    upLabel.position.set(0, arrowLen * 1.20, 0);
+    upLabel.scale.set(arrowLen * 1.0, arrowLen * 0.35, 1);
+    upLabel.renderOrder = 7;
+    this.orientationHelper.add(upLabel);
+
+    // Ground Anchor Ring & Center Node
+    const ringGeo = new THREE.RingGeometry(arrowLen * 0.12, arrowLen * 0.20, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x00F5FF,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = Math.PI / 2;
+    ringMesh.renderOrder = 6;
+    this.orientationHelper.add(ringMesh);
+
+    const nodeGeo = new THREE.SphereGeometry(arrowLen * 0.09, 16, 16);
+    const nodeMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.95, depthWrite: false });
+    const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+    nodeMesh.renderOrder = 6;
+    this.orientationHelper.add(nodeMesh);
+
+    this.orientationHelper.visible = this.showGrid && this.showOrientation;
+    this.scene.add(this.orientationHelper);
+  }
+
+  createDirectionLabelSprite(text, colorStr) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(4, 8, 20, 0.92)';
+    ctx.strokeStyle = colorStr;
+    ctx.lineWidth = 8;
+    ctx.fillRect(8, 8, 496, 112);
+    ctx.strokeRect(8, 8, 496, 112);
+    ctx.font = 'Bold 46px monospace';
+    ctx.fillStyle = colorStr;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 256, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+    const sprite = new THREE.Sprite(spriteMat);
+    return sprite;
   }
 
   restoreFullPlanGrid() {
@@ -279,7 +529,7 @@ export class StationViewer {
     const total = planData.modules.length;
     let completed = 0;
 
-    const loadPromises = planData.modules.map(async (mod) => {
+    for (const mod of planData.modules) {
       const friendlyName = getFriendlyName(mod.macro);
       
       // Update loading text when module loading starts or progresses
@@ -302,19 +552,14 @@ export class StationViewer {
       }
 
       // Position coordinates (convert standard X4 coordinates if needed)
-      moduleGroup.position.set(mod.position.x, mod.position.y, mod.position.z);
-
-      // Add omni light (PointLight) inside the component group to illuminate all sides
-      const omniLight = new THREE.PointLight(0xffffff, 2.5, 0, 1.0);
-      omniLight.position.set(0, 0, 0);
-      moduleGroup.add(omniLight);
+      moduleGroup.position.set(mod.position.x, mod.position.y, -mod.position.z);
 
       // Rotations are in degrees: yaw (Y), pitch (X), roll (Z)
       // Apply correct rotation order 'YXZ' which corresponds to X4's rotation sequence
       moduleGroup.rotation.order = 'YXZ';
       moduleGroup.rotation.y = mod.rotation.yaw * Math.PI / 180;
-      moduleGroup.rotation.x = mod.rotation.pitch * Math.PI / 180;
-      moduleGroup.rotation.z = mod.rotation.roll * Math.PI / 180;
+      moduleGroup.rotation.x = (mod.rotation.pitch + 180) * Math.PI / 180;
+      moduleGroup.rotation.z = (mod.rotation.roll + 180) * Math.PI / 180;
 
       // Save references in mesh userData
       moduleGroup.userData.index = mod.index;
@@ -330,6 +575,8 @@ export class StationViewer {
         }
       });
 
+      this.modulesGroup.add(moduleGroup);
+
       completed++;
       if (loaderText) {
         const typeStr = isDae ? 'DAE' : 'Procedural';
@@ -337,14 +584,7 @@ export class StationViewer {
           loaderText.textContent = `Loaded: ${friendlyName} (${typeStr}) (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
         await new Promise(resolve => setTimeout(resolve, 0));
       }
-
-      return moduleGroup;
-    });
-
-    const loadedGroups = await Promise.all(loadPromises);
-    loadedGroups.forEach(group => {
-      this.modulesGroup.add(group);
-    });
+    }
 
     // Increase visual depth to maximum depth (far clipping plane) to avoid clipping large station plans
     this.camera.far = 1000000;
@@ -358,11 +598,20 @@ export class StationViewer {
     // Auto-center camera to fit the loaded station bounds
     this.fitCameraToStation();
     this.restoreFullPlanGrid();
+
+    if (this.isColorized) {
+      this.setColorized(true);
+    }
   }
 
   async loadModuleMesh(mod) {
     let baseName = mod.macro.replace('_macro', '').toLowerCase();
     const origBaseName = baseName;
+
+    // Replace buildmodule_gen_equip_* and buildmodule_gen_ships_* with _arg_ key lookups
+    if (baseName.startsWith('buildmodule_gen_equip_') || baseName.startsWith('buildmodule_gen_ships_')) {
+      baseName = baseName.replace('buildmodule_gen_', 'buildmodule_arg_');
+    }
 
     let urls = lookupDaeUrls(baseName);
 
@@ -376,13 +625,18 @@ export class StationViewer {
           for (const fac of factions) {
             const prefix = `${pref}${fac}_`;
             if (baseName.startsWith(prefix)) {
-              const genName = baseName.replace(prefix, `${pref}gen_`);
-              const genUrls = lookupDaeUrls(genName);
-              if (genUrls.length > 0) {
-                baseName = genName;
-                urls = genUrls;
-                foundGen = true;
-                break;
+              const candidateNames = [
+                baseName.replace(prefix, `${pref}gen_`),
+                baseName.replace(prefix, `${pref}arg_`)
+              ];
+              for (const candName of candidateNames) {
+                const candUrls = lookupDaeUrls(candName);
+                if (candUrls.length > 0) {
+                  baseName = candName;
+                  urls = candUrls;
+                  foundGen = true;
+                  break;
+                }
               }
             }
           }
@@ -404,8 +658,19 @@ export class StationViewer {
     const loadedScenes = [];
     for (const url of uniqueUrls) {
       try {
-//        sendLogToVSC(`  [*] Attempting to load Collada model: ${url}`, 'log');
-        const sceneTemplate = await this.loadColladaModel(url);
+        let sceneTemplate = null;
+        const binUrl = url.replace(/\.dae$/i, '.bin');
+        const jsonUrl = url.replace(/\.dae$/i, '.json');
+
+        try {
+          // Fast-path: Load Vulkan-aligned binary blob via MeshWorker
+          sceneTemplate = await this.loadBinaryModel(binUrl, jsonUrl);
+        } catch (binErr) {
+          // Fallback to ColladaLoader using .dae files
+          sendLogToVSC(`[*] Falling back to ColladaLoader for ${url}`, 'log');
+          sceneTemplate = await this.loadColladaModel(url);
+        }
+
         if (sceneTemplate) {
           const scene = sceneTemplate.clone();
           scene.scale.set(1, 1, 1);
@@ -525,6 +790,56 @@ export class StationViewer {
     return group;
   }
 
+  loadBinaryModel(binUrl, jsonUrl) {
+    if (this.colladaCache.has(binUrl)) {
+      return this.colladaCache.get(binUrl);
+    }
+    const loadPromise = (async () => {
+      const meshData = await this.meshLoader.loadMesh(binUrl, jsonUrl);
+
+      const geometry = new THREE.BufferGeometry();
+      const strideFloats = 8;
+      const interleavedBuffer = new THREE.InterleavedBuffer(meshData.vertexBuffer, strideFloats);
+
+      geometry.setAttribute('position', new THREE.InterleavedBufferAttribute(interleavedBuffer, 3, 0, false));
+      geometry.setAttribute('normal', new THREE.InterleavedBufferAttribute(interleavedBuffer, 3, 3, false));
+      geometry.setAttribute('uv', new THREE.InterleavedBufferAttribute(interleavedBuffer, 2, 6, false));
+      geometry.setIndex(new THREE.BufferAttribute(meshData.indexBuffer, 1));
+
+      if (meshData.metadata && meshData.metadata.boundingBox) {
+        const min = meshData.metadata.boundingBox.min;
+        const max = meshData.metadata.boundingBox.max;
+        geometry.boundingBox = new THREE.Box3(
+          new THREE.Vector3(min[0], min[1], min[2]),
+          new THREE.Vector3(max[0], max[1], max[2])
+        );
+        geometry.boundingSphere = new THREE.Sphere();
+        geometry.boundingBox.getBoundingSphere(geometry.boundingSphere);
+      } else {
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+      }
+
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x8D99AE,
+        roughness: 0.6,
+        metalness: 0.2,
+        side: THREE.DoubleSide
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      const group = new THREE.Group();
+      group.add(mesh);
+      return group;
+    })();
+
+    this.colladaCache.set(binUrl, loadPromise);
+    return loadPromise;
+  }
+
   loadColladaModel(url) {
     if (this.colladaCache.has(url)) {
       return this.colladaCache.get(url);
@@ -624,8 +939,11 @@ export class StationViewer {
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
     cameraZ *= 1.35; // Add pad offset factor
 
+    // Dynamically adjust controls maxDistance so the user can zoom out as far as needed
+    this.controls.maxDistance = Math.max(50000, cameraZ * 4);
+
     // Keep distance within reasonable boundaries
-    cameraZ = Math.max(120, Math.min(cameraZ, 8000));
+    cameraZ = Math.max(120, cameraZ);
 
     this.camera.position.set(center.x + cameraZ * 0.7, center.y + cameraZ * 0.5, center.z + cameraZ * 0.7);
     this.controls.update();
@@ -647,6 +965,43 @@ export class StationViewer {
     }
 
     return box.getSize(new THREE.Vector3());
+  }
+
+  setColorized(enabled) {
+    this.isColorized = !!enabled;
+    if (!this.modulesGroup) return;
+
+    if (!this.categoryMaterials) {
+      this.categoryMaterials = {};
+      for (const cat in CATEGORY_COLORS) {
+        this.categoryMaterials[cat] = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(CATEGORY_COLORS[cat]),
+          roughness: 0.4,
+          metalness: 0.2
+        });
+      }
+    }
+
+    this.modulesGroup.children.forEach(group => {
+      const macro = group.userData.macro;
+      const category = getModuleCategory(macro);
+      const coloredMat = this.categoryMaterials[category] || this.categoryMaterials['structure'];
+
+      group.traverse(child => {
+        if (child.isMesh) {
+          if (this.isColorized) {
+            if (!child.userData.originalMaterial) {
+              child.userData.originalMaterial = child.material;
+            }
+            child.material = coloredMat;
+          } else {
+            if (child.userData.originalMaterial) {
+              child.material = child.userData.originalMaterial;
+            }
+          }
+        }
+      });
+    });
   }
 
   fitCameraToSelection(categoryFilter, macroFilter = null) {
@@ -694,7 +1049,7 @@ export class StationViewer {
     const fov = this.camera.fov * (Math.PI / 180);
     let cameraDist = Math.abs(maxDim / 2 / Math.tan(fov / 2));
     cameraDist *= 1.35; // pad factor
-    cameraDist = Math.max(100, Math.min(cameraDist, 8000));
+    cameraDist = Math.max(100, cameraDist);
 
     // Smoothly transition camera position and controls target
     const direction = new THREE.Vector3().subVectors(this.camera.position, this.controls.target).normalize();
@@ -754,6 +1109,17 @@ export class StationViewer {
     }
 
     return box.getSize(new THREE.Vector3());
+  }
+
+  getModuleCalculatedRotation(index) {
+    const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
+    if (!targetModule) return null;
+
+    const yawDeg = Math.round(targetModule.rotation.y * 180 / Math.PI);
+    const pitchDeg = Math.round(targetModule.rotation.x * 180 / Math.PI);
+    const rollDeg = Math.round(targetModule.rotation.z * 180 / Math.PI);
+
+    return { yaw: yawDeg, pitch: pitchDeg, roll: rollDeg };
   }
 
   selectModuleByIndex(index, resizeGridAndBounds = false) {
@@ -854,7 +1220,7 @@ export class StationViewer {
     const fov = this.camera.fov * (Math.PI / 180);
     let cameraDist = Math.abs(maxDim / 2 / Math.tan(fov / 2));
     cameraDist *= 1.35; // pad factor
-    cameraDist = Math.max(100, Math.min(cameraDist, 8000)); // clamp safety
+    cameraDist = Math.max(100, cameraDist); // clamp safety
 
     const duration = 800; // ms
     const startCam = this.camera.position.clone();
@@ -1024,8 +1390,18 @@ export class StationViewer {
 
   toggleGrid(enabled) {
     this.showGrid = enabled;
-    this.gridHelper.visible = enabled;
-    this.plotBounds.visible = enabled;
+    if (this.gridLayers) {
+      this.gridLayers.forEach(grid => { grid.visible = enabled; });
+    }
+    if (this.plotBounds) this.plotBounds.visible = enabled;
+    if (this.orientationHelper) this.orientationHelper.visible = enabled && this.showOrientation;
+  }
+
+  toggleOrientation(enabled) {
+    this.showOrientation = enabled;
+    if (this.orientationHelper) {
+      this.orientationHelper.visible = enabled && this.showGrid;
+    }
   }
 
   toggleAutoRotate(enabled) {

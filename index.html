@@ -28,6 +28,12 @@
             <span class="checkbox-text">Clear Panels</span>
           </label>
         </div>
+        <div class="clear-checkbox-container">
+          <label for="colorized-checkbox" class="cyber-checkbox-label" title="Colorize components by their module group category color">
+            <input type="checkbox" id="colorized-checkbox" checked>
+            <span class="checkbox-text">Colorized</span>
+          </label>
+        </div>
         <div class="select-wrapper">
           <label for="sample-selector" class="sr-only">Choose Plan</label>
           <select id="sample-selector">
@@ -120,7 +126,7 @@
               <div class="stat-box category-select-btn" id="stat-box-structure" data-category="structure" style="border-left-color: #8D99AE;">
                 <div class="stat-box-header">
                   <span class="stat-val" id="stat-structure">0</span>
-                  <span class="stat-lbl" style="color: #8D99AE;">Structures</span>
+                  <span class="stat-lbl" style="color: #00A86B;">Structures</span>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-structure"></div>
               </div>
@@ -142,6 +148,7 @@
           <div class="card-header">
             <span class="header-dot"></span>
             <h2>Total Construction Materials</h2>
+            <h4>no shields or turrets</h4>
           </div>
           <div class="card-body" id="resources-list-container">
             <!-- Programmatically populated dynamic list of construction resources -->
@@ -178,10 +185,15 @@
 
         <!-- Float Control: Scene Controls -->
         <div class="floating-hub scene-toggles">
-          <label class="toggle-control" title="Show Plot Grid Boundaries">
-            <input type="checkbox" id="toggle-grid" checked>
-            <span class="toggle-label">Plot Grid</span>
-          </label>
+          <div class="toggle-control grid-selector-wrapper" title="Select Major Plot Grid Size (500m, 1000m, 5000m)">
+            <label for="grid-size-selector" class="toggle-label">Grid:</label>
+            <select id="grid-size-selector" class="cyber-select-sm">
+              <option value="500" selected>500m</option>
+              <option value="1000">1000m</option>
+              <option value="5000">5000m</option>
+              <option value="0">Off</option>
+            </select>
+          </div>
           <label class="toggle-control" title="View Wireframe Render">
             <input type="checkbox" id="toggle-wireframe">
             <span class="toggle-label">Wireframe</span>
@@ -189,6 +201,10 @@
           <label class="toggle-control" title="Auto-Rotate Camera View">
             <input type="checkbox" id="toggle-autorotate">
             <span class="toggle-label">Rotate</span>
+          </label>
+          <label class="toggle-control" title="Show/Hide 3D Orientation Axes">
+            <input type="checkbox" id="toggle-orientation">
+            <span class="toggle-label">Orientation</span>
           </label>
         </div>
 

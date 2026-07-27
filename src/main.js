@@ -19,8 +19,21 @@ const RESOURCE_METADATA = {
   turretComponents: { name: 'Turret Components', desc: 'Defensive weapons components', colorClass: 'text-amber' },
   advancedElectronics: { name: 'Advanced Electronics', desc: 'Targeting and sensor computers', colorClass: 'text-purple' },
   water: { name: 'Water', desc: 'Life support fluid (Boron tech)', colorClass: 'text-cyan' },
-  energyCells: { name: 'Energy Cells', desc: 'Reactor and assembly power', colorClass: 'text-amber' }
+  energyCells: { name: 'Energy Cells', desc: 'Reactor and assembly power', colorClass: 'text-amber' },
+  fieldCoils: { name: 'Field Coils', desc: 'Magnetic field generation coils', colorClass: 'text-cyan' },
+  quantumTubes: { name: 'Quantum Tubes', desc: 'Sub-atomic conduit channels', colorClass: 'text-purple' },
+  microchips: { name: 'Microchips', desc: 'Integrated logic processors', colorClass: 'text-amber' },
+  graphene: { name: 'Graphene', desc: 'Ultra-thin carbon lattice', colorClass: 'text-cyan' },
+  siliconWafers: { name: 'Silicon Wafers', desc: 'Refined silicon substrate', colorClass: 'text-purple' },
+  smartChips: { name: 'Smart Chips', desc: 'Autonomous sub-routines', colorClass: 'text-amber' },
+  advancedComposites: { name: 'Advanced Composites', desc: 'Reinforced hull plating', colorClass: 'text-cyan' }
 };
+
+function getResourceMetadata(key) {
+  if (RESOURCE_METADATA[key]) return RESOURCE_METADATA[key];
+  const name = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  return { name, desc: 'Station construction component', colorClass: 'text-cyan' };
+}
 
 
 let viewer = null;
@@ -140,19 +153,8 @@ function calculateAndRenderStats(plan) {
     structure: { count: 0, macros: {} }
   };
 
-  // Resource totals initialized to 0
-  const totalResources = {
-    hullParts: 0,
-    claytronics: 0,
-    computronicSubstrate: 0,
-    siliconCarbide: 0,
-    metallicMicrolattice: 0,
-    shieldComponents: 0,
-    turretComponents: 0,
-    advancedElectronics: 0,
-    water: 0,
-    energyCells: 0
-  };
+  // Resource totals initialized dynamically
+  const totalResources = {};
 
   modules.forEach(mod => {
     const cat = getModuleCategory(mod.macro);
@@ -163,9 +165,9 @@ function calculateAndRenderStats(plan) {
 
     if (!excludedMacros.has(mod.macro)) {
       const costs = estimateModuleCosts(mod.macro);
-      for (const key in totalResources) {
-        if (costs[key] !== undefined) {
-          totalResources[key] += costs[key];
+      for (const key in costs) {
+        if (costs[key] > 0) {
+          totalResources[key] = (totalResources[key] || 0) + costs[key];
         }
       }
     }
@@ -283,28 +285,21 @@ function calculateAndRenderStats(plan) {
     }
   }
 
-  // Update resources dynamically (hiding ones that are 0 to keep view clean)
+  // Update resources dynamically
   const container = document.getElementById('resources-list-container');
   if (container) {
     container.innerHTML = '';
-    
-    const orderedKeys = [
-      'hullParts', 'claytronics', 'computronicSubstrate', 
-      'siliconCarbide', 'metallicMicrolattice', 'shieldComponents', 
-      'turretComponents', 'advancedElectronics', 'water', 'energyCells'
-    ];
-
     let hasAnyCosts = false;
 
-    orderedKeys.forEach(key => {
+    for (const key in totalResources) {
       const amount = totalResources[key];
       if (amount > 0) {
         hasAnyCosts = true;
-        const meta = RESOURCE_METADATA[key];
+        const meta = getResourceMetadata(key);
         
         const card = document.createElement('div');
         const colorClass = meta.colorClass;
-        const themeColor = colorClass.split('-')[1]; // get cyan, purple, or amber
+        const themeColor = colorClass.split('-')[1] || 'cyan';
         card.className = `resource-component-card border-${themeColor}`;
         card.innerHTML = `
           <span class="res-name">${meta.name}</span>
@@ -313,7 +308,7 @@ function calculateAndRenderStats(plan) {
         `;
         container.appendChild(card);
       }
-    });
+    }
 
     if (!hasAnyCosts) {
       container.innerHTML = `<div class="placeholder-content" style="height: auto; padding: 10px;"><p>No construction resources estimated for this plan.</p></div>`;
@@ -725,18 +720,21 @@ function selectClosestCategoryModuleToCenter(category) {
   }
 }
 
+function clearPersistentHighlights() {
+  // Clear persistent highlights in Component Visibility
+  document.querySelectorAll('.visibility-row.selected-persistent, .visibility-cat-header.selected-persistent')
+    .forEach(el => el.classList.remove('selected-persistent'));
+
+  // Clear persistent highlights in Structure Analysis
+  document.querySelectorAll('.stat-box.selected-persistent, .stat-macro-item.selected-persistent')
+    .forEach(el => el.classList.remove('selected-persistent'));
+}
+
 function scrollAndHighlightLeftCategory(category) {
   const statBox = document.getElementById(`stat-box-${category}`);
-  const scrollContainer = document.querySelector('.stats-card .card-body');
-  
-  if (statBox && scrollContainer) {
-    // Smooth scroll stat box to the top of scroll container
-    statBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
-    // Add glowing outline pulse highlight
+  if (statBox) {
+    statBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     statBox.classList.add('reveal-highlight');
-    
-    // Remove highlight class after animation finishes
     setTimeout(() => {
       statBox.classList.remove('reveal-highlight');
     }, 1500);
@@ -746,47 +744,18 @@ function scrollAndHighlightLeftCategory(category) {
 function scrollAndHighlightLeftMacro(macro) {
   const cat = getModuleCategory(macro);
   const parentCard = document.getElementById(`stat-box-${cat}`);
-  const leftScrollContainer = document.querySelector('.stats-card .card-body');
   
-  if (parentCard && leftScrollContainer) {
-    const containerHeight = leftScrollContainer.clientHeight;
-    const targetTop = parentCard.offsetTop;
-    const targetHeight = parentCard.offsetHeight;
-    const scrollTarget = targetTop - (containerHeight / 2) + (targetHeight / 2);
-    
-    leftScrollContainer.scrollTo({
-      top: scrollTarget,
-      behavior: 'smooth'
-    });
-    
-    // Add glowing outline pulse highlight
-    parentCard.classList.add('reveal-highlight');
-    setTimeout(() => {
-      parentCard.classList.remove('reveal-highlight');
-    }, 1500);
+  if (parentCard) {
+    parentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    parentCard.classList.add('selected-persistent');
   }
 
   // Centering macro item in sub-container
   const subContainer = document.getElementById(`stat-macros-${cat}`);
   const macroItem = subContainer?.querySelector(`.stat-macro-item[data-macro="${macro}"]`);
-  if (macroItem && subContainer) {
-    const containerHeight = subContainer.clientHeight;
-    const targetTop = macroItem.offsetTop;
-    const targetHeight = macroItem.offsetHeight;
-    const scrollTarget = targetTop - (containerHeight / 2) + (targetHeight / 2);
-    
-    subContainer.scrollTo({
-      top: scrollTarget,
-      behavior: 'smooth'
-    });
-    
-    // Flash sub-item briefly
-    macroItem.style.borderColor = 'var(--neon-cyan)';
-    macroItem.style.boxShadow = '0 0 8px var(--neon-cyan)';
-    setTimeout(() => {
-      macroItem.style.borderColor = '';
-      macroItem.style.boxShadow = '';
-    }, 1500);
+  if (macroItem) {
+    macroItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    macroItem.classList.add('selected-persistent');
   }
 }
 
@@ -799,25 +768,8 @@ function scrollAndHighlightVisibilityComponent(category, macro = null) {
     : container.querySelector(`.visibility-cat-header[data-category="${category}"]`);
 
   if (target) {
-    const containerHeight = container.clientHeight;
-    const targetTop = target.offsetTop;
-    const targetHeight = target.offsetHeight;
-    
-    // Target position to center is offsetTop - (containerHeight / 2) + (targetHeight / 2)
-    const scrollTarget = targetTop - (containerHeight / 2) + (targetHeight / 2);
-    
-    container.scrollTo({
-      top: scrollTarget,
-      behavior: 'smooth'
-    });
-    
-    // Add glowing outline pulse highlight
-    target.classList.add('reveal-highlight-cv');
-    
-    // Remove highlight class after animation finishes
-    setTimeout(() => {
-      target.classList.remove('reveal-highlight-cv');
-    }, 1500);
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add('selected-persistent');
   }
 }
 
@@ -862,16 +814,19 @@ function selectModule(index, focusCamera = false) {
     if (prevRow) prevRow.classList.remove('selected');
   }
 
+  // Clear previous persistent panel highlights
+  clearPersistentHighlights();
+
   selectedIndex = index;
   const activeRow = document.getElementById(`mod-row-${index}`);
   if (activeRow) {
     activeRow.classList.add('selected');
-    // Scroll element into view smoothly in the sidebar container
-    activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Scroll element into view centered in the sidebar container
+    activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   // Update Details Card
-  const moduleData = currentPlan.modules.find(m => m.index === index);
+  const moduleData = currentPlan ? currentPlan.modules.find(m => m.index === index) : null;
   const card = document.getElementById('details-card');
   const placeholder = document.getElementById('details-placeholder');
 
@@ -894,8 +849,12 @@ function selectModule(index, focusCamera = false) {
       catTag.style.color = color;
     }
 
-    document.getElementById('det-pos').textContent = `X: ${Math.round(moduleData.position.x)}m | Y: ${Math.round(moduleData.position.y)}m | Z: ${Math.round(moduleData.position.z)}m`;
-    document.getElementById('det-rot').textContent = `Yaw: ${moduleData.rotation.yaw}° | Pitch: ${moduleData.rotation.pitch}° | Roll: ${moduleData.rotation.roll}°`;
+    const calcRot = viewer.getModuleCalculatedRotation(index) || {
+      yaw: Math.round(moduleData.rotation.yaw),
+      pitch: Math.round(moduleData.rotation.pitch),
+      roll: Math.round(moduleData.rotation.roll)
+    };
+    document.getElementById('det-rot').textContent = `Yaw: ${calcRot.yaw}° | Pitch: ${calcRot.pitch}° | Roll: ${calcRot.roll}°`;
 
     // Fetch and display bounding dimensions
     const detDim = document.getElementById('det-dim');
@@ -913,38 +872,33 @@ function selectModule(index, focusCamera = false) {
     if (detContainer) {
       detContainer.innerHTML = '';
       
-      const orderedKeys = [
-        'hullParts', 'claytronics', 'computronicSubstrate', 
-        'siliconCarbide', 'metallicMicrolattice', 'shieldComponents', 
-        'turretComponents', 'advancedElectronics', 'water', 'energyCells'
-      ];
-
-      orderedKeys.forEach(key => {
+      for (const key in costs) {
         const amount = costs[key] || 0;
         if (amount > 0) {
-          const meta = RESOURCE_METADATA[key];
+          const meta = getResourceMetadata(key);
           
           const costItem = document.createElement('div');
           costItem.className = 'cost-item';
           costItem.innerHTML = `
             <span class="lbl">${meta.name}:</span>
-            <span class="val ${meta.colorClass}">${amount}</span>
+            <span class="val ${meta.colorClass}">${amount.toLocaleString()}</span>
           `;
           detContainer.appendChild(costItem);
         }
-      });
+      }
     }
 
     // Highlight inside 3D viewer
     viewer.selectModuleByIndex(index, focusCamera);
     viewer.focusCameraOnModule(index, focusCamera);
 
-    // Scroll and center panels on the selected module's macro
+    // Scroll and apply persistent highlights to Structure Analysis & Component Visibility panels
     scrollAndHighlightVisibilityComponent(cat, moduleData.macro);
     scrollAndHighlightLeftMacro(moduleData.macro);
   } else {
     placeholder.classList.remove('hidden');
     card.classList.add('hidden');
+    clearPersistentHighlights();
     viewer.deselect();
   }
 }
@@ -1152,10 +1106,14 @@ function setupEventListeners() {
   document.getElementById('view-fit').addEventListener('click', () => viewer.fitCameraToStation());
 
   // 3. Viewer options
-  const gridToggle = document.getElementById('toggle-grid');
-  gridToggle.addEventListener('change', (e) => {
-    viewer.toggleGrid(e.target.checked);
-  });
+  const gridSizeSelector = document.getElementById('grid-size-selector');
+  if (gridSizeSelector) {
+    gridSizeSelector.addEventListener('change', (e) => {
+      const val = e.target.value;
+      viewer.setMajorGridSize(val);
+      showNotification(val === '0' ? 'Plot Grid disabled' : `Plot Grid set to ${val}m major grid`, 'info');
+    });
+  }
 
   const wireframeToggle = document.getElementById('toggle-wireframe');
   wireframeToggle.addEventListener('change', (e) => {
@@ -1166,6 +1124,14 @@ function setupEventListeners() {
   rotateToggle.addEventListener('change', (e) => {
     viewer.toggleAutoRotate(e.target.checked);
   });
+
+  const orientationToggle = document.getElementById('toggle-orientation');
+  if (orientationToggle) {
+    orientationToggle.checked = false;
+    orientationToggle.addEventListener('change', (e) => {
+      viewer.toggleOrientation(e.target.checked);
+    });
+  }
 
   // 4. Sidebar module list search
   const searchInput = document.getElementById('module-search');
@@ -1311,6 +1277,16 @@ function setupEventListeners() {
           clearCheckbox.checked = false;
         }, 2000);
       }
+    });
+  }
+
+  // 10. Colorized Checkbox
+  const colorizedCheckbox = document.getElementById('colorized-checkbox');
+  if (colorizedCheckbox) {
+    colorizedCheckbox.checked = true;
+    colorizedCheckbox.addEventListener('change', (e) => {
+      viewer.setColorized(e.target.checked);
+      showNotification(e.target.checked ? 'Colorized category mode enabled' : 'Colorized mode disabled', 'info');
     });
   }
 }
