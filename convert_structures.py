@@ -15,7 +15,7 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(description="Recursive batch XMF to DAE converter and copier for X4 structures.")
-    parser.add_argument("--src-dir", default=r"D:\Ai\X4\GoogleAntiGravity\assets\structures", 
+    parser.add_argument("--src-dir", default=r"D:\Ai\X4\GoogleAntiGravity\assets\assets\structures", 
                         help="Source structures directory.")
     parser.add_argument("--dest-dir", default=r"D:\Ai\X4\GoogleAntiGravity\assets1\structures", 
                         help="Destination structures directory.")

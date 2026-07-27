@@ -1,0 +1,7675 @@
+[
+  [],
+  [
+    {
+      "key": "landmarks_kha_tetrahedron_02",
+      "hash": 3471678735,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_tetrahedron_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_m_station_02_hightech",
+      "hash": 2910770577,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_station_02_hightech_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_fieldcoils",
+      "hash": 2528221070,
+      "folder_path": "/assets1/structures/production/prod_gen_fieldcoils_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_l_main_bottom-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main_bottom-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_16_straight_01",
+      "hash": 577549525,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_straight_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "dockingbay_arg_m_01_hightech",
+      "hash": 3868594831,
+      "folder_path": "/assets1/structures/dock/dockingbay_arg_m_01_hightech_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_cargotube_bottom-lod0.dae",
+        "detail_m_decals-lod0.dae",
+        "detail_s_cargotube_top-lod0.dae",
+        "detail_xl_ladder-lod0.dae",
+        "detail_xs_decals_floor-lod0.dae",
+        "detail_xs_fence_back-lod0.dae",
+        "detail_xs_fence_front-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_detector_01",
+      "hash": 3590029682,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_detector_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_02_part_03",
+      "hash": 910426904,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_02_part_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_par_m_02",
+      "hash": 3018984083,
+      "folder_path": "/assets1/structures/habitat/hab_par_m_02_data",
+      "files": [
+        "detail_s_docks-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_fan_02_blades",
+      "hash": 287236250,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_fan_02_blades_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_panel_01",
+      "hash": 2553719418,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_panel_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_spl_harbor_02",
+      "hash": 1297274038,
+      "folder_path": "/assets1/structures/dock/pier_spl_harbor_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_superfluidcoolant",
+      "hash": 2850375191,
+      "folder_path": "/assets1/structures/production/prod_gen_superfluidcoolant_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_pir_l_condensate_01",
+      "hash": 3093388964,
+      "folder_path": "/assets1/structures/storage/storage_pir_l_condensate_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_column_01-lod0.dae",
+        "detail_xs_column_01-lod0.dae",
+        "part_column_01-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_research_vault_01",
+      "hash": 2217844489,
+      "folder_path": "/assets1/structures/landmarks/landmarks_research_vault_01_data",
+      "files": [
+        "detail_m_main004-lod0.dae",
+        "detail_s_main009-lod0.dae",
+        "detail_s_main016-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main020-lod0.dae",
+        "part_main062-lod0.dae",
+        "part_main065-lod0.dae",
+        "part_main085-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_piratestation_02_storage_02",
+      "hash": 789108986,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_02_storage_02_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_m_bottom-lod0.dae",
+        "detail_m_top-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_xs_cables-lod0.dae",
+        "part_bottom-lod0.dae",
+        "part_top-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_kha_tetrahedron_04",
+      "hash": 2290134799,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_tetrahedron_04_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_spacesuit_16_corner_01",
+      "hash": 3016891543,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_corner_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_pipe_l_corner_02",
+      "hash": 2704751370,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_l_corner_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "pier_par_harbor_03",
+      "hash": 3532404394,
+      "folder_path": "/assets1/structures/dock/pier_par_harbor_03_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_par_monument_expl_03",
+      "hash": 1495705804,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_expl_03_data",
+      "files": [
+        "part_mesh01-lod0.dae",
+        "part_mesh02-lod0.dae",
+        "part_mesh03-lod0.dae",
+        "part_mesh04-lod0.dae",
+        "part_mesh05-lod0.dae",
+        "part_mesh06-lod0.dae",
+        "part_mesh07-lod0.dae",
+        "part_mesh08-lod0.dae",
+        "part_mesh09-lod0.dae",
+        "part_mesh10-lod0.dae",
+        "part_mesh11-lod0.dae",
+        "part_mesh12-lod0.dae",
+        "part_mesh13-lod0.dae",
+        "part_mesh14-lod0.dae",
+        "part_mesh15-lod0.dae",
+        "part_mesh16-lod0.dae",
+        "part_mesh17-lod0.dae",
+        "part_mesh18-lod0.dae",
+        "part_mesh19-lod0.dae",
+        "part_mesh20-lod0.dae",
+        "part_mesh21-lod0.dae",
+        "part_mesh22-lod0.dae",
+        "part_mesh23-lod0.dae",
+        "part_mesh24-lod0.dae",
+        "part_mesh25-lod0.dae",
+        "part_mesh26-lod0.dae",
+        "part_mesh27-lod0.dae",
+        "part_mesh28-lod0.dae",
+        "part_mesh29-lod0.dae",
+        "part_mesh30-lod0.dae",
+        "part_mesh31-lod0.dae",
+        "part_mesh32-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "xenon_asteroid_01_part_02",
+      "hash": 1460928577,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_part_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_par_s_liquid_01",
+      "hash": 4175966568,
+      "folder_path": "/assets1/structures/storage/storage_par_s_liquid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "ventureplatform_gen_cross_01",
+      "hash": 2378281316,
+      "folder_path": "/assets1/structures/venture/ventureplatform_gen_cross_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_xen_water_old_special_01",
+      "hash": 2348489038,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_special_01_data",
+      "files": [
+        "detail_s_alpha-lod0.dae",
+        "detail_s_pipes-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_spl_vertical_01",
+      "hash": 345065833,
+      "folder_path": "/assets1/structures/connectionmodules/struct_spl_vertical_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_corner_01",
+      "hash": 162292155,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_corner_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_destructible_hatch_16_02",
+      "hash": 3033258973,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_hatch_16_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_16_straight_03",
+      "hash": 3298229264,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_straight_03_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_spl_l_solid_01",
+      "hash": 2358894330,
+      "folder_path": "/assets1/structures/storage/storage_spl_l_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_arg_antigonescaffolding_01",
+      "hash": 3412999256,
+      "folder_path": "/assets1/structures/landmarks/landmarks_arg_antigonescaffolding_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_spl_scruffinfruit",
+      "hash": 2953771317,
+      "folder_path": "/assets1/structures/production/prod_spl_scruffinfruit_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_bor_s_solid_01",
+      "hash": 3129721883,
+      "folder_path": "/assets1/structures/storage/storage_bor_s_solid_01_data",
+      "files": [
+        "detail_s_container-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_end_01_a",
+      "hash": 2603831885,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_end_01_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_bor_bogas",
+      "hash": 2362672186,
+      "folder_path": "/assets1/structures/production/prod_bor_bogas_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_par_m_station_01",
+      "hash": 3897798909,
+      "folder_path": "/assets1/structures/dock/dockarea_par_m_station_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "prod_gen_plasmaconductors",
+      "hash": 669793144,
+      "folder_path": "/assets1/structures/production/prod_gen_plasmaconductors_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_intersection_02_a",
+      "hash": 3024892447,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_intersection_02_a_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_quantumtubes",
+      "hash": 1280037126,
+      "folder_path": "/assets1/structures/production/prod_gen_quantumtubes_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_02_tradestation_01",
+      "hash": 354156419,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_02_tradestation_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_spl_xl_carrier_01",
+      "hash": 525366636,
+      "folder_path": "/assets1/structures/dock/dockarea_spl_xl_carrier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_shieldcomponents",
+      "hash": 1671441160,
+      "folder_path": "/assets1/structures/production/prod_gen_shieldcomponents_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_arg_cross_01",
+      "hash": 2527005490,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_cross_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockingbay_bor_xl_pier_base_01",
+      "hash": 1655222963,
+      "folder_path": "/assets1/structures/dock/xref_parts/dockingbay_bor_xl_pier_base_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_destructible_generator_01",
+      "hash": 3266093744,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_generator_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "defence_tel_disc_01",
+      "hash": 1981431310,
+      "folder_path": "/assets1/structures/defence/defence_tel_disc_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_par_harbor_01",
+      "hash": 3668450965,
+      "folder_path": "/assets1/structures/dock/pier_par_harbor_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_bor_base_03",
+      "hash": 898732650,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_base_03_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_roombase_03",
+      "hash": 1087525937,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_roombase_03_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_arg_base_01",
+      "hash": 3925211256,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_base_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_s_ship_06",
+      "hash": 2131863984,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_06_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_destructible_hazard_fire_02",
+      "hash": 654827318,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_hazard_fire_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_oxygenrecharger_01",
+      "hash": 3395976359,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_oxygenrecharger_01_data",
+      "files": [
+        "part_main-lod0.dae",
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_scanningarrays",
+      "hash": 1408399565,
+      "folder_path": "/assets1/structures/production/prod_gen_scanningarrays_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_tel_s_solid_01",
+      "hash": 3914730157,
+      "folder_path": "/assets1/structures/storage/storage_tel_s_solid_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_tel_sunriseflowers",
+      "hash": 3393519356,
+      "folder_path": "/assets1/structures/production/prod_tel_sunriseflowers_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_gatestation_01_stage_03",
+      "hash": 4026824227,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_gatestation_01_stage_03_data",
+      "files": [
+        "detail_s_main_stage_03-lod0.dae",
+        "part_main_stage_03-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "hab_par_s_02",
+      "hash": 3350941841,
+      "folder_path": "/assets1/structures/habitat/hab_par_s_02_data",
+      "files": [
+        "detail_s_docks-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_kha_xl_battleship_01",
+      "hash": 1530908709,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_xl_battleship_01_data",
+      "files": [
+        "detail_m_rear-lod0.dae",
+        "detail_s_middle-lod0.dae",
+        "detail_xs_front-lod0.dae",
+        "part_front-lod0.dae",
+        "part_middle-lod0.dae",
+        "part_rear-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_32_end_01",
+      "hash": 1942977768,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_end_01_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "struct_gen_venturervertical_01",
+      "hash": 1983147203,
+      "folder_path": "/assets1/structures/venture/struct_gen_venturervertical_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "hab_bor_l_01",
+      "hash": 3594159856,
+      "folder_path": "/assets1/structures/habitat/hab_bor_l_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_ship_01_hightech",
+      "hash": 2486525448,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_ship_01_hightech_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "defence_par_claim_01",
+      "hash": 3047208578,
+      "folder_path": "/assets1/structures/defence/defence_par_claim_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_16_straight_01",
+      "hash": 1137851195,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_straight_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_roombase_05",
+      "hash": 3898697873,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_roombase_05_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_bor_m_01",
+      "hash": 893224294,
+      "folder_path": "/assets1/structures/habitat/hab_bor_m_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_par_xl_resupplier_01",
+      "hash": 1342619314,
+      "folder_path": "/assets1/structures/dock/dockarea_par_xl_resupplier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_spacesuit_level_01",
+      "hash": 369709361,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_spacesuit_level_01_data",
+      "files": []
+    },
+    {
+      "key": "storage_pir_s_condensate_01",
+      "hash": 1444463416,
+      "folder_path": "/assets1/structures/storage/storage_pir_s_condensate_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_tel_vertical_01",
+      "hash": 2781215874,
+      "folder_path": "/assets1/structures/connectionmodules/struct_tel_vertical_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_par_monument_expl_04",
+      "hash": 1197954320,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_expl_04_data",
+      "files": [
+        "part_mesh05-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_ship_04",
+      "hash": 1282796283,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_ship_04_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_par_monument_core_02",
+      "hash": 4272650933,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_core_02_data",
+      "files": [
+        "part_explosive_center_a_glass-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_tel_l_solid_01",
+      "hash": 1882088300,
+      "folder_path": "/assets1/structures/storage/storage_tel_l_solid_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_tel_base_02",
+      "hash": 1459024472,
+      "folder_path": "/assets1/structures/connectionmodules/struct_tel_base_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_station_01_lowtech",
+      "hash": 4280962444,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_station_01_lowtech_data",
+      "files": [
+        "detail_s_decals-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xl_windowfront-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_32_entranceplug_02",
+      "hash": 741903749,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_entranceplug_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "struct_par_cross_01",
+      "hash": 3040487001,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_cross_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "pier_ter_harbor_03",
+      "hash": 1989927555,
+      "folder_path": "/assets1/structures/dock/pier_ter_harbor_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "struct_at_xen_shell",
+      "hash": 2651438471,
+      "folder_path": "/assets1/structures/landmarks/struct_at_xen_shell_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "struct_par_vertical_01",
+      "hash": 328160409,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_vertical_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_par_m_container_01",
+      "hash": 397598680,
+      "folder_path": "/assets1/structures/storage/storage_par_m_container_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_erlking_vault_03",
+      "hash": 840844457,
+      "folder_path": "/assets1/structures/landmarks/landmarks_erlking_vault_03_data",
+      "files": [
+        "detail_m_main041-lod0.dae",
+        "detail_s_main017-lod0.dae",
+        "detail_s_main018-lod0.dae",
+        "detail_s_main023-lod0.dae",
+        "part_main063-lod0.dae",
+        "part_main066-lod0.dae",
+        "part_main067-lod0.dae",
+        "part_main069-lod0.dae",
+        "part_main081-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_kha_tetrahedron_01",
+      "hash": 3751586906,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_tetrahedron_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "xenon_asteroid_02",
+      "hash": 3975799497,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_spl_harbor_03",
+      "hash": 3120160570,
+      "folder_path": "/assets1/structures/dock/pier_spl_harbor_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_02_base_02",
+      "hash": 939514884,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_02_base_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_intersection_02",
+      "hash": 3306819727,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_intersection_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "buildmodule_arg_ships_s",
+      "hash": 3591321327,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_arg_ships_s_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockingbay_arg_m_01",
+      "hash": 2946103217,
+      "folder_path": "/assets1/structures/dock/dockingbay_arg_m_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_cargotube_bottom-lod0.dae",
+        "detail_s_cargotube_top-lod0.dae",
+        "detail_xl_ladder-lod0.dae",
+        "detail_xs_fence_back-lod0.dae",
+        "detail_xs_fence_front-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_16_end_01",
+      "hash": 1098815529,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_end_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_gen_s_showroom_01",
+      "hash": 3855041713,
+      "folder_path": "/assets1/structures/dock/dockarea_gen_s_showroom_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "masstraffic_station_01_center_01",
+      "hash": 491131293,
+      "folder_path": "/assets1/structures/landmarks/masstraffic_station_01_center_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_engineparts",
+      "hash": 4030840625,
+      "folder_path": "/assets1/structures/production/prod_gen_engineparts_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_ter_xl_resupplier_01",
+      "hash": 123771451,
+      "folder_path": "/assets1/structures/dock/dockarea_ter_xl_resupplier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_02_part_02",
+      "hash": 1995635326,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_02_part_02_data",
+      "files": [
+         "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_spacesuit_16_straight_02",
+      "hash": 1659863123,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_straight_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_arg_s_solid_01",
+      "hash": 1090516272,
+      "folder_path": "/assets1/structures/storage/storage_arg_s_solid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_par_tradestation_living_02",
+      "hash": 3933016542,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_tradestation_living_02_data",
+      "files": [
+        "detail_l_center-lod0.dae",
+        "detail_m_center-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "detail_xs_center-lod0.dae",
+        "part_center-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_roombase_01",
+      "hash": 3973762014,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_roombase_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "xenon_asteroid_01_part_04",
+      "hash": 2148761056,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_part_04_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_s_ship_05",
+      "hash": 3540783326,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_05_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_s_ship_03",
+      "hash": 4035717975,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "pier_spl_harbor_01",
+      "hash": 188612489,
+      "folder_path": "/assets1/structures/dock/pier_spl_harbor_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_xen_water_old_bridge_01",
+      "hash": 3130180652,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_bridge_01_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_xl_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_detector_02_16_16_32",
+      "hash": 1582019196,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_detector_02_16_16_32_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_vault_04",
+      "hash": 2909471961,
+      "folder_path": "/assets1/structures/landmarks/landmarks_vault_04_data",
+      "files": [
+        "detail_m_main004-lod0.dae",
+        "detail_s_main009-lod0.dae",
+        "detail_s_main016-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main004-lod0.dae",
+        "part_main020-lod0.dae",
+        "part_main062-lod0.dae"
+        ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_room_05",
+      "hash": 1693747590,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/landmarks_gen_spacesuit_level_01_room_05_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_bor_base_01",
+      "hash": 652078133,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_base_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_spl_l_liquid_01",
+      "hash": 2173506032,
+      "folder_path": "/assets1/structures/storage/storage_spl_l_liquid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "hab_ter_l_01",
+      "hash": 1652907956,
+      "folder_path": "/assets1/structures/habitat/hab_ter_l_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_par_cross_03",
+      "hash": 2255571782,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_cross_03_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_scrap_recyclerkhaak",
+      "hash": 1393032687,
+      "folder_path": "/assets1/structures/production/prod_gen_scrap_recyclerkhaak_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_top-lod0.dae",
+        "part_top_khaak-lod0.dae",
+        "part_top_ter-lod0.dae"     
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_prison_hangar_01",
+      "hash": 2190663507,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_prison_hangar_01_data",
+      "files": [
+        "detail_s_door_01-lod0.dae",
+        "detail_s_door_02-lod0.dae",
+        "detail_s_floor-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xl_terminal-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main01-lod0.dae",
+        "part_static-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "hab_pir_m_01",
+      "hash": 3968654794,
+      "folder_path": "/assets1/structures/habitat/hab_pir_m_01_data",
+      "files": [
+        "detail_l_radiators-lod0.dae",
+        "detail_l_radiators_001-lod0.dae",
+        "detail_l_radiators_002-lod0.dae",
+        "detail_l_radiators_003-lod0.dae",
+        "detail_l_radiators_004-lod0.dae",
+        "detail_l_radiators_005-lod0.dae",
+        "detail_l_radiators_006-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_corner_01_a",
+      "hash": 1433972623,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_corner_01_a_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_arg_xl_builder_01",
+      "hash": 2684241861,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_xl_builder_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_gen_m_showroom_01",
+      "hash": 3885362394,
+      "folder_path": "/assets1/structures/dock/dockarea_gen_m_showroom_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_xen_water_old_destillery_03",
+      "hash": 1281229719,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_destillery_03_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_arg_claim_01",
+      "hash": 1546634173,
+      "folder_path": "/assets1/structures/defence/defence_arg_claim_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_countersabotage_01",
+      "hash": 3025839224,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_spacesuit_level_01_countersabotage_01_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_crate_02",
+      "hash": 2529533599,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_crate_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "hab_pir_l_01",
+      "hash": 1458953645,
+      "folder_path": "/assets1/structures/habitat/hab_pir_l_01_data",
+      "files": [
+        "detail_l_radiators-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_erlking_vault_02",
+      "hash": 1174412912,
+      "folder_path": "/assets1/structures/landmarks/landmarks_erlking_vault_02_data",
+      "files": [
+        "detail_m_main043-lod0.dae",
+        "detail_s_main019-lod0.dae",
+        "detail_s_main020-lod0.dae",
+        "detail_s_main024-lod0.dae",
+        "part_main064-lod0.dae",
+        "part_main071-lod0.dae",
+        "part_main072-lod0.dae",
+        "part_main074-lod0.dae",
+        "part_main082-lod0.dae",
+        "part_main083-lod0.dae",
+        "part_main083-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_02_base_03",
+      "hash": 1471598252,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_02_base_03_data",
+      "files": []
+    },
+    {
+      "key": "struct_gen_venturerbase_03",
+      "hash": 1339335694,
+      "folder_path": "/assets1/structures/venture/struct_gen_venturerbase_03_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "defence_ter_tube_01",
+      "hash": 1296053729,
+      "folder_path": "/assets1/structures/defence/defence_ter_tube_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_arg_spacefuel",
+      "hash": 4258285698,
+      "folder_path": "/assets1/structures/production/prod_arg_spacefuel_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "room_gen_venturerroom_01",
+      "hash": 2429232940,
+      "folder_path": "/assets1/structures/venture/room_gen_venturerroom_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xl_door_002-lod0.dae",
+        "detail_xl_door_003-lod0.dae",
+        "detail_xl_door_01-lod0.dae",
+        "detail_xl_door_light_01-lod0.dae",
+        "detail_xl_door_light_03-lod0.dae",
+        "detail_xl_projector001-lod0.dae",
+        "detail_xl_windowpane-lod0.dae",
+        "part_corridor-lod0.dae",
+        "part_fx_licence-lod0.dae",
+        "part_main-lod0.dae",
+        "part_shadowcaster-lod0.dae",
+        "part_shadwocaster-lod0.dae",
+        "part_static-lod0.dae",
+        "part_static001-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_station_02_lowtech",
+      "hash": 691609218,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_station_02_lowtech_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_pipe_s_straight_01",
+      "hash": 3698445220,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_s_straight_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_arg_l_liquid_01",
+      "hash": 3348895925,
+      "folder_path": "/assets1/structures/storage/storage_arg_l_liquid_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_arg_l_solid_01",
+      "hash": 1822487971,
+      "folder_path": "/assets1/structures/storage/storage_arg_l_solid_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_spl_cross_01",
+      "hash": 322801344,
+      "folder_path": "/assets1/structures/connectionmodules/struct_spl_cross_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_xen_water_old_destillery_01",
+      "hash": 2995149292,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_destillery_01_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_ter_base_01",
+      "hash": 3127000924,
+      "folder_path": "/assets1/structures/connectionmodules/struct_ter_base_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "pier_tel_harbor_03",
+      "hash": 2071518903,
+      "folder_path": "/assets1/structures/dock/pier_tel_harbor_03_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_arg_vertical_02",
+      "hash": 2288453421,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_vertical_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_xen_water_old_connector_02",
+      "hash": 839851503,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_connector_02_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_bor_s_01",
+      "hash": 2964181713,
+      "folder_path": "/assets1/structures/habitat/hab_bor_s_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_weaponcomponents",
+      "hash": 2495146537,
+      "folder_path": "/assets1/structures/production/prod_gen_weaponcomponents_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_ter_l_liquid_01",
+      "hash": 2218566311,
+      "folder_path": "/assets1/structures/storage/storage_ter_l_liquid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "xref_dockingbay_gen_xl_pier_01",
+      "hash": 3654041771,
+      "folder_path": "/assets1/structures/dock/xref_parts/xref_dockingbay_gen_xl_pier_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_soh_storage_condensate_01",
+      "hash": 901617900,
+      "folder_path": "/assets1/structures/landmarks/landmarks_soh_storage_condensate_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "xenon_asteroid_01",
+      "hash": 3824170857,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_data",
+      "files": [
+        "part_asteroidp67-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_dockarea_m_01",
+      "hash": 1771899810,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_dockarea_m_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_gen_venturerbase_01",
+      "hash": 4190168287,
+      "folder_path": "/assets1/structures/venture/struct_gen_venturerbase_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_arg_antigonearc_01",
+      "hash": 2790816580,
+      "folder_path": "/assets1/structures/landmarks/landmarks_arg_antigonearc_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_piratestation_02_ring_02",
+      "hash": 3518005042,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_02_ring_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_storage_01",
+      "hash": 3782055636,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_storage_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_ring_inside_01",
+      "hash": 243009174,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ring_inside_01_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_m_buildings-lod0.dae",
+        "detail_s_tree-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_straight_03_a",
+      "hash": 758748274,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_straight_03_a_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_spl_s_solid_01",
+      "hash": 28218582,
+      "folder_path": "/assets1/structures/storage/storage_spl_s_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_arg_harbor_01",
+      "hash": 658182215,
+      "folder_path": "/assets1/structures/dock/pier_arg_harbor_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_prop_pipe_s_straight_03",
+      "hash": 3036337514,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_s_straight_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_piratestation_01_exit_01",
+      "hash": 2807073938,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_01_exit_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "struct_tel_base_03",
+      "hash": 705526999,
+      "folder_path": "/assets1/structures/connectionmodules/struct_tel_base_03_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "hab_arg_m_01",
+      "hash": 1065287128,
+      "folder_path": "/assets1/structures/habitat/hab_arg_m_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_destructible_grate_16_01",
+      "hash": 105847299,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_grate_16_01_data",
+      "files": [
+        "part_col-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_arg_harbor_03",
+      "hash": 3979852676,
+      "folder_path": "/assets1/structures/dock/pier_arg_harbor_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_spl_claim_01",
+      "hash": 2481426962,
+      "folder_path": "/assets1/structures/defence/defence_spl_claim_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_ter_xl_carrier_01",
+      "hash": 2885364294,
+      "folder_path": "/assets1/structures/dock/dockarea_ter_xl_carrier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_par_m_liquid_01",
+      "hash": 2964884979,
+      "folder_path": "/assets1/structures/storage/storage_par_m_liquid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "defence_ter_disc_01",
+      "hash": 1412032097,
+      "folder_path": "/assets1/structures/defence/defence_ter_disc_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_xen_water_old_connector_01",
+      "hash": 4137809246,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_connector_01_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_intersection_02",
+      "hash": 3186131798,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_intersection_02_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockingbay_arg_s_01_hightech",
+      "hash": 3954393494,
+      "folder_path": "/assets1/structures/dock/dockingbay_arg_s_01_hightech_data",
+      "files": [
+        "detail_s_door_01-lod0.dae",
+        "detail_s_door_02-lod0.dae",
+        "detail_s_floor-lod0.dae",
+        "detail_xl_cargotube_bottom-lod0.dae",
+        "detail_xl_cargotube_top-lod0.dae",
+        "detail_xl_terminal-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_static-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_tel_s_liquid_01",
+      "hash": 3401409157,
+      "folder_path": "/assets1/structures/storage/storage_tel_s_liquid_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_straight_01",
+      "hash": 1946096640,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_straight_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_arg_arc_01",
+      "hash": 3092309369,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_arc_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_station_01",
+      "hash": 1397085834,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_station_01_data",
+      "files": [
+        "detail_s_decals-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xl_windowfront-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_fx_licence-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_pipe_l_straight_03",
+      "hash": 1688195307,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_l_straight_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "cargo_gen_buildstorage_01",
+      "hash": 1264347547,
+      "folder_path": "/assets1/structures/buildstorage/cargo_gen_buildstorage_01_data",
+      "files": [
+        "part_detail_m-lod0.dae",
+        "part_main-lod0.dae",
+        "part_storage_scale-lod0.dae",
+        "part_storage_scale001-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_straight_02",
+      "hash": 157456721,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_straight_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_par_tradestation_stor_container_l_01",
+      "hash": 1784841673,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_tradestation_stor_container_l_01_data",
+      "files": [
+        "detail_l_bottom_main-lod0.dae",
+        "detail_m_bottom_main-lod0.dae",
+        "detail_s_bottom-lod0.dae",
+        "detail_xs_bottom-lod0.dae",
+        "detail_xs_docks-lod0.dae",
+        "part_bottom_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tfm_xl_carrier_01",
+      "hash": 1094762705,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tfm_xl_carrier_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_central-lod0.dae",
+        "detail_s_rear-lod0.dae",
+        "detail_xs_front-lod0.dae",
+        "part_central-lod0.dae",
+        "part_front-lod0.dae",
+        "part_main-lod0.dae",
+        "part_rear-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_ter_m_container_01",
+      "hash": 1963864419,
+      "folder_path": "/assets1/structures/storage/storage_ter_m_container_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "radar_par_standard_01",
+      "hash": 522062382,
+      "folder_path": "/assets1/structures/radar_par_standard_01_data",
+      "files": [
+        "detail_s_docks-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_destructible_hazard_fire_01",
+      "hash": 73977196,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_hazard_fire_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_gen_asteroidmine_01_asteroid_01",
+      "hash": 3402501335,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_asteroidmine_01_asteroid_01_data",
+      "files": [
+        "part_asteorid_01-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_tel_spaceweed",
+      "hash": 2163432338,
+      "folder_path": "/assets1/structures/production/prod_tel_spaceweed_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_gen_s_showroom_02",
+      "hash": 3410801840,
+      "folder_path": "/assets1/structures/dock/dockarea_gen_s_showroom_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_arg_meat",
+      "hash": 744250917,
+      "folder_path": "/assets1/structures/production/prod_arg_meat_data",
+      "files": [
+        "detail_l_cows-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_l_water-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_argon_hangar_01",
+      "hash": 2079903897,
+      "folder_path": "/assets1/structures/struct_argon_hangar_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_kha_hive_arm_01",
+      "hash": 3662563738,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_hive_arm_01_data",
+      "files": [
+        "detail_m_tech-lod0.dae",
+        "detail_s_wires-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_vault_03",
+      "hash": 3728635091,
+      "folder_path": "/assets1/structures/landmarks/landmarks_vault_03_data",
+      "files": [
+        "detail_m_main004-lod0.dae",
+        "detail_m_main035-lod0.dae",
+        "detail_m_main037-lod0.dae",
+        "detail_m_main041-lod0.dae",
+        "detail_m_main043-lod0.dae",
+        "detail_s_main023-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main051-lod0.dae",
+        "part_main053-lod0.dae",
+        "part_main056-lod0.dae",
+        "part_main061-lod0.dae",
+        "part_main063-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_ter_s_container_01",
+      "hash": 99410722,
+      "folder_path": "/assets1/structures/storage/storage_ter_s_container_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_asteroidmine_01_entrance_01",
+      "hash": 2970329848,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_asteroidmine_01_entrance_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_tel_tradestation_01_centerfill_01",
+      "hash": 1772972489,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_centerfill_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "struct_gen_venturercross_01",
+      "hash": 3974870250,
+      "folder_path": "/assets1/structures/venture/struct_gen_venturercross_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "buildmodule_ter_equip_xl",
+      "hash": 3458028009,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_equip_xl_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_piratestation_02_port_01",
+      "hash": 1128762136,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_02_port_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_m_main_01-lod0.dae",
+        "detail_m_main_02-lod0.dae",
+        "detail_s_cables-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "part_main_01-lod0.dae",
+        "part_main_02-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_tel_tradestation_01_ring_01",
+      "hash": 1192919493,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ring_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_par_base_01",
+      "hash": 33215859,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_base_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "hab_par_s_03",
+      "hash": 834569490,
+      "folder_path": "/assets1/structures/habitat/hab_par_s_03_data",
+      "files": [
+        "detail_s_docks-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "radar_arg_dish_01",
+      "hash": 4080701341,
+      "folder_path": "/assets1/structures/radar/radar_arg_dish_01_data",
+      "files": [
+        "detail_l_antenna-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_m_antenna-lod0.dae",
+        "detail_s_antenna-lod0.dae",
+        "detail_xs_antenna-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_corner_01_b",
+      "hash": 1830638173,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_corner_01_b_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_gen_advancedelectronics",
+      "hash": 1705676929,
+      "folder_path": "/assets1/structures/production/prod_gen_advancedelectronics_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_s_simon_container_01-lod0.dae",
+        "detail_s_simon_container_02-lod0.dae",
+        "detail_s_simon_container_03-lod0.dae",
+        "detail_s_simon_container_04-lod0.dae",
+        "detail_s_simon_container_05-lod0.dae",
+        "detail_s_simon_container_06-lod0.dae",
+        "detail_s_simon_container_07-lod0.dae",
+        "detail_s_simon_container_08-lod0.dae",
+        "detail_s_simon_container_09-lod0.dae",
+        "detail_s_simon_container_10-lod0.dae",
+        "detail_s_simon_container_12-lod0.dae",
+        "detail_s_simon_container_18-lod0.dae",
+        "detail_xs_simon_01-lod0.dae",
+        "detail_xs_simon_02-lod0.dae",
+        "detail_xs_simon_03-lod0.dae",
+        "detail_xs_simon_04-lod0.dae",
+        "detail_xs_simon_05-lod0.dae",
+        "detail_xs_simon_06-lod0.dae",
+        "detail_xs_simon_07-lod0.dae",
+        "detail_xs_simon_08-lod0.dae",
+        "detail_xs_simon_09-lod0.dae",
+        "detail_xs_simon_10-lod0.dae",
+        "detail_xs_simon_12-lod0.dae",
+        "detail_xs_simon_18-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_par_tradestation_living_01",
+      "hash": 3649316228,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_tradestation_living_01_data",
+      "files": [
+        "detail_l_top_main-lod0.dae",
+        "detail_m_top_main-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "detail_s_top_main-lod0.dae",
+        "detail_xs_top-lod0.dae",
+        "part_top_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_tel_tube_01",
+      "hash": 127912761,
+      "folder_path": "/assets1/structures/defence/defence_tel_tube_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_tel_teladianium",
+      "hash": 3047257789,
+      "folder_path": "/assets1/structures/production/prod_tel_teladianium_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main01-lod0.dae",
+        "detail_xl_central_rotator01-lod0.dae",
+        "detail_xl_glass-lod0.dae",
+        "detail_xs_dock-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockingbay_gen_s_showroom_01",
+      "hash": 3143424727,
+      "folder_path": "/assets1/structures/dock/dockingbay_gen_s_showroom_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "xenon_small_station_01_solarpanel_01",
+      "hash": 2359128281,
+      "folder_path": "/assets1/structures/landmarks/xenon_small_station_01_solarpanel_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_vault_02",
+      "hash": 1692024587,
+      "folder_path": "/assets1/structures/landmarks/landmarks_vault_02_data",
+      "files": [
+        "detail_m_main004-lod0.dae",
+        "detail_m_main005-lod0.dae",
+        "detail_m_main033-lod0.dae",
+        "detail_s_main020-lod0.dae",
+        "detail_s_main021-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main005-lod0.dae",
+        "part_main047-lod0.dae",
+        "part_main048-lod0.dae",
+        "part_main049-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_fan_02",
+      "hash": 2544060558,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_fan_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_arg_l_container_01",
+      "hash": 1317403789,
+      "folder_path": "/assets1/structures/storage/storage_arg_l_container_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "hab_par_l_01",
+      "hash": 2062714667,
+      "folder_path": "/assets1/structures/habitat/hab_par_l_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "buildmodule_bor_ships_xl",
+      "hash": 3825083354,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_bor_ships_xl_data",
+      "files": [
+        "detail_s_main_01-lod0.dae",
+        "detail_s_main_02-lod0.dae",
+        "part_main_01-lod0.dae",
+        "part_main_02-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_ter_m_station_01_hightech",
+      "hash": 3991651064,
+      "folder_path": "/assets1/structures/dock/dockarea_ter_m_station_01_hightech_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_bor_base_02",
+      "hash": 2930154330,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_base_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_arg_antigonestraight_01",
+      "hash": 4125657628,
+      "folder_path": "/assets1/structures/landmarks/landmarks_arg_antigonestraight_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_tel_xl_carrier_01",
+      "hash": 3880336063,
+      "folder_path": "/assets1/structures/dock/dockarea_tel_xl_carrier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_01_base_01",
+      "hash": 1448416464,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_base_01_data",
+      "files": [
+        "part_asteroidp67-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_gen_venturervertical_02",
+      "hash": 904300099,
+      "folder_path": "/assets1/structures/venture/struct_gen_venturervertical_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_ter_equip_l",
+      "hash": 4177629025,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_equip_l_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "ter_torus_exterior",
+      "hash": 1633362198,
+      "folder_path": "/assets1/structures/landmarks/ter_torus_exterior_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "launchtube_xen_s_01",
+      "hash": 4257004175,
+      "folder_path": "/assets1/structures/dock/launchtube_xen_s_01_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "dockingbay_gen_m_showroom_01",
+      "hash": 2326520692,
+      "folder_path": "/assets1/structures/dock/dockingbay_gen_m_showroom_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_bor_harbor_01",
+      "hash": 597411496,
+      "folder_path": "/assets1/structures/dock/pier_bor_harbor_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_radar_01",
+      "hash": 2612788308,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_radar_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "welfare_gen_gamblinghall_01",
+      "hash": 3300701351,
+      "folder_path": "/assets1/structures/welfare/welfare_gen_gamblinghall_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_arg_cross_03",
+      "hash": 3699256265,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_cross_03_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_straight_07",
+      "hash": 2532365063,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_07_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "xenon_asteroid_01_part_03",
+      "hash": 2390876194,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_part_03_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_erlking_vault_01",
+      "hash": 861385058,
+      "folder_path": "/assets1/structures/landmarks/landmarks_erlking_vault_01_data",
+      "files": [
+        "detail_m_main045-lod0.dae",
+        "detail_s_main021-lod0.dae",
+        "detail_s_main022-lod0.dae",
+        "part_main076-lod0.dae",
+        "part_main077-lod0.dae",
+        "part_main080-lod0.dae",
+        "part_main084-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_ter_s_liquid_tradestation_01",
+      "hash": 739251387,
+      "folder_path": "/assets1/structures/storage/storage_ter_s_liquid_tradestation_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "prod_ter_metallicmicrolattice",
+      "hash": 2892312315,
+      "folder_path": "/assets1/structures/production/prod_ter_metallicmicrolattice_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_end_01_a",
+      "hash": 3100508497,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_end_01_a_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_repairduty_01",
+      "hash": 2677602445,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_spacesuit_level_01_repairduty_01_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_16_intersection_01",
+      "hash": 1679894950,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_intersection_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_gen_refinedmetals",
+      "hash": 2518589224,
+      "folder_path": "/assets1/structures/production/prod_gen_refinedmetals_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_gatestation_01_stage_02",
+      "hash": 1001310968,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_gatestation_01_stage_02_data",
+      "files": [
+        "detail_s_main_stage_02-lod0.dae",
+        "part_main_stage_02-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_gen_piratestation_02_storage_01",
+      "hash": 3207457433,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_02_storage_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_m_front-lod0.dae",
+        "detail_m_rear-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_xs_cables-lod0.dae",
+        "part_front-lod0.dae",
+        "part_rear-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "hab_ter_s_01",
+      "hash": 2529939899,
+      "folder_path": "/assets1/structures/habitat/hab_ter_s_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_bor_xl_carrier_01",
+      "hash": 814664055,
+      "folder_path": "/assets1/structures/landmarks/landmarks_bor_xl_carrier_01_data",
+      "files": [
+        "detail_s_front-lod0.dae",
+        "detail_s_middle-lod0.dae",
+        "detail_s_rear-lod0.dae",
+        "part_front-lod0.dae",
+        "part_middle-lod0.dae",
+        "part_rear-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_ship_03",
+      "hash": 4280487068,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_ship_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_arg_s_ship_01_hightech",
+      "hash": 4028511155,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_01_hightech_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_ter_ships_xl",
+      "hash": 1483731892,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_ships_xl_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_piratestation_01_ring_01",
+      "hash": 4101557277,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_01_ring_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_s_ring_01-lod0.dae",
+        "detail_s_ring_02-lod0.dae",
+        "detail_s_tower_02-lod0.dae",
+        "detail_xs_ring_01-lod0.dae",
+        "detail_xs_ring_02-lod0.dae",
+        "detail_xs_tower_02-lod0.dae",
+        "part_ring_01-lod0.dae",
+        "part_ring_02-lod0.dae",
+        "part_tower-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "torus_turretbase",
+      "hash": 1987719187,
+      "folder_path": "/assets1/structures/landmarks/torus_turretbase_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_tel_m_liquid_01",
+      "hash": 1701177627,
+      "folder_path": "/assets1/structures/storage/storage_tel_m_liquid_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_pipe_s_straight_02",
+      "hash": 3057939585,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_s_straight_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_room_03",
+      "hash": 3005257639,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/landmarks_gen_spacesuit_level_01_room_03_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "buildmodule_ter_ships_l",
+      "hash": 1190599597,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_ships_l_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "struct_bor_vertical_01",
+      "hash": 3233370382,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_vertical_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_arg_s_ship_04",
+      "hash": 4183879867,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_04_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_32_corner_02_a",
+      "hash": 299109646,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_corner_02_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_ter_ships_m_dockarea_01",
+      "hash": 1370959077,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_ships_m_dockarea_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_ringcenter_01",
+      "hash": 1561098893,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ringcenter_01_data",
+      "files": [
+        "detail_l_poslights-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_ter_mre",
+      "hash": 463455170,
+      "folder_path": "/assets1/structures/production/prod_ter_mre_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_par_s_solid_01",
+      "hash": 902539077,
+      "folder_path": "/assets1/structures/storage/storage_par_s_solid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_spl_m_liquid_01",
+      "hash": 4172960932,
+      "folder_path": "/assets1/structures/storage/storage_spl_m_liquid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_par_sojabeans",
+      "hash": 741018692,
+      "folder_path": "/assets1/structures/production/prod_par_sojabeans_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_s_simon_01-lod0.dae",
+        "detail_s_simon_02-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_fx_lightcones-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_end_02_a",
+      "hash": 812402769,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_end_02_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_xen_ships_xl",
+      "hash": 3770765167,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_xen_ships_xl_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main01-lod0.dae",
+        "detail_s_main02-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_small_station_01_base",
+      "hash": 1043100932,
+      "folder_path": "/assets1/structures/landmarks/xenon_small_station_01_base_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_bor_l_solid_01",
+      "hash": 2112232860,
+      "folder_path": "/assets1/structures/storage/storage_bor_l_solid_01_data",
+      "files": [
+        "detail_s_container_01-lod0.dae",
+        "detail_s_container_02-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container_01-lod0.dae",
+        "part_container_02-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_arg_harbor_02",
+      "hash": 2766723757,
+      "folder_path": "/assets1/structures/dock/pier_arg_harbor_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_arg_s_container_01",
+      "hash": 1806654086,
+      "folder_path": "/assets1/structures/storage/storage_arg_s_container_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_arg_s_ship_08",
+      "hash": 3758220874,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_08_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_hazard_fire_1s_delay2",
+      "hash": 464898347,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_hazard_fire_1s_delay2_data",
+      "files": []
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_medicalsupplies",
+      "hash": 134870575,
+      "folder_path": "/assets1/structures/production/prod_gen_medicalsupplies_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_scrap_recycler",
+      "hash": 1507247795,
+      "folder_path": "/assets1/structures/production/prod_gen_scrap_recycler_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_top-lod0.dae",
+        "part_top_khaak-lod0.dae",
+        "part_top_ter-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_straight_01",
+      "hash": 4109138716,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_01_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "launchtube_arg_s_01",
+      "hash": 2775773975,
+      "folder_path": "/assets1/structures/dock/launchtube_arg_s_01_data",
+      "files": []
+    },
+    {
+      "key": "masstraffic_station_02_center_01",
+      "hash": 3560396963,
+      "folder_path": "/assets1/structures/landmarks/masstraffic_station_02_center_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_tel_vertical_02",
+      "hash": 1315381123,
+      "folder_path": "/assets1/structures/connectionmodules/struct_tel_vertical_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_arg_s_01",
+      "hash": 4188266827,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_arg_l_tradestation_01",
+      "hash": 1348294500,
+      "folder_path": "/assets1/structures/storage/storage_arg_l_tradestation_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_arg_cross_05",
+      "hash": 3125684075,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_cross_05_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_arrow_02",
+      "hash": 3802758889,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_arrow_02_data",
+      "files": []
+    },
+    {
+      "key": "scs_gen_prop_fan_01_forceemitter",
+      "hash": 2954601051,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_fan_01_forceemitter_data",
+      "files": []
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_32_intersection_03",
+      "hash": 1022099616,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_intersection_03_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_ring_storage_01",
+      "hash": 2721247763,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ring_storage_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_intersection_04",
+      "hash": 882562662,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_intersection_04_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "proc_gen_scrapworkskhaak",
+      "hash": 3555248159,
+      "folder_path": "/assets1/structures/processingmodule/proc_gen_scrapworkskhaak_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_entry_details-lod0.dae",
+        "part_entry_details_khaak-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_par_monument_expldummy_01",
+      "hash": 3202345395,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_expldummy_01_data",
+      "files": [
+        "part_center_explosiondummy_large-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_ter_s_solid_01",
+      "hash": 525494363,
+      "folder_path": "/assets1/structures/storage/storage_ter_s_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_s_ship_09",
+      "hash": 3878474834,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_09_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_antimatterconverters",
+      "hash": 438178280,
+      "folder_path": "/assets1/structures/production/prod_gen_antimatterconverters_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_missilecomponents",
+      "hash": 532651361,
+      "folder_path": "/assets1/structures/production/prod_gen_missilecomponents_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_m_station_02",
+      "hash": 2058845292,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_station_02_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xl_windowfont-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_destructible_hatch_32_01",
+      "hash": 1517363270,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_destructible_hatch_32_01_data",
+      "files": [
+        "detail_m_01-lod0.dae",
+        "detail_m_02-lod0.dae",
+        "detail_m_03-lod0.dae",
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "struct_bor_base_05",
+      "hash": 1893218079,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_base_05_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_gen_observationdeck_01",
+      "hash": 70995780,
+      "folder_path": "/assets1/structures/connectionmodules/struct_gen_observationdeck_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_gen_claytronics",
+      "hash": 1603983481,
+      "folder_path": "/assets1/structures/production/prod_gen_claytronics_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_arg_ships_m",
+      "hash": 1202850489,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_arg_ships_m_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_centercylinder_01",
+      "hash": 4224805219,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_centercylinder_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_cutcrystals",
+      "hash": 4293773860,
+      "folder_path": "/assets1/structures/production/prod_gen_cutcrystals_data",
+      "files": [
+        "detail_l_crystalls_small-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_par_base_02",
+      "hash": 2142079028,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_base_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_antimattercells",
+      "hash": 3184311069,
+      "folder_path": "/assets1/structures/production/prod_gen_antimattercells_data",
+      "files": [
+        "detail_m_pipes-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main_xr-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_arrow_03",
+      "hash": 1778109343,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_arrow_03_data",
+      "files": []
+    },
+    {
+      "key": "scs_gen_prop_fan_01_blades",
+      "hash": 925834887,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_fan_01_blades_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_ter_m_station_01_standard",
+      "hash": 3894141501,
+      "folder_path": "/assets1/structures/dock/dockarea_ter_m_station_01_standard_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_bor_disc_01",
+      "hash": 212034611,
+      "folder_path": "/assets1/structures/defence/defence_bor_disc_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_end_01",
+      "hash": 318113969,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_end_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "storage_bor_m_solid_01",
+      "hash": 2710862106,
+      "folder_path": "/assets1/structures/storage/storage_bor_m_solid_01_data",
+      "files": [
+        "detail_s_container-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "storage_spl_l_container_01",
+      "hash": 2400737438,
+      "folder_path": "/assets1/structures/storage/storage_spl_l_container_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "storage_par_l_container_01",
+      "hash": 1134581440,
+      "folder_path": "/assets1/structures/storage/storage_par_l_container_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_centerend_01",
+      "hash": 2728346123,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_centerend_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_s_ship_10",
+      "hash": 87302084,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_10_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "buildmodule_bor_equip_l",
+      "hash": 3354802193,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_bor_equip_l_data",
+      "files": [
+        "detail_s_main_02-lod0.dae",
+        "part_main_02-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_hullparts",
+      "hash": 941815857,
+      "folder_path": "/assets1/structures/production/prod_gen_hullparts_data",
+      "files": [
+        "detail_l_container_big01-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_m_laser01-lod0.dae",
+        "detail_m_laser02-lod0.dae",
+        "detail_m_laser03-lod0.dae",
+        "detail_m_laser04-lod0.dae",
+        "detail_m_laser05-lod0.dae",
+        "detail_m_laser06-lod0.dae",
+        "detail_m_laser07-lod0.dae",
+        "detail_m_laser08-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_m_main_bottom-lod0.dae",
+        "detail_xl_lasersign-lod0.dae",
+        "detail_xs_cable01-lod0.dae",
+        "detail_xs_cable02-lod0.dae",
+        "detail_xs_cableConnector-lod0.dae",
+        "detail_xs_containerDoor01-lod0.dae",
+        "detail_xs_containerDoor02-lod0.dae",
+        "detail_xs_containerDoor03-lod0.dae",
+        "detail_xs_containerDoor04-lod0.dae",
+        "detail_xs_containerDoor05-lod0.dae",
+        "detail_xs_containerDoor06-lod0.dae",
+        "detail_xs_laserwall01-lod0.dae",
+        "detail_xs_laserwall02-lod0.dae",
+        "detail_xs_laserwall03-lod0.dae",
+        "detail_xs_laserwall04-lod0.dae",
+        "detail_xs_laserwall05-lod0.dae",
+        "detail_xs_laserwall06-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "hab_tel_s_01",
+      "hash": 1086100507,
+      "folder_path": "/assets1/structures/habitat/hab_tel_s_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_player_hq_01_research",
+      "hash": 2715023999,
+      "folder_path": "/assets1/structures/landmarks/landmarks_player_hq_01_research_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_asteroid-lod0.dae",
+        "part_main_big-lod0.dae",
+        "part_main_small-lod0.dae",
+        "part_ring-lod0.dae",
+        "part_sensor_big-lod0.dae",
+        "part_sensor_small-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_piratestation_01_port_01",
+      "hash": 3813385628,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_01_port_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_port-lod0.dae",
+        "detail_m_port_01-lod0.dae",
+        "detail_m_port_02-lod0.dae",
+        "detail_m_port_03-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_xs_port_01-lod0.dae",
+        "detail_xs_port_02-lod0.dae",
+        "detail_xs_port_03-lod0.dae",
+        "part_port_01-lod0.dae",
+        "part_port_02-lod0.dae",
+        "part_port_03-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_xl_resupplier_01",
+      "hash": 3521276971,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_xl_resupplier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_barrel_01",
+      "hash": 3117479067,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_barrel_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_room_01",
+      "hash": 94388175,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/landmarks_gen_spacesuit_level_01_room_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_spl_m_solid_01",
+      "hash": 3993063906,
+      "folder_path": "/assets1/structures/storage/storage_spl_m_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_hazard_fire_1s_delay6",
+      "hash": 1859928098,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_hazard_fire_1s_delay6_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_ter_s_liquid_01",
+      "hash": 465155308,
+      "folder_path": "/assets1/structures/storage/storage_ter_s_liquid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_spacesuit_vertical_segment_01",
+      "hash": 1094195575,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_spacesuit_vertical_segment_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_prop_arrow_01",
+      "hash": 843288565,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_arrow_01_data",
+      "files": []
+    }
+  ],
+  [
+    {
+      "key": "struct_bor_base_04",
+      "hash": 3724019815,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_base_04_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_bor_vertical_02",
+      "hash": 3621902985,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_vertical_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_intersection_02_a",
+      "hash": 407315975,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_intersection_02_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_pipe_s_corner_01",
+      "hash": 440586470,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_s_corner_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_straight_02_a",
+      "hash": 242098462,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_straight_02_a_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "buildmodule_gen_equip_m_dockarea_01",
+      "hash": 1647812218,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_gen_equip_m_dockarea_01_data",
+      "files": [
+        "detail_s_alpha-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_s_ship_11",
+      "hash": 3841546455,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_11_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_par_monument_expl_02",
+      "hash": 3027855205,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_expl_02_data",
+      "files": [
+        "part_mesh01-lod0.dae",
+        "part_mesh02-lod0.dae",
+        "part_mesh03-lod0.dae",
+        "part_mesh04-lod0.dae",
+        "part_mesh05-lod0.dae",
+        "part_mesh057-lod0.dae",
+        "part_mesh058-lod0.dae",
+        "part_mesh059-lod0.dae",
+        "part_mesh06-lod0.dae",
+        "part_mesh060-lod0.dae",
+        "part_mesh061-lod0.dae",
+        "part_mesh062-lod0.dae",
+        "part_mesh063-lod0.dae",
+        "part_mesh064-lod0.dae",
+        "part_mesh065-lod0.dae",
+        "part_mesh066-lod0.dae",
+        "part_mesh067-lod0.dae",
+        "part_mesh068-lod0.dae",
+        "part_mesh069-lod0.dae",
+        "part_mesh07-lod0.dae",
+        "part_mesh070-lod0.dae",
+        "part_mesh071-lod0.dae",
+        "part_mesh072-lod0.dae",
+        "part_mesh073-lod0.dae",
+        "part_mesh074-lod0.dae",
+        "part_mesh075-lod0.dae",
+        "part_mesh076-lod0.dae",
+        "part_mesh077-lod0.dae",
+        "part_mesh078-lod0.dae",
+        "part_mesh079-lod0.dae",
+        "part_mesh08-lod0.dae",
+        "part_mesh080-lod0.dae",
+        "part_mesh081-lod0.dae",
+        "part_mesh082-lod0.dae",
+        "part_mesh083-lod0.dae",
+        "part_mesh084-lod0.dae",
+        "part_mesh085-lod0.dae",
+        "part_mesh086-lod0.dae",
+        "part_mesh087-lod0.dae",
+        "part_mesh088-lod0.dae",
+        "part_mesh089-lod0.dae",
+        "part_mesh09-lod0.dae",
+        "part_mesh090-lod0.dae",
+        "part_mesh091-lod0.dae",
+        "part_mesh092-lod0.dae",
+        "part_mesh093-lod0.dae",
+        "part_mesh094-lod0.dae",
+        "part_mesh095-lod0.dae",
+        "part_mesh096-lod0.dae",
+        "part_mesh097-lod0.dae",
+        "part_mesh098-lod0.dae",
+        "part_mesh099-lod0.dae",
+        "part_mesh10-lod0.dae",
+        "part_mesh100-lod0.dae",
+        "part_mesh101-lod0.dae",
+        "part_mesh102-lod0.dae",
+        "part_mesh103-lod0.dae",
+        "part_mesh104-lod0.dae",
+        "part_mesh105-lod0.dae",
+        "part_mesh106-lod0.dae",
+        "part_mesh107-lod0.dae",
+        "part_mesh108-lod0.dae",
+        "part_mesh109-lod0.dae",
+        "part_mesh11-lod0.dae",
+        "part_mesh110-lod0.dae",
+        "part_mesh111-lod0.dae",
+        "part_mesh112-lod0.dae",
+        "part_mesh12-lod0.dae",
+        "part_mesh13-lod0.dae",
+        "part_mesh14-lod0.dae",
+        "part_mesh15-lod0.dae",
+        "part_mesh16-lod0.dae",
+        "part_mesh17-lod0.dae",
+        "part_mesh18-lod0.dae",
+        "part_mesh19-lod0.dae",
+        "part_mesh20-lod0.dae",
+        "part_mesh21-lod0.dae",
+        "part_mesh22-lod0.dae",
+        "part_mesh23-lod0.dae",
+        "part_mesh24-lod0.dae",
+        "part_mesh25-lod0.dae",
+        "part_mesh26-lod0.dae",
+        "part_mesh27-lod0.dae",
+        "part_mesh28-lod0.dae",
+        "part_mesh29-lod0.dae",
+        "part_mesh30-lod0.dae",
+        "part_mesh31-lod0.dae",
+        "part_mesh32-lod0.dae",
+        "part_mesh33-lod0.dae",
+        "part_mesh34-lod0.dae",
+        "part_mesh35-lod0.dae",
+        "part_mesh36-lod0.dae",
+        "part_mesh37-lod0.dae",
+        "part_mesh38-lod0.dae",
+        "part_mesh39-lod0.dae",
+        "part_mesh40-lod0.dae",
+        "part_mesh41-lod0.dae",
+        "part_mesh42-lod0.dae",
+        "part_mesh43-lod0.dae",
+        "part_mesh44-lod0.dae",
+        "part_mesh45-lod0.dae",
+        "part_mesh46-lod0.dae",
+        "part_mesh47-lod0.dae",
+        "part_mesh48-lod0.dae",
+        "part_mesh49-lod0.dae",
+        "part_mesh50-lod0.dae",
+        "part_mesh51-lod0.dae",
+        "part_mesh52-lod0.dae",
+        "part_mesh53-lod0.dae",
+        "part_mesh54-lod0.dae",
+        "part_mesh55-lod0.dae",
+        "part_mesh56-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_16_straight_02",
+      "hash": 2079280507,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_straight_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_ter_l_solid_01",
+      "hash": 3606005220,
+      "folder_path": "/assets1/structures/storage/storage_ter_l_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_entrance_01",
+      "hash": 2749060129,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_entrance_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_01-lod0.dae",
+        "detail_m_02-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_gen_old_ringstation",
+      "hash": 2200006510,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_old_ringstation_data",
+      "files": [
+        "part_c-lod0.dae",
+        "part_f-lod0.dae",
+        "part_lightning022-lod0.dae",
+        "part_lightning023-lod0.dae",
+        "part_lightning024-lod0.dae",
+        "part_lightning025-lod0.dae",
+        "part_lightning026-lod0.dae",
+        "part_lightning027-lod0.dae",
+        "part_lightning028-lod0.dae",
+        "part_lightning029-lod0.dae",
+        "part_lightning030-lod0.dae",
+        "part_lightning031-lod0.dae",
+        "part_lightning032-lod0.dae",
+        "part_lightning033-lod0.dae",
+        "part_lightning034-lod0.dae",
+        "part_lightning035-lod0.dae",
+        "part_lightning036-lod0.dae",
+        "part_lightning037-lod0.dae",
+        "part_lightning038-lod0.dae",
+        "part_lightning039-lod0.dae",
+        "part_lightning040-lod0.dae",
+        "part_lightning041-lod0.dae",
+        "part_lightning042-lod0.dae",
+        "part_ringstation-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_32_intersection_01_a",
+      "hash": 129362333,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_intersection_01_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_obstaclecourse_01",
+      "hash": 720158167,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_spacesuit_level_01_obstaclecourse_01_data",
+      "files": []
+    },
+    {
+      "key": "landmarks_tel_tradestation_01_ringclamp_02",
+      "hash": 3861421437,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ringclamp_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_destructible_fence_16_01",
+      "hash": 3619212403,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_fence_16_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_gen_observationdeck_02",
+      "hash": 1134954521,
+      "folder_path": "/assets1/structures/connectionmodules/struct_gen_observationdeck_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_bor_l_container_01",
+      "hash": 2487878705,
+      "folder_path": "/assets1/structures/storage/storage_bor_l_container_01_data",
+      "files": [
+        "detail_s_container_01-lod0.dae",
+        "detail_s_container_02-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container_01-lod0.dae",
+        "part_container_02-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_end_01_b",
+      "hash": 149140700,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_end_01_b_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_arg_foodrations",
+      "hash": 325433708,
+      "folder_path": "/assets1/structures/production/prod_arg_foodrations_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main_bottom-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_graphene",
+      "hash": 4048234702,
+      "folder_path": "/assets1/structures/production/prod_gen_graphene_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main_up-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_16_corner_01",
+      "hash": 492598244,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_corner_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_bor_s_liquid_01",
+      "hash": 2122803432,
+      "folder_path": "/assets1/structures/storage/storage_bor_s_liquid_01_data",
+      "files": [
+        "detail_s_container-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_vault_01",
+      "hash": 3605749638,
+      "folder_path": "/assets1/structures/landmarks/landmarks_vault_01_data",
+      "files": [
+        "detail_m_main004-lod0.dae",
+        "detail_s_main009-lod0.dae",
+        "detail_s_main016-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main004-lod0.dae",
+        "part_main020-lod0.dae",
+        "part_main062-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_s_ship_02",
+      "hash": 1405917526,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_xen_xl_mothership_01",
+      "hash": 722118661,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_xl_mothership_01_data",
+      "files": [
+        "detail_s_front-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_s_middle-lod0.dae",
+        "detail_s_middlerear-lod0.dae",
+        "detail_s_rear-lod0.dae",
+        "part_front-lod0.dae",
+        "part_main-lod0.dae",
+        "part_middle-lod0.dae",
+        "part_middlerear-lod0.dae",
+        "part_middle_arms-lod0.dae",
+        "part_middle_arms_one-lod0.dae",
+        "part_middle_arms_three-lod0.dae",
+        "part_middle_arms_two-lod0.dae",
+        "part_rear-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_ter_medicalsupplies",
+      "hash": 2542323014,
+      "folder_path": "/assets1/structures/production/prod_ter_medicalsupplies_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_32_to_16_01_a",
+      "hash": 4100686736,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_to_16_01_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "buildmodule_ter_equip_m_dockarea_01",
+      "hash": 1323133887,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_equip_m_dockarea_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "hab_spl_s_01",
+      "hash": 2498677823,
+      "folder_path": "/assets1/structures/habitat/hab_spl_s_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "pier_bor_harbor_04",
+      "hash": 1354080687,
+      "folder_path": "/assets1/structures/dock/pier_bor_harbor_04_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_spl_s_container_01",
+      "hash": 2624524527,
+      "folder_path": "/assets1/structures/storage/storage_spl_s_container_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_turretcomponents",
+      "hash": 325663659,
+      "folder_path": "/assets1/structures/production/prod_gen_turretcomponents_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockingbay_arg_m_01_lowtech",
+      "hash": 1355629014,
+      "folder_path": "/assets1/structures/dock/dockingbay_arg_m_01_lowtech_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_cargotube_bottom-lod0.dae",
+        "detail_m_decals-lod0.dae",
+        "detail_s_cargotube_top-lod0.dae",
+        "detail_xl_ladder-lod0.dae",
+        "detail_xs_decals_floor-lod0.dae",
+        "detail_xs_fence_back-lod0.dae",
+        "detail_xs_fence_front-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_par_monument_clamp_01",
+      "hash": 49014950,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_clamp_01_data",
+      "files": [
+        "part_clamp_base-lod0.dae",
+        "part_clamp_left-lod0.dae",
+        "part_clamp_right-lod0.dae",
+        "part_clamp_strut_left-lod0.dae",
+        "part_clamp_strut_right-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_player_hq_02",
+      "hash": 2230904431,
+      "folder_path": "/assets1/structures/landmarks/landmarks_player_hq_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockingbay_arg_s_01",
+      "hash": 148684559,
+      "folder_path": "/assets1/structures/dock/dockingbay_arg_s_01_data",
+      "files": [
+        "detail_s_door_01-lod0.dae",
+        "detail_s_door_02-lod0.dae",
+        "detail_s_floor-lod0.dae",
+        "detail_xl_cargotube_bottom-lod0.dae",
+        "detail_xl_cargotube_top-lod0.dae",
+        "detail_xl_terminal-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_static-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_intersection_01_b",
+      "hash": 2161452708,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_intersection_01_b_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_ter_harbor_05",
+      "hash": 3527491120,
+      "folder_path": "/assets1/structures/dock/pier_ter_harbor_05_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_ter_m_liquid_01",
+      "hash": 166570937,
+      "folder_path": "/assets1/structures/storage/storage_ter_m_liquid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockingbay_arg_s_01_lowtech",
+      "hash": 1434289933,
+      "folder_path": "/assets1/structures/dock/dockingbay_arg_s_01_lowtech_data",
+      "files": [
+        "detail_s_door_01-lod0.dae",
+        "detail_s_door_02-lod0.dae",
+        "detail_s_floor-lod0.dae",
+        "detail_xl_cargotube_bottom-lod0.dae",
+        "detail_xl_cargotube_top-lod0.dae",
+        "detail_xl_terminal-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_static-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_intersection_01",
+      "hash": 2468475860,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_intersection_01_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_par_s_container_01",
+      "hash": 1507804468,
+      "folder_path": "/assets1/structures/storage/storage_par_s_container_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_detector_02_32_32_4",
+      "hash": 1177525982,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_detector_02_32_32_4_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_02_part_01",
+      "hash": 642435356,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_02_part_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "defence_arg_tube_01",
+      "hash": 1300065697,
+      "folder_path": "/assets1/structures/defence/defence_arg_tube_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "storage_ter_m_solid_01",
+      "hash": 80727367,
+      "folder_path": "/assets1/structures/storage/storage_ter_m_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_atf_xl_battleship_01",
+      "hash": 890102655,
+      "folder_path": "/assets1/structures/dock/dockarea_atf_xl_battleship_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_spacesuit_vertical_bottom_01",
+      "hash": 1991058266,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_spacesuit_vertical_bottom_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "hab_par_s_01",
+      "hash": 1139111579,
+      "folder_path": "/assets1/structures/habitat/hab_par_s_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_arg_disc_01",
+      "hash": 4268080031,
+      "folder_path": "/assets1/structures/defence/defence_arg_disc_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_par_l_miner_mineral_01",
+      "hash": 3152796979,
+      "folder_path": "/assets1/structures/dock/dockarea_par_l_miner_mineral_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "dockingbay_gen_xl_inv",
+      "hash": 960366464,
+      "folder_path": "/assets1/structures/dock/dockingbay_gen_xl_inv_data",
+      "files": [
+        "part_dummy-lod0.dae"
+      ]
+    },
+    {
+      "key": "launchtube_arg_m_01",
+      "hash": 3923986538,
+      "folder_path": "/assets1/structures/dock/launchtube_arg_m_01_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "storage_ter_m_container_tradestation_01",
+      "hash": 1413031788,
+      "folder_path": "/assets1/structures/storage/storage_ter_m_container_tradestation_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_par_vertical_02",
+      "hash": 2013049042,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_vertical_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_gen_observationdeck_03",
+      "hash": 1435066581,
+      "folder_path": "/assets1/structures/connectionmodules/struct_gen_observationdeck_03_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_spl_s_liquid_01",
+      "hash": 1286916031,
+      "folder_path": "/assets1/structures/storage/storage_spl_s_liquid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_corner_02",
+      "hash": 1409601280,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_corner_02_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_gen_m_inv_01",
+      "hash": 1517763404,
+      "folder_path": "/assets1/structures/dock/dockarea_gen_m_inv_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_xen_water_old_bridge_03",
+      "hash": 1367762454,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_bridge_03_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_fountain_base-lod0.dae",
+        "part_fountain_ice-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_arg_antigonespire_01",
+      "hash": 3670829226,
+      "folder_path": "/assets1/structures/landmarks/landmarks_arg_antigonespire_01_data",
+      "files": [
+        "detail_xs_main_bottom-lod0.dae",
+        "detail_xs_main_top_01-lod0.dae",
+        "detail_xs_main_top_02-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_gatestation_01_stage_01",
+      "hash": 1826902342,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_gatestation_01_stage_01_data",
+      "files": [
+        "detail_s_main_stage_01-lod0.dae",
+        "part_main_stage_01-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_par_xl_carrier_01",
+      "hash": 1812579800,
+      "folder_path": "/assets1/structures/dock/dockarea_par_xl_carrier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_straight_03",
+      "hash": 1455697395,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_03_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_arg_cross_04",
+      "hash": 109817695,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_cross_04_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_hazard_radiation_01",
+      "hash": 339252495,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_hazard_radiation_01_data",
+      "files": [
+        "part_main-lod0.dae",
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "prod_gen_microchips",
+      "hash": 3742541072,
+      "folder_path": "/assets1/structures/production/prod_gen_microchips_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "detail_xs_dock-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_kha_tetrahedron_05",
+      "hash": 2535918266,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_tetrahedron_05_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_s_ship_01",
+      "hash": 2530325489,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_gen_venturerbase_02",
+      "hash": 1827248476,
+      "folder_path": "/assets1/structures/venture/struct_gen_venturerbase_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_xen_m_station_01",
+      "hash": 3265519715,
+      "folder_path": "/assets1/structures/landmarks/dockarea_xen_m_station_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_bor_plankton",
+      "hash": 3580752857,
+      "folder_path": "/assets1/structures/production/prod_bor_plankton_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_pipe_l_corner_01",
+      "hash": 181402343,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_l_corner_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_pipe_l_straight_02",
+      "hash": 3020381599,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_l_straight_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_ter_cross_01",
+      "hash": 2466656121,
+      "folder_path": "/assets1/structures/connectionmodules/struct_ter_cross_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "struct_spl_base_02",
+      "hash": 3636898351,
+      "folder_path": "/assets1/structures/connectionmodules/struct_spl_base_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "defence_spl_tube_01",
+      "hash": 1161967063,
+      "folder_path": "/assets1/structures/defence/defence_spl_tube_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_textdisplay_02",
+      "hash": 2737056533,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_textdisplay_02_data",
+      "files": [
+        "part_display-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_tel_claim_01",
+      "hash": 2813202960,
+      "folder_path": "/assets1/structures/defence/defence_tel_claim_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_par_monument_core_01",
+      "hash": 4155467474,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_core_01_data",
+      "files": [
+        "part_explosive_center_a_glass-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_destructible_hatch_16_01",
+      "hash": 1232422871,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_destructible_hatch_16_01_data",
+      "files": [
+        "detail_m_01-lod0.dae",
+        "detail_m_02-lod0.dae",
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "proc_gen_scrapworks",
+      "hash": 2240467169,
+      "folder_path": "/assets1/structures/processingmodule/proc_gen_scrapworks_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_entry_details-lod0.dae",
+        "part_entry_details_khaak-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_center_01",
+      "hash": 3457792450,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_center_01_data",
+      "files": [
+        "detail_l_innerarea_alpha-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_l_poslights-lod0.dae",
+        "detail_s_base-lod0.dae",
+        "detail_s_dockarea-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "detail_s_floodlights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_s_main01-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "detail_xs_base-lod0.dae",
+        "detail_xs_poslightglow-lod0.dae",
+        "part_dock-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_16_end_01",
+      "hash": 1920157355,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_end_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_prop_pipe_l_straight_01",
+      "hash": 2931493969,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_l_straight_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_par_monument_expldummy_02",
+      "hash": 364557616,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_expldummy_02_data",
+      "files": [
+        "part_center_explosiondummy_small-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "pier_par_harbor_02",
+      "hash": 4224856833,
+      "folder_path": "/assets1/structures/dock/pier_par_harbor_02_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_bor_ships_l",
+      "hash": 1869116680,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_bor_ships_l_data",
+      "files": [
+        "detail_s_main_01-lod0.dae",
+        "detail_s_main_02-lod0.dae",
+        "part_main_01-lod0.dae",
+        "part_main_02-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_arg_equip_l",
+      "hash": 2263413104,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_arg_equip_l_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "buildmodule_bor_equip_m_dockarea_01",
+      "hash": 2524682594,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_bor_equip_m_dockarea_01_data",
+      "files": [
+        "detail_s_exterior-lod0.dae",
+        "detail_xs_interior-lod0.dae",
+        "part_exterior-lod0.dae",
+        "part_interior-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_ter_vertical_02",
+      "hash": 383126432,
+      "folder_path": "/assets1/structures/connectionmodules/struct_ter_vertical_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_s_ship_07",
+      "hash": 2287956271,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_07_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_bor_m_station_01_standard",
+      "hash": 2619687683,
+      "folder_path": "/assets1/structures/dock/dockarea_bor_m_station_01_standard_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_bor_s_container_01",
+      "hash": 3509608525,
+      "folder_path": "/assets1/structures/storage/storage_bor_s_container_01_data",
+      "files": [
+        "detail_s_container-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_par_majadust",
+      "hash": 1798511673,
+      "folder_path": "/assets1/structures/production/prod_par_majadust_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_arg_m_solid_01",
+      "hash": 380850433,
+      "folder_path": "/assets1/structures/storage/storage_arg_m_solid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_ter_m_01",
+      "hash": 3058829074,
+      "folder_path": "/assets1/structures/habitat/hab_ter_m_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_xen_water_old_connector_03",
+      "hash": 3850901355,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_connector_03_data",
+      "files": [
+        "detail_s_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_bor_harbor_02",
+      "hash": 742678655,
+      "folder_path": "/assets1/structures/dock/pier_bor_harbor_02_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_extension_01",
+      "hash": 542709596,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_extension_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_bor_tradestation_01",
+      "hash": 1752577023,
+      "folder_path": "/assets1/structures/dock/pier_bor_tradestation_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main_bottom-lod0.dae",
+        "part_main_top-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_bor_bofu",
+      "hash": 4192859498,
+      "folder_path": "/assets1/structures/production/prod_bor_bofu_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_bofu-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_gen_ships_m_dockarea_01",
+      "hash": 74356856,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_gen_ships_m_dockarea_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_exploration_01",
+      "hash": 1106556626,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_exploration_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_decals-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_debree-lod0.dae",
+        "detail_xs_interior-lod0.dae",
+        "part_interior-lod0.dae",
+        "part_station-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_piratestation_01_asteorid_01",
+      "hash": 1201927389,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_01_asteorid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_32_straight_04",
+      "hash": 2518049055,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_04_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "storage_par_l_liquid_01",
+      "hash": 61027382,
+      "folder_path": "/assets1/structures/storage/storage_par_l_liquid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_par_cross_02",
+      "hash": 3781280867,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_cross_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "buildmodule_arg_ships_xl",
+      "hash": 1298277781,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_arg_ships_xl_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main_L-lod0.dae",
+        "detail_s_main_R-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_bor_m_liquid_01",
+      "hash": 1095276903,
+      "folder_path": "/assets1/structures/storage/storage_bor_m_liquid_01_data",
+      "files": [
+        "detail_s_container-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_tel_m_01",
+      "hash": 4099216842,
+      "folder_path": "/assets1/structures/habitat/hab_tel_m_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_gen_xl_venturer_01",
+      "hash": 3622142889,
+      "folder_path": "/assets1/structures/venture/dockarea_gen_xl_venturer_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_biathloncourse_01",
+      "hash": 4229559293,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_spacesuit_level_01_biathloncourse_01_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "prod_ter_siliconcarbide",
+      "hash": 598644739,
+      "folder_path": "/assets1/structures/production/prod_ter_siliconcarbide_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_destructible_shoottarget_01",
+      "hash": 3063022761,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_shoottarget_01_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_destructible_hatch_32_01",
+      "hash": 962500699,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_hatch_32_01_data",
+      "files": [
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_gen_piratestation_02_ring_01",
+      "hash": 3293289208,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_02_ring_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_m_centre-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_s_ring_01-lod0.dae",
+        "detail_s_ring_02-lod0.dae",
+        "detail_s_ring_03-lod0.dae",
+        "detail_s_ring_04-lod0.dae",
+        "detail_xs_cables-lod0.dae",
+        "part_centre-lod0.dae",
+        "part_ring_01-lod0.dae",
+        "part_ring_02-lod0.dae",
+        "part_ring_03-lod0.dae",
+        "part_ring_04-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_ringclamp_01",
+      "hash": 3864590422,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ringclamp_01_data",
+      "files": [
+        "detail_l_docks-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_spacesuit_vertical_top_01",
+      "hash": 254879017,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_spacesuit_vertical_top_01_data",
+      "files": [
+        "detail_s_wall_fan-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "station_soh_hub_01",
+      "hash": 319690680,
+      "folder_path": "/assets1/structures/landmarks/station_soh_hub_01_data",
+      "files": []
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_spacesuit_vertical_doorframe_01",
+      "hash": 527241119,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_spacesuit_vertical_doorframe_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_bor_tube_01",
+      "hash": 2393282290,
+      "folder_path": "/assets1/structures/defence/defence_bor_tube_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_bor_cross_02",
+      "hash": 2458142874,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_cross_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_03",
+      "hash": 515966292,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "hab_spl_l_01",
+      "hash": 3286071078,
+      "folder_path": "/assets1/structures/habitat/hab_spl_l_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_arg_antigonepillar_01",
+      "hash": 1453894778,
+      "folder_path": "/assets1/structures/landmarks/landmarks_arg_antigonepillar_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_tel_l_transporter_01",
+      "hash": 3424557484,
+      "folder_path": "/assets1/structures/dock/dockarea_tel_l_transporter_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "hab_pir_s_01",
+      "hash": 2812516918,
+      "folder_path": "/assets1/structures/habitat/hab_pir_s_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_l_radiators_001-lod0.dae",
+        "detail_l_radiators_002-lod0.dae",
+        "detail_l_radiators_003-lod0.dae",
+        "detail_l_radiators_004-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_smartchips",
+      "hash": 3036769868,
+      "folder_path": "/assets1/structures/production/prod_gen_smartchips_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main_bottom-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "pier_tel_harbor_02",
+      "hash": 2959159526,
+      "folder_path": "/assets1/structures/dock/pier_tel_harbor_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_par_m_solid_01",
+      "hash": 2269293357,
+      "folder_path": "/assets1/structures/storage/storage_par_m_solid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_gen_energycells",
+      "hash": 3474465691,
+      "folder_path": "/assets1/structures/production/prod_gen_energycells_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "hab_par_m_01",
+      "hash": 2921870272,
+      "folder_path": "/assets1/structures/habitat/hab_par_m_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_bor_m_container_01",
+      "hash": 3576972669,
+      "folder_path": "/assets1/structures/storage/storage_bor_m_container_01_data",
+      "files": [
+        "detail_s_container-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_m_ship_02",
+      "hash": 2141739365,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_ship_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_ter_base_03",
+      "hash": 1956129548,
+      "folder_path": "/assets1/structures/connectionmodules/struct_ter_base_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockarea_pir_xl_battleship_01",
+      "hash": 1886806239,
+      "folder_path": "/assets1/structures/dock/dockarea_pir_xl_battleship_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_siliconwafers",
+      "hash": 1211316433,
+      "folder_path": "/assets1/structures/production/prod_gen_siliconwafers_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_dronecomponents",
+      "hash": 1101482474,
+      "folder_path": "/assets1/structures/production/prod_gen_dronecomponents_data",
+      "files": [
+        "detail_l_pipes-lod0.dae",
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_main_techcubes-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_spl_base_03",
+      "hash": 3912632362,
+      "folder_path": "/assets1/structures/connectionmodules/struct_spl_base_03_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_gen_countermeasures",
+      "hash": 1919100780,
+      "folder_path": "/assets1/structures/production/prod_gen_countermeasures_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_s_cells-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_cells_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "defence_par_tube_01",
+      "hash": 1249659934,
+      "folder_path": "/assets1/structures/defence/defence_par_tube_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildstorage_gen_base_01",
+      "hash": 4163953973,
+      "folder_path": "/assets1/structures/buildstorage/buildstorage_gen_base_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "pier_arg_single_01_tradestation_01",
+      "hash": 486699946,
+      "folder_path": "/assets1/structures/dock/pier_arg_single_01_tradestation_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_16_straight_01_a",
+      "hash": 3765795316,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_straight_01_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_tel_cross_01",
+      "hash": 628558163,
+      "folder_path": "/assets1/structures/connectionmodules/struct_tel_cross_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_spl_xl_resupplier_01",
+      "hash": 4283755387,
+      "folder_path": "/assets1/structures/dock/dockarea_spl_xl_resupplier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_player_hq_01",
+      "hash": 6995321,
+      "folder_path": "/assets1/structures/landmarks/landmarks_player_hq_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_bor_equip_xl",
+      "hash": 3529429779,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_bor_equip_xl_data",
+      "files": [
+        "detail_s_main_02-lod0.dae",
+        "part_main_02-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_bor_l_liquid_01",
+      "hash": 3019633238,
+      "folder_path": "/assets1/structures/storage/storage_bor_l_liquid_01_data",
+      "files": [
+        "detail_s_container_01-lod0.dae",
+        "detail_s_container_02-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_container_01-lod0.dae",
+        "part_container_02-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "welfare_bor_artacademy_01",
+      "hash": 2007452756,
+      "folder_path": "/assets1/structures/welfare/welfare_bor_artacademy_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_16_straight_03",
+      "hash": 2764908026,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_straight_03_data",
+      "files": [
+        "detail_l_-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_spices",
+      "hash": 2025468775,
+      "folder_path": "/assets1/structures/production/prod_gen_spices_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_panel_01_a",
+      "hash": 2190283924,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_panel_01_a_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "struct_spl_base_01",
+      "hash": 3666175867,
+      "folder_path": "/assets1/structures/connectionmodules/struct_spl_base_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_roombase_04",
+      "hash": 1957597172,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_roombase_04_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_01_part_01",
+      "hash": 400024737,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_part_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_tel_l_container_01",
+      "hash": 2117697663,
+      "folder_path": "/assets1/structures/storage/storage_tel_l_container_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "defence_kha_disc_01",
+      "hash": 1800763337,
+      "folder_path": "/assets1/structures/defence/defence_kha_disc_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "pier_ter_harbor_04",
+      "hash": 3702415824,
+      "folder_path": "/assets1/structures/dock/pier_ter_harbor_04_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_tel_nostropoil",
+      "hash": 1447982876,
+      "folder_path": "/assets1/structures/production/prod_tel_nostropoil_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "masstraffic_station_03_center_01",
+      "hash": 3437746397,
+      "folder_path": "/assets1/structures/landmarks/masstraffic_station_03_center_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "defence_spl_disc_01",
+      "hash": 4160875727,
+      "folder_path": "/assets1/structures/defence/defence_spl_disc_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_tel_s_container_01",
+      "hash": 2648537165,
+      "folder_path": "/assets1/structures/storage/storage_tel_s_container_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_fan_02_forceemitter",
+      "hash": 2832714854,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_fan_02_forceemitter_data",
+      "files": []
+    },
+    {
+      "key": "scs_gen_spacesuit_32_roombase_02",
+      "hash": 1653022507,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_roombase_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "xenon_small_station_01_storage_01",
+      "hash": 1021420058,
+      "folder_path": "/assets1/structures/landmarks/xenon_small_station_01_storage_01_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_xen_water_old_destillery_02",
+      "hash": 2696393164,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_destillery_02_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_16_intersection_02",
+      "hash": 3887373801,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_intersection_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_tel_m_container_01",
+      "hash": 1637227468,
+      "folder_path": "/assets1/structures/storage/storage_tel_m_container_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "launchtube_xen_m_01",
+      "hash": 749182710,
+      "folder_path": "/assets1/structures/dock/launchtube_xen_m_01_data",
+      "files": []
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_straight_03",
+      "hash": 814110558,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_straight_03_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_ter_harbor_02",
+      "hash": 2619465247,
+      "folder_path": "/assets1/structures/dock/pier_ter_harbor_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_intersection_01",
+      "hash": 902364690,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_intersection_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_gen_m_venturer_01",
+      "hash": 566658530,
+      "folder_path": "/assets1/structures/venture/dockarea_gen_m_venturer_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xl_ringskirt_01-lod0.dae",
+        "detail_xl_ringskirt_02-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae",
+        "part_ring_inner-lod0.dae",
+        "part_ring_outer-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_bor_medicalsupplies",
+      "hash": 959308799,
+      "folder_path": "/assets1/structures/production/prod_bor_medicalsupplies_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_tel_l_liquid_01",
+      "hash": 2827104974,
+      "folder_path": "/assets1/structures/storage/storage_tel_l_liquid_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_poslights-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_ter_harbor_01",
+      "hash": 3612557157,
+      "folder_path": "/assets1/structures/dock/pier_ter_harbor_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "defence_par_disc_01",
+      "hash": 1717221471,
+      "folder_path": "/assets1/structures/defence/defence_par_disc_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_32_straight_02",
+      "hash": 1509673480,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_02_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_ter_base_02",
+      "hash": 3226172327,
+      "folder_path": "/assets1/structures/connectionmodules/struct_ter_base_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "pier_tel_harbor_01",
+      "hash": 1499207051,
+      "folder_path": "/assets1/structures/dock/pier_tel_harbor_01_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_tel_swampplants",
+      "hash": 131052851,
+      "folder_path": "/assets1/structures/production/prod_tel_swampplants_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xs_plants-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_32_corner_01",
+      "hash": 3994070794,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_corner_01_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_destructible_hatch_16_01",
+      "hash": 520250588,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_destructible_hatch_16_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae",
+        "part_trigger-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_kha_hive_cluster_01",
+      "hash": 2121376506,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_hive_cluster_01_data",
+      "files": [
+        "detail_m_tech-lod0.dae",
+        "detail_s_wires-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_ring_inside_02",
+      "hash": 3920882809,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ring_inside_02_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_s_trees-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_gen_prison_01",
+      "hash": 495239020,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_prison_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_32_straight_01_a",
+      "hash": 905674151,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_01_a_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_par_majasnails",
+      "hash": 2135329719,
+      "folder_path": "/assets1/structures/production/prod_par_majasnails_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_glass-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_spl_cheltmeat",
+      "hash": 1288759336,
+      "folder_path": "/assets1/structures/production/prod_spl_cheltmeat_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_xl_carrier_01",
+      "hash": 3987875086,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_xl_carrier_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "pier_bor_harbor_03",
+      "hash": 1633043623,
+      "folder_path": "/assets1/structures/dock/pier_bor_harbor_03_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main_center-lod0.dae",
+        "part_main_left-lod0.dae",
+        "part_main_right-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_gen_piratestation_01_core_01",
+      "hash": 2678393089,
+      "folder_path": "/assets1/structures/landmarks/landmarks_gen_piratestation_01_core_01_data",
+      "files": [
+        "detail_l_radiator-lod0.dae",
+        "detail_m_front_02-lod0.dae",
+        "detail_s_back_01-lod0.dae",
+        "detail_s_core_01-lod0.dae",
+        "detail_s_dock-lod0.dae",
+        "detail_s_front_01-lod0.dae",
+        "detail_xs_back_01-lod0.dae",
+        "detail_xs_core_01-lod0.dae",
+        "detail_xs_front_01-lod0.dae",
+        "detail_xs_main_cables-lod0.dae",
+        "part_back_01-lod0.dae",
+        "part_core_01-lod0.dae",
+        "part_front_01-lod0.dae",
+        "part_front_02-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_spl_vertical_02",
+      "hash": 1547248952,
+      "folder_path": "/assets1/structures/connectionmodules/struct_spl_vertical_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_column_02",
+      "hash": 4170969198,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_column_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_room_02",
+      "hash": 1640510043,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/landmarks_gen_spacesuit_level_01_room_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "storage_arg_s_liquid_01",
+      "hash": 4150672294,
+      "folder_path": "/assets1/structures/storage/storage_arg_s_liquid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "defence_bor_claim_01",
+      "hash": 694443720,
+      "folder_path": "/assets1/structures/defence/defence_bor_claim_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_arg_m_container_01",
+      "hash": 614930376,
+      "folder_path": "/assets1/structures/storage/storage_arg_m_container_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_ter_vertical_01",
+      "hash": 3637572432,
+      "folder_path": "/assets1/structures/connectionmodules/struct_ter_vertical_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_kha_tetrahedron_03",
+      "hash": 3417330925,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_tetrahedron_03_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_arg_harbor_04",
+      "hash": 2393907404,
+      "folder_path": "/assets1/structures/dock/pier_arg_harbor_04_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_corner_01_a",
+      "hash": 1733769921,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_corner_01_a_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_ter_computronicsubstrate",
+      "hash": 3812553168,
+      "folder_path": "/assets1/structures/production/prod_ter_computronicsubstrate_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "welfare_gen_casino_01",
+      "hash": 4186207799,
+      "folder_path": "/assets1/structures/welfare/welfare_gen_casino_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_tradelocation_01",
+      "hash": 1556324860,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_tradelocation_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "xenon_asteroid_philae_01",
+      "hash": 2093487254,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_philae_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_arg_base_03",
+      "hash": 1922218336,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_base_03_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "struct_par_base_03",
+      "hash": 453013762,
+      "folder_path": "/assets1/structures/connectionmodules/struct_par_base_03_data",
+      "files": [
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_arg_m_station_01_hightech",
+      "hash": 1938259208,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_station_01_hightech_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_arg_s_01",
+      "hash": 459814868,
+      "folder_path": "/assets1/structures/habitat/hab_arg_s_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_to_16_01_a",
+      "hash": 511452377,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_to_16_01_a_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_ter_l_container_01",
+      "hash": 2682519531,
+      "folder_path": "/assets1/structures/storage/storage_ter_l_container_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "struct_arg_vertical_01",
+      "hash": 2658519382,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_vertical_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_hazard_fire_1s_delay0",
+      "hash": 2351595302,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_hazard_fire_1s_delay0_data",
+      "files": []
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_hazard_fire_1s_delay4",
+      "hash": 535326566,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_hazard_fire_1s_delay4_data",
+      "files": []
+    },
+    {
+      "key": "scs_gen_prop_textdisplay_01",
+      "hash": 2900229436,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_textdisplay_01_data",
+      "files": [
+        "part_display-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_ter_stimulants",
+      "hash": 540493745,
+      "folder_path": "/assets1/structures/production/prod_ter_stimulants_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_bridge_01",
+      "hash": 299090669,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_bridge_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmarks_xen_water_old_bridge_02",
+      "hash": 980877708,
+      "folder_path": "/assets1/structures/landmarks/landmarks_xen_water_old_bridge_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_alpha-lod0.dae",
+        "detail_s_fountain_base-lod0.dae",
+        "part_fountain_ice-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "pier_ter_tradestation_01",
+      "hash": 2262469193,
+      "folder_path": "/assets1/structures/dock/pier_ter_tradestation_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_tel_l_01",
+      "hash": 2435627649,
+      "folder_path": "/assets1/structures/habitat/hab_tel_l_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "torus_turretbase_v2",
+      "hash": 3980230175,
+      "folder_path": "/assets1/structures/landmarks/torus_turretbase_v2_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_column_01",
+      "hash": 2344482353,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_column_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "hab_spl_m_01",
+      "hash": 2229198705,
+      "folder_path": "/assets1/structures/habitat/hab_spl_m_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_gen_spacesuit_level_01_room_04",
+      "hash": 2750721373,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/landmarks_gen_spacesuit_level_01_room_04_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_s_ship_12",
+      "hash": 4103855912,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_s_ship_12_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_prop_fan_01",
+      "hash": 1067307126,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_fan_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_bor_cross_01",
+      "hash": 696793162,
+      "folder_path": "/assets1/structures/connectionmodules/struct_bor_cross_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "landmarks_tel_spacesuit_vertical_alcoves_01",
+      "hash": 3903936996,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_spacesuit_vertical_alcoves_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01_ring_inside_03",
+      "hash": 2985101989,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_ring_inside_03_data",
+      "files": [
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "part_walls-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_kha_hive_02",
+      "hash": 1541365166,
+      "folder_path": "/assets1/structures/landmarks/landmarks_kha_hive_02_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_l_megadish-lod0.dae",
+        "detail_l_pyramidm-lod0.dae",
+        "detail_m_asteroid_01-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_m_megadish-lod0.dae",
+        "detail_m_pyramid-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_asteroid_01-lod0.dae",
+        "part_asteroid_01-lod0.dae",
+        "part_asteroid_02-lod0.dae",
+        "part_asteroid_03-lod0.dae",
+        "part_main-lod0.dae",
+        "part_megadish-lod0.dae",
+        "part_pyramidm-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_16_intersection_02",
+      "hash": 2900136511,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_16_intersection_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_spacesuit_32_to_16_01",
+      "hash": 697400995,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_to_16_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_entranceplug_01",
+      "hash": 1966986291,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_entranceplug_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_ter_proteinpaste",
+      "hash": 58110770,
+      "folder_path": "/assets1/structures/production/prod_ter_proteinpaste_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "struct_arg_cross_02",
+      "hash": 2246873512,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_cross_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_asteroid_16_intersection_01",
+      "hash": 2378189468,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_16_intersection_01_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_par_l_miner_solid_01",
+      "hash": 2067332222,
+      "folder_path": "/assets1/structures/dock/dockarea_par_l_miner_solid_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "dockingbay_gen_l_inv",
+      "hash": 1633058375,
+      "folder_path": "/assets1/structures/dock/dockingbay_gen_l_inv_data",
+      "files": [
+        "part_boundingbox-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_par_monument_center_01",
+      "hash": 350064111,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_center_01_data",
+      "files": [
+        "detail_l_center01-lod0.dae",
+        "detail_m_center-lod0.dae",
+        "detail_xs_center-lod0.dae",
+        "part_backplate01-lod0.dae",
+        "part_backplate02-lod0.dae",
+        "part_backplate03-lod0.dae",
+        "part_backplate04-lod0.dae",
+        "part_backplate05-lod0.dae",
+        "part_backplate06-lod0.dae",
+        "part_backplate07-lod0.dae",
+        "part_backplate08-lod0.dae",
+        "part_blastshield02-lod0.dae",
+        "part_blastshield03-lod0.dae",
+        "part_blastshield04-lod0.dae",
+        "part_bridge01-lod0.dae",
+        "part_bridge011-lod0.dae",
+        "part_bridge012-lod0.dae",
+        "part_bridge013-lod0.dae",
+        "part_bridge02-lod0.dae",
+        "part_bridge03-lod0.dae",
+        "part_bridge04-lod0.dae",
+        "part_bridge05-lod0.dae",
+        "part_center-lod0.dae",
+        "part_doorframe-lod0.dae",
+        "part_doorframe003-lod0.dae",
+        "part_doorframe004-lod0.dae",
+        "part_doorframe005-lod0.dae",
+        "part_doorframe006-lod0.dae",
+        "part_doorframe1-lod0.dae",
+        "part_doorwindow_lower-lod0.dae",
+        "part_doorwindow_lower002-lod0.dae",
+        "part_doorwindow_lower003-lod0.dae",
+        "part_doorwindow_lower004-lod0.dae",
+        "part_doorwindow_lower005-lod0.dae",
+        "part_doorwindow_lower006-lod0.dae",
+        "part_doorwindow_upper-lod0.dae",
+        "part_doorwindow_upper002-lod0.dae",
+        "part_doorwindow_upper003-lod0.dae",
+        "part_doorwindow_upper004-lod0.dae",
+        "part_doorwindow_upper005-lod0.dae",
+        "part_doorwindow_upper006-lod0.dae",
+        "part_door_round_window_lower-lod0.dae",
+        "part_door_round_window_lower001-lod0.dae",
+        "part_door_round_window_lower002-lod0.dae",
+        "part_door_round_window_upper-lod0.dae",
+        "part_door_round_window_upper001-lod0.dae",
+        "part_door_round_window_upper002-lod0.dae",
+        "part_entry01-lod0.dae",
+        "part_entry02-lod0.dae",
+        "part_entry03-lod0.dae",
+        "part_entry04-lod0.dae",
+        "part_entry05-lod0.dae",
+        "part_entry06-lod0.dae",
+        "part_entry07-lod0.dae",
+        "part_entry08-lod0.dae",
+        "part_entry09-lod0.dae",
+        "part_entry10-lod0.dae",
+        "part_explosive_ccover_a_bottom-lod0.dae",
+        "part_explosive_ccover_a_bottom002-lod0.dae",
+        "part_explosive_cover_a_bottom_glass-lod0.dae",
+        "part_explosive_cover_a_top-lod0.dae",
+        "part_explosive_cover_a_top002-lod0.dae",
+        "part_explosive_cover_a_top_glass-lod0.dae",
+        "part_explosive_cover_b_bottom_glass-lod0.dae",
+        "part_explosive_cover_b_top_glass-lod0.dae",
+        "part_fence01-lod0.dae",
+        "part_fence02-lod0.dae",
+        "part_fence03-lod0.dae",
+        "part_fence04-lod0.dae",
+        "part_fence05-lod0.dae",
+        "part_fence06-lod0.dae",
+        "part_fence07-lod0.dae",
+        "part_fence08-lod0.dae",
+        "part_fogplane005-lod0.dae",
+        "part_fogplane006-lod0.dae",
+        "part_fogplane007-lod0.dae",
+        "part_fogplane008-lod0.dae",
+        "part_fogplane009-lod0.dae",
+        "part_fogplane01-lod0.dae",
+        "part_fogplane010-lod0.dae",
+        "part_fogplane02-lod0.dae",
+        "part_fogplane03-lod0.dae",
+        "part_fogplane04-lod0.dae",
+        "part_forcefield-lod0.dae",
+        "part_forcefield2-lod0.dae",
+        "part_gang003-lod0.dae",
+        "part_gang004-lod0.dae",
+        "part_gang005-lod0.dae",
+        "part_gang006-lod0.dae",
+        "part_gang007-lod0.dae",
+        "part_gang008-lod0.dae",
+        "part_gang009-lod0.dae",
+        "part_gang01-lod0.dae",
+        "part_gang010-lod0.dae",
+        "part_gang011-lod0.dae",
+        "part_gang012-lod0.dae",
+        "part_gang013-lod0.dae",
+        "part_gang014-lod0.dae",
+        "part_gang015-lod0.dae",
+        "part_gang016-lod0.dae",
+        "part_gang017-lod0.dae",
+        "part_gang018-lod0.dae",
+        "part_gang019-lod0.dae",
+        "part_gang020-lod0.dae",
+        "part_gang021-lod0.dae",
+        "part_gang022-lod0.dae",
+        "part_gang023-lod0.dae",
+        "part_gang025-lod0.dae",
+        "part_gang026-lod0.dae",
+        "part_gang027-lod0.dae",
+        "part_gang028-lod0.dae",
+        "part_gang029-lod0.dae",
+        "part_gang030-lod0.dae",
+        "part_gang031-lod0.dae",
+        "part_gang032-lod0.dae",
+        "part_gang033-lod0.dae",
+        "part_gang035-lod0.dae",
+        "part_gang036-lod0.dae",
+        "part_gang037-lod0.dae",
+        "part_gang039-lod0.dae",
+        "part_gang040-lod0.dae",
+        "part_gang041-lod0.dae",
+        "part_gang042-lod0.dae",
+        "part_glass02-lod0.dae",
+        "part_glassfront01-lod0.dae",
+        "part_glassfront02-lod0.dae",
+        "part_glassfront03-lod0.dae",
+        "part_glassfront04-lod0.dae",
+        "part_glassfront05-lod0.dae",
+        "part_glassfront06-lod0.dae",
+        "part_glassfront07-lod0.dae",
+        "part_glassfront08-lod0.dae",
+        "part_lamp01-lod0.dae",
+        "part_lamp02-lod0.dae",
+        "part_lamp03-lod0.dae",
+        "part_lamp04-lod0.dae",
+        "part_lamp05-lod0.dae",
+        "part_lamp06-lod0.dae",
+        "part_lamp07-lod0.dae",
+        "part_lamp08-lod0.dae",
+        "part_lamp09-lod0.dae",
+        "part_lamp10-lod0.dae",
+        "part_lamp11-lod0.dae",
+        "part_lamp12-lod0.dae",
+        "part_liquid01-lod0.dae",
+        "part_liquid02-lod0.dae",
+        "part_liquid03-lod0.dae",
+        "part_liquid04-lod0.dae",
+        "part_liquid05-lod0.dae",
+        "part_liquid06-lod0.dae",
+        "part_liquid07-lod0.dae",
+        "part_liquid08-lod0.dae",
+        "part_main002-lod0.dae",
+        "part_main003-lod0.dae",
+        "part_main004-lod0.dae",
+        "part_main005-lod0.dae",
+        "part_mainCocoon-lod0.dae",
+        "part_pillar01-lod0.dae",
+        "part_pillar02-lod0.dae",
+        "part_pillar03-lod0.dae",
+        "part_pillar04-lod0.dae",
+        "part_pillar05-lod0.dae",
+        "part_pillar06-lod0.dae",
+        "part_pillar07-lod0.dae",
+        "part_pillar08-lod0.dae",
+        "part_pillar09-lod0.dae",
+        "part_pillar10-lod0.dae",
+        "part_pillar11-lod0.dae",
+        "part_pillar12-lod0.dae",
+        "part_pillar13-lod0.dae",
+        "part_pillar14-lod0.dae",
+        "part_pillar15-lod0.dae",
+        "part_pillar16-lod0.dae",
+        "part_seperator01-lod0.dae",
+        "part_seperator03-lod0.dae",
+        "part_seperator04-lod0.dae",
+        "part_structural-lod0.dae",
+        "part_structural002-lod0.dae",
+        "part_waterplane-lod0.dae",
+        "part_windowframe-lod0.dae"
+      ]
+    },
+    {
+      "key": "scs_gen_prop_detector_02_16_16_16",
+      "hash": 265240500,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_detector_02_16_16_16_data",
+      "files": []
+    }
+  ],
+  [
+    {
+      "key": "struct_arg_base_02",
+      "hash": 3766507274,
+      "folder_path": "/assets1/structures/connectionmodules/struct_arg_base_02_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_gen_s_inv_01",
+      "hash": 4120771240,
+      "folder_path": "/assets1/structures/dock/dockarea_gen_s_inv_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_intersection_01_a",
+      "hash": 4290859966,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_intersection_01_a_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_gen_advancedcomposites",
+      "hash": 1747110470,
+      "folder_path": "/assets1/structures/production/prod_gen_advancedcomposites_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_par_l_solid_01",
+      "hash": 868581873,
+      "folder_path": "/assets1/structures/storage/storage_par_l_solid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockingbay_gen_sm_buildstorage_01",
+      "hash": 2565418551,
+      "folder_path": "/assets1/structures/dock/dockingbay_gen_sm_buildstorage_01_data",
+      "files": []
+    },
+    {
+      "key": "storage_spl_m_container_01",
+      "hash": 229635311,
+      "folder_path": "/assets1/structures/storage/storage_spl_m_container_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "defence_ter_claim_01",
+      "hash": 3164402377,
+      "folder_path": "/assets1/structures/defence/defence_ter_claim_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_arg_ships_l",
+      "hash": 69564188,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_arg_ships_l_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "struct_tel_base_01",
+      "hash": 1600796878,
+      "folder_path": "/assets1/structures/connectionmodules/struct_tel_base_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "prod_gen_water",
+      "hash": 13960494,
+      "folder_path": "/assets1/structures/production/prod_gen_water_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "detail_l_ice_hull-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_s_main_front-lod0.dae",
+        "part_main-lod0.dae",
+        "part_texturepart_poslights07-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "prod_ter_energycells",
+      "hash": 3768672005,
+      "folder_path": "/assets1/structures/production/prod_ter_energycells_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "buildmodule_arg_equip_xl",
+      "hash": 41489004,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_arg_equip_xl_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "hab_arg_l_01",
+      "hash": 2078894488,
+      "folder_path": "/assets1/structures/habitat/hab_arg_l_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "dockarea_arg_m_ship_01",
+      "hash": 83468480,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_m_ship_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "prod_par_sojahusk",
+      "hash": 3403755713,
+      "folder_path": "/assets1/structures/production/prod_par_sojahusk_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_prop_crate_01",
+      "hash": 1645540339,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_crate_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "dockarea_arg_xl_builder_01_a",
+      "hash": 671859900,
+      "folder_path": "/assets1/structures/dock/dockarea_arg_xl_builder_01_a_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_tel_tradestation_01",
+      "hash": 1975317402,
+      "folder_path": "/assets1/structures/landmarks/landmarks_tel_tradestation_01_data",
+      "files": []
+    },
+    {
+      "key": "scs_gen_asteroid_32_end_02",
+      "hash": 2021806078,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_end_02_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "storage_arg_m_liquid_01",
+      "hash": 125647311,
+      "folder_path": "/assets1/structures/storage/storage_arg_m_liquid_01_data",
+      "files": [
+        "detail_s_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_straight_06",
+      "hash": 4081643832,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_06_data",
+      "files": [
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_asteroid_32_to_16_01",
+      "hash": 2872760924,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_to_16_01_data",
+      "files": [
+        "detail_l-lod0.dae",
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "landmark_gen_hqasteroiddebree_01",
+      "hash": 658686979,
+      "folder_path": "/assets1/structures/landmarks/landmark_gen_hqasteroiddebree_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "prod_arg_wheat",
+      "hash": 3375420057,
+      "folder_path": "/assets1/structures/production/prod_arg_wheat_data",
+      "files": [
+        "detail_l_alpha-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "part_water-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [
+    {
+      "key": "buildmodule_bor_ships_m_dockarea_01",
+      "hash": 832423930,
+      "folder_path": "/assets1/structures/buildmodule/buildmodule_bor_ships_m_dockarea_01_data",
+      "files": [
+        "detail_s_exterior-lod0.dae",
+        "detail_xs_interior-lod0.dae",
+        "part_exterior-lod0.dae",
+        "part_interior-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "scs_gen_asteroid_32_straight_05",
+      "hash": 2615578722,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_asteroid_32_straight_05_data",
+      "files": [
+        "detail_m-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [
+    {
+      "key": "landmarks_par_monument_top_01",
+      "hash": 3452653735,
+      "folder_path": "/assets1/structures/landmarks/landmarks_par_monument_top_01_data",
+      "files": [
+        "detail_l_top_main-lod0.dae",
+        "detail_m_top_main-lod0.dae",
+        "detail_s_docks-lod0.dae",
+        "detail_s_top_main-lod0.dae",
+        "detail_xs_top-lod0.dae",
+        "part_top_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "storage_tel_m_solid_01",
+      "hash": 318816521,
+      "folder_path": "/assets1/structures/storage/storage_tel_m_solid_01_data",
+      "files": [
+        "detail_m_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "key": "scs_gen_prop_pipe_s_corner_02",
+      "hash": 2854777959,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_prop_pipe_s_corner_02_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "scs_gen_spacesuit_32_straight_01_a",
+      "hash": 111307671,
+      "folder_path": "/assets1/structures/spacesuit_construction_set/scs_gen_spacesuit_32_straight_01_a_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  [
+    {
+      "key": "dockarea_par_l_destroyer_01",
+      "hash": 1311454695,
+      "folder_path": "/assets1/structures/dock/dockarea_par_l_destroyer_01_data",
+      "files": [
+        "part_main-lod0.dae"
+      ]
+    }
+  ],
+  [],
+  []
+]

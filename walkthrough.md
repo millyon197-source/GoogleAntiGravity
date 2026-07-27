@@ -27,10 +27,21 @@ Finally, I updated the file [src/dae-registry.js](file:///d:/Ai/X4/GoogleAntiGra
 - **Commented Line Count**: **914** lines were commented out.
 - Verified that `src/dae-registry.js` remains syntactically valid.
 
-## Copying to assests1 & Logging to additionalCOH.txt
+## Creation of MurmurHash Table
 
-I searched recursively for all `part_main-lod0.dae` files in [assets/structures/](file:///d:/Ai/X4/GoogleAntiGravity/assets/structures):
-- Verified if each file already existed under [assests1/](file:///d:/Ai/X4/GoogleAntiGravity/assests1).
-- Recreated missing subdirectories and copied **379** `part_main-lod0.dae` files to [assests1/structures/](file:///d:/Ai/X4/GoogleAntiGravity/assests1/structures).
-- Appended each copied web-style path (e.g., `/assests1/structures/.../part_main-lod0.dae`) to [additionalCOH.txt](file:///d:/Ai/X4/GoogleAntiGravity/additionalCOH.txt) formatted with CR/LF (`\r\n`) line endings.
+To map X4 structure data folders to their respective `.dae` mesh models, I:
+1. Created a hash table of size **1223**.
+2. Scanned [assets1/structures/](file:///d:/Ai/X4/GoogleAntiGravity/assets1/structures) recursively for folders ending in `_data`.
+3. Used the folder names stripped of `_data` as keys (e.g., `buildmodule_arg_equip_l`).
+4. Computed their **32-bit MurmurHash3** value and assigned them to their corresponding table buckets (`hash % 1223`).
+5. Associated each key with the list of `.dae` files located under its directory.
+6. Exported the final table as [dae_hash_table.json](file:///d:/Ai/X4/GoogleAntiGravity/dae_hash_table.json) in the workspace root, containing **591** processed keys.
 
+## Replacing DAE Registry with MurmurHash Table in Codebase
+
+To integrate the new hash table into the visualizer application, I made the following updates:
+1. **Refactored Import**: Replaced the import of the old static registry `dae-registry.js` in [src/viewer.js](file:///d:/Ai/X4/GoogleAntiGravity/src/viewer.js) with the JSON import of `dae_hash_table.json`.
+2. **Added MurmurHash3_x86_32 Hashing Utility**: Embedded a pure JavaScript implementation of MurmurHash3 in [src/viewer.js](file:///d:/Ai/X4/GoogleAntiGravity/src/viewer.js).
+3. **Implemented Hash Lookups**: Added the `lookupDaeUrls` helper to calculate the bucket index for keys, scan the corresponding bucket list, and map `.dae` filenames to their reconstructed relative paths under `assets1/`.
+4. **Updated loadModuleMesh()**: Configured the model loading logic to query `lookupDaeUrls` directly.
+5. **Removed Obsolete Registry**: Deleted the old static `src/dae-registry.js` file from the codebase.

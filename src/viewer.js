@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { createProceduralModule, getModuleCategory, getFriendlyName } from './modules.js';
-import { DAE_REGISTRY } from './dae-registry.js';
+import DAE_HASH_TABLE from '../dae_hash_table.json';
 import { MACRO_TO_NAME_DB } from './modules-cost-db.js';
 
 function sendLogToVSC(msg, type = 'log') {
@@ -14,6 +14,66 @@ function sendLogToVSC(msg, type = 'log') {
     console.log(msg);
   }
   fetch(`/api/log?msg=${encodeURIComponent(msg)}&type=${type}`).catch(() => {});
+}
+
+// Pure JS MurmurHash3_x86_32 implementation
+function murmur3_32(key, seed = 0) {
+  let remainder = key.length & 3;
+  let bytes = key.length - remainder;
+  let h1 = seed;
+  let c1 = 0xcc9e2d51;
+  let c2 = 0x1b873593;
+  let i = 0;
+
+  while (i < bytes) {
+    let k1 =
+      (key.charCodeAt(i) & 0xff) |
+      ((key.charCodeAt(++i) & 0xff) << 8) |
+      ((key.charCodeAt(++i) & 0xff) << 16) |
+      ((key.charCodeAt(++i) & 0xff) << 24);
+    ++i;
+
+    k1 = ((((k1 & 0xffff) * c1) + ((((k1 >>> 16) * c1) & 0xffff) << 16))) & 0xffffffff;
+    k1 = (k1 << 15) | (k1 >>> 17);
+    k1 = ((((k1 & 0xffff) * c2) + ((((k1 >>> 16) * c2) & 0xffff) << 16))) & 0xffffffff;
+
+    h1 ^= k1;
+    h1 = (h1 << 13) | (h1 >>> 19);
+    h1 = (((h1 * 5) + 0xe6546b64)) & 0xffffffff;
+  }
+
+  let k1 = 0;
+  switch (remainder) {
+    case 3:
+      k1 ^= (key.charCodeAt(i + 2) & 0xff) << 16;
+    case 2:
+      k1 ^= (key.charCodeAt(i + 1) & 0xff) << 8;
+    case 1:
+      k1 ^= (key.charCodeAt(i) & 0xff);
+
+      k1 = (((k1 & 0xffff) * c1) + ((((k1 >>> 16) * c1) & 0xffff) << 16)) & 0xffffffff;
+      k1 = (k1 << 15) | (k1 >>> 17);
+      k1 = (((k1 & 0xffff) * c2) + ((((k1 >>> 16) * c2) & 0xffff) << 16)) & 0xffffffff;
+      h1 ^= k1;
+  }
+
+  h1 ^= key.length;
+  h1 ^= h1 >>> 16;
+  h1 = (((h1 & 0xffff) * 0x85ebca6b) + ((((h1 >>> 16) * 0x85ebca6b) & 0xffff) << 16)) & 0xffffffff;
+  h1 ^= h1 >>> 13;
+  h1 = (((h1 & 0xffff) * 0xc2b2ae35) + ((((h1 >>> 16) * 0xc2b2ae35) & 0xffff) << 16)) & 0xffffffff;
+  h1 ^= h1 >>> 16;
+
+  return h1 >>> 0;
+}
+
+function lookupDaeUrls(key) {
+  const hashVal = murmur3_32(key);
+  const bucketIndex = hashVal % 1223;
+  const bucket = DAE_HASH_TABLE[bucketIndex] || [];
+  const entry = bucket.find(item => item.key === key);
+  if (!entry) return [];
+  return entry.files.map(file => `${entry.folder_path}/${file}`);
 }
 
 export class StationViewer {
@@ -304,7 +364,9 @@ export class StationViewer {
     let baseName = mod.macro.replace('_macro', '').toLowerCase();
     const origBaseName = baseName;
 
-    if (!DAE_REGISTRY[baseName]) {
+    let urls = lookupDaeUrls(baseName);
+
+    if (urls.length === 0) {
       const prefixes = ['prod_', 'buildmodule_', 'landmarks_'];
       let foundGen = false;
       for (const pref of prefixes) {
@@ -315,8 +377,10 @@ export class StationViewer {
             const prefix = `${pref}${fac}_`;
             if (baseName.startsWith(prefix)) {
               const genName = baseName.replace(prefix, `${pref}gen_`);
-              if (DAE_REGISTRY[genName]) {
+              const genUrls = lookupDaeUrls(genName);
+              if (genUrls.length > 0) {
                 baseName = genName;
+                urls = genUrls;
                 foundGen = true;
                 break;
               }
@@ -325,12 +389,6 @@ export class StationViewer {
         }
       }
     }
-
-//    if (baseName !== origBaseName) {
-//      sendLogToVSC(`[*] Translated production macro baseName: ${origBaseName} -> ${baseName}`, 'log');
-//    }
-
-    const urls = DAE_REGISTRY[baseName] || [];
     const uniqueUrls = [];
     for (const url of urls) {
       const fileName = url.substring(url.lastIndexOf('/') + 1).toLowerCase();
