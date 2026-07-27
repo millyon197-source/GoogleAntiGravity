@@ -2,6 +2,24 @@
  * Parser for X4: Foundations Station Construction Plans (XML format).
  */
 
+/**
+ * Parse an X4 station plan XML document into normalized plan data.
+ *
+ * @param {string} xmlString Raw XML plan text.
+ * @returns {{
+ *   id: string,
+ *   name: string,
+ *   description: string,
+ *   modules: Array<{
+ *     index: number,
+ *     macro: string,
+ *     connection: string,
+ *     position: { x: number, y: number, z: number },
+ *     rotation: { yaw: number, pitch: number, roll: number }
+ *   }>
+ * }}
+ * @throws {Error} When XML parsing fails or no `<plan>` node exists.
+ */
 export function parseConstructionPlan(xmlString) {
   try {
     const parser = new DOMParser();

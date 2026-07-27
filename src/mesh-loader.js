@@ -5,7 +5,13 @@
  * Vulkan-aligned .bin meshes via a Web Worker with zero-copy transfer.
  */
 
+/**
+ * Worker-backed mesh loading client.
+ */
 export class MeshLoader {
+  /**
+   * @param {string} [workerPath='./mesh-worker.js'] Path to the mesh worker script.
+   */
   constructor(workerPath = './mesh-worker.js') {
     this.worker = new Worker(workerPath);
     this.callbacks = new Map();
@@ -32,9 +38,20 @@ export class MeshLoader {
 
   /**
    * Load a single .bin (and optional .json) mesh file.
-   * @param {string} binUrl - URL to the .bin file
-   * @param {string} [jsonUrl] - Optional URL to the .json sidecar
-   * @returns {Promise<Object>} Promise resolving to { vertexBuffer, indexBuffer, vertexCount, indexCount, ... }
+   * @param {string} binUrl URL to the `.bin` file.
+   * @param {string|null} [jsonUrl] Optional URL to the `.json` sidecar.
+   * @returns {Promise<{
+   *   vertexBuffer: Float32Array,
+   *   indexBuffer: Uint16Array|Uint32Array,
+   *   vertexCount: number,
+   *   indexCount: number,
+   *   metadata?: {
+   *     boundingBox?: {
+   *       min: [number, number, number],
+   *       max: [number, number, number]
+   *     }
+   *   }
+   * }>}
    */
   loadMesh(binUrl, jsonUrl = null) {
     return new Promise((resolve, reject) => {

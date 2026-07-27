@@ -1,3 +1,9 @@
+/**
+ * Static per-module resource cost table keyed by X4 macro name.
+ *
+ * Values are consumed directly when available; heuristic estimation is only
+ * used when a macro is not present in this table.
+ */
 export const MODULES_COST_DB = {
   "struct_arg_base_01_macro": {
     "claytronics": 14,
@@ -1276,6 +1282,9 @@ export const MODULES_COST_DB = {
   }
 };
 
+/**
+ * Reverse lookup table from normalized friendly names to X4 macro names.
+ */
 export const NAME_TO_MACRO_DB = {
   "argon base connection structure 01": "struct_arg_base_01_macro",
   "argon base connection structure 02": "struct_arg_base_02_macro",
@@ -1526,6 +1535,9 @@ export const NAME_TO_MACRO_DB = {
   "boron s solid storage": "storage_bor_s_solid_01_macro"
 };
 
+/**
+ * Display name table from X4 macro names to human-readable module labels.
+ */
 export const MACRO_TO_NAME_DB = {
   "struct_arg_base_01_macro": "Argon Base Connection Structure 01",
   "struct_arg_base_02_macro": "Argon Base Connection Structure 02",

@@ -4,6 +4,7 @@
 import { MODULES_COST_DB, NAME_TO_MACRO_DB, MACRO_TO_NAME_DB } from './modules-cost-db.js';
 
 // Colors for each module category
+/** @type {Record<'docks'|'production'|'storage'|'habitation'|'defense'|'structure', string>} */
 export const CATEGORY_COLORS = {
   docks: '#FF9F1C',       // Orange
   production: '#2EC4B6',  // Neon Teal
@@ -14,6 +15,7 @@ export const CATEGORY_COLORS = {
 };
 
 // Nice user-friendly names for categories
+/** @type {Record<'docks'|'production'|'storage'|'habitation'|'defense'|'structure', string>} */
 export const CATEGORY_NAMES = {
   docks: 'Docks',
   production: 'Production Factories',
@@ -93,7 +95,10 @@ function initMaterials(THREE) {
 }
 
 /**
- * Classify a macro name into one of the core categories
+ * Classify a module macro name into one of the supported category buckets.
+ *
+ * @param {string} macroName X4 module macro identifier.
+ * @returns {'docks'|'production'|'storage'|'habitation'|'defense'|'structure'}
  */
 export function getModuleCategory(macroName) {
   const name = macroName.toLowerCase();
@@ -113,7 +118,10 @@ export function getModuleCategory(macroName) {
 }
 
 /**
- * Translate internal macro names into readable game-like titles
+ * Convert an internal X4 macro into a readable display name.
+ *
+ * @param {string} macroName X4 module macro identifier.
+ * @returns {string}
  */
 export function getFriendlyName(macroName) {
   if (MACRO_TO_NAME_DB[macroName]) {
@@ -142,7 +150,24 @@ export function getFriendlyName(macroName) {
 }
 
 /**
- * Generate mock resource construction costs for visual depth
+ * Estimate construction resource costs for a module.
+ *
+ * Uses fixed lookup data when available, and otherwise derives an estimate
+ * from module category, faction markers, and module size hints.
+ *
+ * @param {string} macroName X4 module macro identifier.
+ * @returns {{
+ *   hullParts: number,
+ *   claytronics: number,
+ *   computronicSubstrate: number,
+ *   siliconCarbide: number,
+ *   metallicMicrolattice: number,
+ *   shieldComponents: number,
+ *   turretComponents: number,
+ *   advancedElectronics: number,
+ *   water: number,
+ *   energyCells: number
+ * }}
  */
 export function estimateModuleCosts(macroName) {
   if (MODULES_COST_DB[macroName]) {
@@ -214,7 +239,14 @@ export function estimateModuleCosts(macroName) {
 }
 
 /**
- * Procedurally generates a 3D visual object representing the macro
+ * Procedurally generate a fallback mesh group for a module macro.
+ *
+ * The returned group includes `userData.update(time)` for optional animation
+ * playback during the render loop.
+ *
+ * @param {string} macroName X4 module macro identifier.
+ * @param {typeof import('three')} THREE Three.js namespace.
+ * @returns {import('three').Group}
  */
 export function createProceduralModule(macroName, THREE) {
   const materials = initMaterials(THREE);
@@ -597,7 +629,13 @@ export function createProceduralModule(macroName, THREE) {
 }
 
 /**
- * Translate a friendly component name to its X4 macro name using the static database mapping.
+ * Translate a friendly component name to its X4 macro name.
+ *
+ * Attempts exact match first, then falls back to substring matching against
+ * the static module-name mapping table.
+ *
+ * @param {string} name Friendly module label.
+ * @returns {string|null}
  */
 export function translateNameToMacro(name) {
   if (!name) return null;

@@ -10,6 +10,9 @@
 import * as THREE from 'three';
 import { MeshLoader } from './mesh-loader.js';
 
+/**
+ * Coordinates worker-based mesh loading and Three.js object creation.
+ */
 export class ThreeCoordinator {
   /**
    * @param {THREE.Scene|THREE.Group} targetContainer - Three.js scene or group to attach loaded meshes.

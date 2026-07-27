@@ -77,7 +77,14 @@ function lookupDaeUrls(key) {
   return entry.files.map(file => `${entry.folder_path}/${file}`);
 }
 
+/**
+ * Main Three.js station viewer and interaction controller.
+ */
 export class StationViewer {
+  /**
+   * @param {HTMLElement} containerElement DOM container where the WebGL canvas is mounted.
+   * @param {(index: number|null) => void} onModuleSelectedCallback Callback fired when a module is selected.
+   */
   constructor(containerElement, onModuleSelectedCallback) {
     this.container = containerElement;
     this.onModuleSelected = onModuleSelectedCallback;
@@ -1260,6 +1267,7 @@ export class StationViewer {
     let finalEndCam = focusCameraPosition ? center.clone().add(direction.multiplyScalar(cameraDist)) : startCam;
 
     if (focusCameraPosition) {
+      // First try to keep the current viewing direction; only branch out if line-of-sight is blocked.
       const defaultBlocked = checkBlocked(finalEndCam);
       if (defaultBlocked) {
         // Standard ISO direction test
