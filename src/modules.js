@@ -108,7 +108,7 @@ export function getModuleCategory(macroName) {
     return 'production';
   } else if (name.includes('storage') || name.includes('store') || name.includes('container') || name.includes('solid') || name.includes('liquid')) {
     return 'storage';
-  } else if (name.includes('hab_') || name.includes('habitation') || name.includes('population') || name.includes('crew')) {
+  } else if (name.includes('hab_') || name.includes('habitation') || name.includes('population') || name.includes('crew') || name.includes('antigonespire') || name.includes('antigonepillar') || name.includes('living')) {
     return 'habitation';
   } else if (name.includes('defense') || name.includes('defence') || name.includes('def_') || name.includes('disc') || name.includes('claim') || name.includes('tube') || name.includes('bridge_admin') || name.includes('platform_defence')) {
     return 'defense';

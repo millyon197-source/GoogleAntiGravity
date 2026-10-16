@@ -9,19 +9,123 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/style.css">
+  <style>
+    #initial-app-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #040814;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #E2E8F0;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s ease;
+    }
+    #initial-app-loader.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .initial-loader-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+      padding: 24px;
+      max-width: 600px;
+    }
+    .initial-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3.5px solid rgba(0, 245, 255, 0.15);
+      border-top-color: #00F5FF;
+      border-radius: 50%;
+      animation: initial-spin 1s infinite linear;
+      box-shadow: 0 0 20px rgba(0, 245, 255, 0.25);
+    }
+    @keyframes initial-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .initial-loader-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #E2E8F0;
+      margin: 0;
+    }
+    .initial-loader-subtext {
+      font-size: 0.85rem;
+      color: #94A3B8;
+      font-family: monospace;
+      margin: 0;
+      min-height: 1.2em;
+    }
+    .initial-loader-quote {
+      font-style: italic;
+      text-align: center;
+      margin-top: 1rem;
+      color: #00F5FF;
+      font-size: 1.15rem;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 12px rgba(0, 245, 255, 0.4);
+    }
+  </style>
 </head>
 <body>
+  <!-- Full-screen Initial Application Loader -->
+  <div id="initial-app-loader">
+    <div class="initial-loader-content">
+      <div class="initial-spinner"></div>
+      <p class="initial-loader-title">Initializing WebGL Star System...</p>
+      <p id="initial-loader-subtext" class="initial-loader-subtext">Loading 3D station models and assets...</p>
+      <p class="initial-loader-quote"><em>"Excuse me while I kiss the sky"</em></p>
+    </div>
+  </div>
+
   <div id="app-container">
     
     <!-- Top Control Bar -->
     <header id="app-header">
-      <div class="logo-area">
-        <div class="logo-glow"></div>
-        <h1>X4 STATION VISUALIZER</h1>
-        <p class="subtitle">X4: FOUNDATIONS UTILITY</p>
+      <div class="header-left">
+        <div class="logo-area">
+          <div class="logo-glow"></div>
+          <h1>X4 STATION VISUALIZER</h1>
+          <p class="subtitle">X4: FOUNDATIONS UTILITY</p>
+        </div>
+
+        <div class="header-xml-actions">
+          <label for="file-upload" class="btn btn-primary" id="btn-upload-label" title="Load an X4 station construction plan XML file">
+            <span>📁 Load XML File</span>
+            <input type="file" id="file-upload" accept=".xml">
+          </label>
+          
+          <button id="btn-open-paste" class="btn btn-secondary" title="Paste X4 construction plan XML code">
+            <span>📝 Paste XML Code</span>
+          </button>
+        </div>
       </div>
       
       <div class="header-actions">
+        <div class="clear-checkbox-container grid-selector-container">
+          <div class="toggle-control grid-selector-wrapper" title="Select Major Plot Grid Size (500m, 1000m, 5000m)">
+            <label for="grid-size-selector" class="toggle-label">Grid:</label>
+            <select id="grid-size-selector" class="cyber-select-sm">
+              <option value="500" selected>500m</option>
+              <option value="1000">1000m</option>
+              <option value="5000">5000m</option>
+              <option value="0">Off</option>
+            </select>
+          </div>
+        </div>
         <div class="clear-checkbox-container">
           <label for="clear-panels-checkbox" class="cyber-checkbox-label" title="Clear all station modules and data panels">
             <input type="checkbox" id="clear-panels-checkbox">
@@ -34,22 +138,40 @@
             <span class="checkbox-text">Colorized</span>
           </label>
         </div>
-        <div class="select-wrapper">
+        <div class="select-wrapper" id="sample-select-wrapper">
           <label for="sample-selector" class="sr-only">Choose Plan</label>
-          <select id="sample-selector">
+          <select id="sample-selector" class="sr-only-sample-select" title="Choose station plan • Right-click to manage samples (Add, Replace, Delete)">
             <option value="refineryComplex">Methane Miner</option>
             <option value="defenseFortress">Xenon Border Citadel</option>
             <option value="allModulesPlan">All Modules Showcase</option>
           </select>
+
+          <!-- Custom Cyber Dropdown for SAMPLE with Right-Mouse Re-ordering -->
+          <div id="sample-custom-dropdown" class="sample-custom-dropdown">
+            <button type="button" id="sample-dropdown-trigger" class="sample-dropdown-trigger" title="Choose station plan • Click to open • Right-drag items to reorder • Right-click to manage samples" aria-haspopup="listbox" aria-expanded="false">
+              <span class="sample-dropdown-icon">🪐</span>
+              <span id="sample-dropdown-current-label" class="sample-dropdown-label">Methane Miner</span>
+              <span class="sample-dropdown-arrow">▼</span>
+            </button>
+            <div id="sample-dropdown-menu" class="sample-dropdown-menu" role="listbox" style="display: none;">
+              <div class="sample-dropdown-header">
+                <span class="sample-dropdown-title">SAMPLES</span>
+                <span class="sample-dropdown-hint"><span class="hint-icon">✓</span> Checked loads on reload • ⠿ Drag to reorder</span>
+              </div>
+              <div id="sample-dropdown-list" class="sample-dropdown-list">
+                <!-- Dynamically populated sample items -->
+              </div>
+              <div class="sample-dropdown-footer">
+                <button type="button" id="btn-dropdown-manage-samples" class="sample-dropdown-footer-btn" title="Open Sample Action Manager">
+                  ⚙️ Manage Samples (Add, Replace, Delete)
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <label for="file-upload" class="btn btn-primary" id="btn-upload-label">
-          <span>📁 Upload XML File</span>
-          <input type="file" id="file-upload" accept=".xml">
-        </label>
-        
-        <button id="btn-open-paste" class="btn btn-secondary">
-          <span>📝 Paste XML Code</span>
+
+        <button id="btn-save-blueprint" class="btn btn-primary" title="Save current station plan as an X4 .xml blueprint file">
+          <span>💾 Save Blueprint .XML</span>
         </button>
       </div>
     </header>
@@ -70,63 +192,102 @@
             <div class="meta-row"><span class="label">Plan Name:</span> <span id="plan-name" class="value text-highlight">Loading...</span></div>
             <div class="meta-row"><span class="label">ID:</span> <span id="plan-id" class="value code-font">Loading...</span></div>
             <p id="plan-desc" class="plan-desc-text">Plan description will appear here...</p>
+            <button id="btn-card-save-blueprint" class="btn btn-secondary btn-sm" title="Save current plan as an .xml blueprint file" style="margin-top:0.5rem; width:100%;">💾 Save .XML Blueprint</button>
           </div>
         </div>
 
         <!-- Statistics Dashboard -->
-        <div class="panel-card stats-card">
+        <div class="panel-card stats-card" id="card-structure-analysis">
           <div class="card-header">
             <span class="header-dot"></span>
             <h2>Structure Analysis</h2>
+            <button type="button" class="stat-collapse-btn card-collapse-btn" data-panel="card-structure-analysis" title="Collapse / Expand Structure Analysis" aria-label="Toggle Structure Analysis">
+              <span class="stat-collapse-arrow">▼</span>
+            </button>
           </div>
           <div class="card-body">
             <div class="stat-grid">
               <div class="stat-box category-select-btn" id="stat-box-all" data-category="all" style="border-left-color: #ffffff;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-total-modules">0</span>
-                  <span class="stat-lbl">Total Modules</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-total-modules">0</span>
+                    <span class="stat-lbl">Total Modules</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-all" title="Collapse / Expand Total Modules" aria-label="Toggle Total Modules">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-all"></div>
               </div>
               <div class="stat-box category-select-btn" id="stat-box-docks" data-category="docks" style="border-left-color: #FF9F1C;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-docks">0</span>
-                  <span class="stat-lbl" style="color: #FF9F1C;">Docks</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-docks">0</span>
+                    <span class="stat-lbl" style="color: #FF9F1C;">Docks</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-docks" title="Collapse / Expand Docks" aria-label="Toggle Docks">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-docks"></div>
               </div>
               <div class="stat-box category-select-btn" id="stat-box-production" data-category="production" style="border-left-color: #2EC4B6;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-production">0</span>
-                  <span class="stat-lbl" style="color: #2EC4B6;">Production</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-production">0</span>
+                    <span class="stat-lbl" style="color: #2EC4B6;">Production</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-production" title="Collapse / Expand Production" aria-label="Toggle Production">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-production"></div>
               </div>
               <div class="stat-box category-select-btn" id="stat-box-storage" data-category="storage" style="border-left-color: #00B4D8;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-storage">0</span>
-                  <span class="stat-lbl" style="color: #00B4D8;">Storage</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-storage">0</span>
+                    <span class="stat-lbl" style="color: #00B4D8;">Storage</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-storage" title="Collapse / Expand Storage" aria-label="Toggle Storage">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-storage"></div>
               </div>
               <div class="stat-box category-select-btn" id="stat-box-habitation" data-category="habitation" style="border-left-color: #9D4EDD;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-habitation">0</span>
-                  <span class="stat-lbl" style="color: #9D4EDD;">Habitats</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-habitation">0</span>
+                    <span class="stat-lbl" style="color: #9D4EDD;">Habitats</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-habitation" title="Collapse / Expand Habitats" aria-label="Toggle Habitats">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-habitation"></div>
               </div>
               <div class="stat-box category-select-btn" id="stat-box-defense" data-category="defense" style="border-left-color: #E63946;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-defense">0</span>
-                  <span class="stat-lbl" style="color: #E63946;">Defense</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-defense">0</span>
+                    <span class="stat-lbl" style="color: #E63946;">Defense</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-defense" title="Collapse / Expand Defense" aria-label="Toggle Defense">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-defense"></div>
               </div>
               <div class="stat-box category-select-btn" id="stat-box-structure" data-category="structure" style="border-left-color: #8D99AE;">
                 <div class="stat-box-header">
-                  <span class="stat-val" id="stat-structure">0</span>
-                  <span class="stat-lbl" style="color: #00A86B;">Structures</span>
+                  <div class="stat-box-left">
+                    <span class="stat-val" id="stat-structure">0</span>
+                    <span class="stat-lbl" style="color: #00A86B;">Structures</span>
+                  </div>
+                  <button type="button" class="stat-collapse-btn" data-panel="stat-box-structure" title="Collapse / Expand Structures" aria-label="Toggle Structures">
+                    <span class="stat-collapse-arrow">▼</span>
+                  </button>
                 </div>
                 <div class="stat-box-macros" id="stat-macros-structure"></div>
               </div>
@@ -134,11 +295,18 @@
             
             <hr class="panel-divider" />
             
-            <h3 class="sub-heading">Estimated Bounding Envelope</h3>
-            <div class="envelope-grid">
-              <div><span class="lbl">Width (X):</span> <span class="val" id="stat-size-x">0m</span></div>
-              <div><span class="lbl">Height (Y):</span> <span class="val" id="stat-size-y">0m</span></div>
-              <div><span class="lbl">Depth (Z):</span> <span class="val" id="stat-size-z">0m</span></div>
+            <div class="envelope-panel" id="stat-panel-envelope">
+              <div class="envelope-header">
+                <h3 class="sub-heading" style="margin-bottom: 0;">Estimated Bounding Envelope</h3>
+                <button type="button" class="stat-collapse-btn" data-panel="stat-panel-envelope" title="Collapse / Expand Estimated Bounding Envelope" aria-label="Toggle Estimated Bounding Envelope">
+                  <span class="stat-collapse-arrow">▼</span>
+                </button>
+              </div>
+              <div class="envelope-grid">
+                <div><span class="lbl">Width (X):</span> <span class="val" id="stat-size-x">0m</span></div>
+                <div><span class="lbl">Height (Y):</span> <span class="val" id="stat-size-y">0m</span></div>
+                <div><span class="lbl">Depth (Z):</span> <span class="val" id="stat-size-z">0m</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -171,10 +339,11 @@
           <div class="loading-overlay">
             <div class="spinner"></div>
             <p>Initializing WebGL Star System...</p>
+            <p class="loading-quote" style="font-style: italic; text-align: center; margin-top: 0.75rem; color: #00F5FF; font-size: 1.05rem; letter-spacing: 0.04em;"><em>"Excuse me while I kiss the sky"</em></p>
           </div>
         </div>
 
-        <!-- Float Control: View Presets -->
+        <!-- First Line of Main Display: View Presets -->
         <div class="floating-hub view-presets">
           <button id="view-iso" title="Isometric View" class="hub-btn active">ISO</button>
           <button id="view-top" title="Top Down View" class="hub-btn">TOP</button>
@@ -183,17 +352,17 @@
           <button id="view-fit" title="Center on Station" class="hub-btn fit-btn">🎯 FIT</button>
         </div>
 
+        <!-- Two Lines Under the First Line: Undo Hub (displayed if move made, hidden if list exhausted) -->
+        <div class="floating-hub undo-hub" id="undo-hub" title="Undo Module Moves • Right-click to clear list" style="display: none;">
+          <button id="btn-undo" class="hub-btn undo-btn" title="Undo last module move (Ctrl+Z) • Right-click to clear list" style="display: none;">
+            <span class="undo-icon">↩</span>
+            <span class="undo-label">UNDO</span>
+            <span class="undo-count-badge" id="undo-count-badge" style="display: none;">0</span>
+          </button>
+        </div>
+
         <!-- Float Control: Scene Controls -->
         <div class="floating-hub scene-toggles">
-          <div class="toggle-control grid-selector-wrapper" title="Select Major Plot Grid Size (500m, 1000m, 5000m)">
-            <label for="grid-size-selector" class="toggle-label">Grid:</label>
-            <select id="grid-size-selector" class="cyber-select-sm">
-              <option value="500" selected>500m</option>
-              <option value="1000">1000m</option>
-              <option value="5000">5000m</option>
-              <option value="0">Off</option>
-            </select>
-          </div>
           <label class="toggle-control" title="View Wireframe Render">
             <input type="checkbox" id="toggle-wireframe">
             <span class="toggle-label">Wireframe</span>
@@ -204,8 +373,20 @@
           </label>
           <label class="toggle-control" title="Show/Hide 3D Orientation Axes">
             <input type="checkbox" id="toggle-orientation">
-            <span class="toggle-label">Orientation</span>
+            <span class="toggle-label">Axes</span>
           </label>
+          <label class="toggle-control" title="Show/Hide 3D Module Size Overlays (Hotkey: D)">
+            <input type="checkbox" id="toggle-dimensions" checked>
+            <span class="toggle-label">Size</span>
+          </label>
+          <label class="toggle-control" title="Show/Hide Connection Snap Points (Hotkey: S)">
+            <input type="checkbox" id="toggle-snaps" checked>
+            <span class="toggle-label">Snaps</span>
+          </label>
+          <button id="btn-toggle-display-panel" class="hub-btn display-panel-btn" title="Open Module Layout & Placement Behaviors Panel">
+            <span class="hub-btn-icon">🎛️</span>
+            <span class="toggle-label">Layout</span>
+          </button>
         </div>
 
         <!-- Float Control: Build Sequence Animator Timeline -->
@@ -249,6 +430,25 @@
               </div>
               <span class="tip-lbl">Drag timeline to scrub build progress manually</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Floating Panel: Module Layout & Placement Panel (5-Checkbox Behaviors) -->
+        <div id="module-display-panel" class="floating-card display-panel-card" style="display: none;">
+          <div class="display-panel-header" id="display-panel-header">
+            <div class="display-panel-title">
+              <span class="header-dot glow-dot"></span>
+              <h3>Layout</h3>
+            </div>
+            <!-- Centered Plot pill slot on Layout row -->
+            <div id="layout-plot-pill-slot" class="plot-pill-slot"></div>
+            <div class="display-panel-header-actions">
+              <button id="btn-add-display-value" class="btn-xs-cyber" title="Add a new layout value row">+ Value</button>
+              <button id="btn-close-display-panel" class="panel-close-btn" title="Close Panel">✕</button>
+            </div>
+          </div>
+          <div class="display-panel-body" id="display-panel-container">
+            <!-- Dynamically populated rows: each value has up to 5 editable checkboxes -->
           </div>
         </div>
 
@@ -317,9 +517,26 @@
                     <span class="cell-lbl">Local Position</span>
                     <span class="cell-val font-medium" id="det-pos">X: 0m | Y: 0m | Z: 0m</span>
                   </div>
-                  <div class="detail-cell">
+                  <div class="detail-cell rotation-cell">
                     <span class="cell-lbl">Rotational Orientation</span>
-                    <span class="cell-val font-medium" id="det-rot">Yaw: 0° | Pitch: 0° | Roll: 0°</span>
+                    <span id="det-rot" style="display: none;">Yaw: 0° | Pitch: 0° | Roll: 0°</span>
+                    <div class="rot-inputs-row">
+                      <div class="rot-input-group" title="Pitch: X-axis tilt (-180° to 180°)">
+                        <label for="det-input-pitch" class="rot-input-lbl rot-lbl-pitch">Pitch:</label>
+                        <input type="number" id="det-input-pitch" class="rot-num-input" step="1" min="-180" max="180" value="0">
+                        <span class="rot-unit">°</span>
+                      </div>
+                      <div class="rot-input-group" title="Roll: Z-axis roll (-180° to 180°)">
+                        <label for="det-input-roll" class="rot-input-lbl rot-lbl-roll">Roll:</label>
+                        <input type="number" id="det-input-roll" class="rot-num-input" step="1" min="-180" max="180" value="0">
+                        <span class="rot-unit">°</span>
+                      </div>
+                      <div class="rot-input-group" title="Yaw: Y-axis heading (-180° to 180°)">
+                        <label for="det-input-yaw" class="rot-input-lbl rot-lbl-yaw">Yaw:</label>
+                        <input type="number" id="det-input-yaw" class="rot-num-input" step="1" min="-180" max="180" value="0">
+                        <span class="rot-unit">°</span>
+                      </div>
+                    </div>
                   </div>
                   <div class="detail-cell">
                     <span class="cell-lbl">Bounding Dimensions</span>
@@ -355,6 +572,140 @@
         </div>
         <div class="modal-footer">
           <button id="btn-submit-paste" class="btn btn-primary">Process Code</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sample Action Management Modal -->
+    <div id="sample-action-modal" class="modal-backdrop">
+      <div class="modal-card sample-action-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+            <span class="header-dot"></span>
+            <h3>Manage Station Plan Samples</h3>
+          </div>
+          <button id="btn-close-sample-action" class="close-modal-btn" title="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- Step 1: Select sample_action -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label for="sample_action" class="form-label" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Choose Sample Action:</label>
+            <div class="select-wrapper-modal">
+              <select id="sample_action" name="sample_action" class="cyber-select-lg">
+                <option value="" disabled selected>-- Select Action (Add, Replace, Delete) --</option>
+                <option value="Add Sample">Add Sample</option>
+                <option value="Replace Sample">Replace Sample</option>
+                <option value="Delete Sample">Delete Sample</option>
+              </select>
+            </div>
+            <div class="sample-action-quick-buttons">
+              <button type="button" class="btn-sample-action-pill" data-action="Add Sample">➕ Add Sample</button>
+              <button type="button" class="btn-sample-action-pill" data-action="Replace Sample">🔄 Replace Sample</button>
+              <button type="button" class="btn-sample-action-pill" data-action="Delete Sample">🗑️ Delete Sample</button>
+            </div>
+          </div>
+
+          <!-- Step 2: Content dynamically presented after sample_action selection -->
+          <div id="sample-action-body-content" class="sample-action-content-area" style="display: none;">
+            
+            <!-- Current SAMPLES presentation -->
+            <div id="sample-action-current-samples-block" class="samples-presentation-block">
+              <!-- Dynamically populated based on sample_action -->
+            </div>
+
+            <!-- Blueprint Loader from Construction Plans (for Add and Replace) -->
+            <div id="sample-action-loader-block" class="blueprint-loader-block" style="display: none;">
+              <hr class="panel-divider" style="margin: 14px 0;" />
+              <div class="blueprint-loader-header">
+                <span class="form-label" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Load Blueprint from Construction Plans:</span>
+              </div>
+              <div class="blueprint-load-methods" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="file" id="sample-action-file-input" accept=".xml" style="display: none;">
+                <button type="button" id="btn-sample-action-browse" class="btn btn-primary btn-sm">
+                  <span>📁 Choose Blueprint File (.xml)</span>
+                </button>
+                <button type="button" id="btn-sample-action-paste-toggle" class="btn btn-secondary btn-sm">
+                  <span>📝 Paste XML Snippet</span>
+                </button>
+              </div>
+
+              <!-- Paste XML container (collapsed by default) -->
+              <div id="sample-action-paste-box" style="display: none; margin-top: 10px;">
+                <textarea id="sample-action-paste-text" placeholder="Paste X4 construction plan XML code here..." rows="4" style="width: 100%; height: 100px; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border); border-radius: 6px; padding: 8px; color: var(--text-primary); font-family: monospace; font-size: 0.75rem; resize: vertical;"></textarea>
+                <button type="button" id="btn-sample-action-paste-process" class="btn btn-secondary btn-sm" style="margin-top: 6px;">Parse XML Snippet</button>
+              </div>
+
+              <!-- Multi-plan selector if a file has multiple plans -->
+              <div id="sample-action-multi-plan-wrap" style="display: none; margin-top: 10px;">
+                <label for="sample-action-multi-plan-select" style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Select Plan from File:</label>
+                <select id="sample-action-multi-plan-select" class="cyber-select-sm" style="width: 100%;"></select>
+              </div>
+
+              <!-- Loaded Blueprint Info Card -->
+              <div id="sample-action-loaded-info" class="blueprint-loaded-preview" style="display: none; margin-top: 12px; background: rgba(0, 245, 255, 0.04); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem;">
+                  <span style="color: var(--text-muted);">Detected Plan Name:</span>
+                  <span id="sample-action-preview-name" style="font-weight: 600; color: var(--neon-cyan);">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8rem;">
+                  <span style="color: var(--text-muted);">Total Modules:</span>
+                  <span id="sample-action-preview-modules" style="font-weight: 600; color: #fff;">-</span>
+                </div>
+                <div class="form-group" style="margin-top: 8px;">
+                  <label for="sample-action-plan-name-input" style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Sample Display Name:</label>
+                  <input type="text" id="sample-action-plan-name-input" style="width: 100%; background: rgba(13, 18, 46, 0.8); border: 1px solid var(--panel-border); border-radius: 6px; padding: 6px 10px; color: #fff; font-size: 0.85rem;" placeholder="e.g. Argon Prime Wharf">
+                </div>
+              </div>
+            </div>
+
+            <!-- Action confirmation footer -->
+            <div class="modal-footer" style="padding: 16px 0 0 0; margin-top: 16px; border-top: 1px solid var(--panel-border); display: flex; justify-content: flex-end; gap: 10px; background: transparent;">
+              <button type="button" id="btn-sample-action-cancel" class="btn btn-secondary">Cancel</button>
+              <button type="button" id="btn-sample-action-submit" class="btn btn-primary" disabled>Perform Action</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Modules in Plot Bounding Box Modal -->
+    <div id="center-modules-modal" class="modal-backdrop">
+      <div class="modal-card" style="max-width: 480px;">
+        <div class="modal-header">
+          <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+            <span class="header-dot"></span>
+            <h3>Center Modules in Plot BB</h3>
+          </div>
+          <button id="btn-close-center-modal" class="close-modal-btn" title="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="center-modal-desc" style="font-size: 0.88rem; color: var(--text-primary); margin-bottom: 14px; line-height: 1.5;">
+            Center the selected modules within the Plot Bounding Box?
+          </p>
+          <div id="center-modal-details" style="background: rgba(0, 245, 255, 0.04); border: 1px solid rgba(0, 245, 255, 0.2); border-radius: 8px; padding: 12px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Selected Modules:</span>
+              <span id="center-modal-mod-count" style="font-weight: 600; color: var(--neon-cyan);">1</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Current Center:</span>
+              <span id="center-modal-cur-center" style="font-family: monospace; color: #fff;">0, 0, 0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Plot BB Center:</span>
+              <span id="center-modal-target-center" style="font-family: monospace; color: var(--neon-cyan);">0, 0, 0</span>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding: 16px 0 0 0; margin-top: 16px; border-top: 1px solid var(--panel-border); display: flex; flex-direction: column; gap: 10px; background: transparent;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px; width: 100%;">
+              <button type="button" id="btn-center-modal-cancel" class="btn btn-secondary">Cancel</button>
+              <button type="button" id="btn-center-modal-confirm" class="btn btn-primary">Center Modules</button>
+            </div>
+            <div id="center-modal-fefb-wrap" style="display: none; width: 100%; border-top: 1px dashed rgba(0, 245, 255, 0.2); padding-top: 10px;">
+              <button type="button" id="btn-center-modal-fefb" class="btn btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(168, 85, 247, 0.25)); border-color: var(--neon-cyan); color: #fff; font-weight: 600;">First Element for branching</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -26,3 +26,6 @@ dist-ssr/
 # Assets (local DAE files)
 assets/
 assets1/
+create_snapped_station.ps1
+create_snapped_station.py
+module_bounds_buckets_503.json

@@ -1,0 +1,3469 @@
+[
+  {
+    "key": "storage_par_s_container_01_macro",
+    "name": "Paranid S Container Storage",
+    "index": 94,
+    "hash": 559849563,
+    "boundingBox": {
+      "size": [
+        399.79,
+        762.57,
+        403.36
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "hab_arg_m_01_macro",
+    "name": "Argon M Habitat",
+    "index": 18,
+    "hash": 919306949,
+    "boundingBox": {
+      "size": [
+        662.04,
+        800,
+        415.62
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_spl_cheltmeat_macro",
+    "name": "Chelt Production",
+    "index": 150,
+    "hash": 1754083740,
+    "boundingBox": {
+      "size": [
+        805.36,
+        1233.39,
+        567.42
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_bor_equip_m_dockarea_01_macro",
+    "name": "Boron S/M Ship Maintenance Bay",
+    "index": 224,
+    "hash": 584758706,
+    "boundingBox": {
+      "size": [
+        1322.55,
+        638.9,
+        1282.02
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "buildmodule_gen_ships_l_macro",
+    "name": "L Ship Fabrication Bay",
+    "index": 38,
+    "hash": 3069282372,
+    "boundingBox": {
+      "size": [
+        1577.36,
+        1078,
+        2248.26
+      ]
+    }
+  },
+  {
+    "key": "dockarea_arg_m_station_01_hightech_macro",
+    "name": "1M6S Luxury Dock Area",
+    "index": 11,
+    "hash": 2318080544,
+    "boundingBox": {
+      "size": [
+        400.01,
+        214.95,
+        400.01
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_ter_ships_m_dockarea_01_macro",
+    "name": "Terran S/M Ship Fabrication Bay",
+    "index": 162,
+    "hash": 3617337090,
+    "boundingBox": {
+      "size": [
+        1200,
+        489.12,
+        800
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_bor_s_liquid_01_macro",
+    "name": "Boron S Liquid Storage",
+    "index": 244,
+    "hash": 2782790844,
+    "boundingBox": {
+      "size": [
+        356.25,
+        800,
+        488.42
+      ]
+    }
+  },
+  {
+    "key": "storage_arg_m_container_01_macro",
+    "name": "Argon M Container Storage",
+    "index": 29,
+    "hash": 1990513367,
+    "boundingBox": {
+      "size": [
+        569.06,
+        479.85,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_gen_fieldcoils_macro",
+    "name": "Field Coil Production",
+    "index": 52,
+    "hash": 3258447602,
+    "boundingBox": {
+      "size": [
+        757.92,
+        347.28,
+        765.14
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_ter_mre_macro",
+    "name": "Terran MRE Production",
+    "index": 194,
+    "hash": 1374110514,
+    "boundingBox": {
+      "size": [
+        559.33,
+        1768.61,
+        342.11
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_gen_dronecomponents_macro",
+    "name": "Drone Component Production",
+    "index": 49,
+    "hash": 4284398096,
+    "boundingBox": {
+      "size": [
+        893.21,
+        534.06,
+        1104.8
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "struct_spl_base_02_macro",
+    "name": "Split Base Connection Structure 02",
+    "index": 136,
+    "hash": 71357118,
+    "boundingBox": {
+      "size": [
+        178.03,
+        398.5,
+        800.14
+      ]
+    }
+  },
+  null,
+  {
+    "key": "buildmodule_bor_ships_l_macro",
+    "name": "Boron L Ship Fabrication Bay",
+    "index": 209,
+    "hash": 457795924,
+    "boundingBox": {
+      "size": [
+        1456.51,
+        831.14,
+        2271.48
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_gen_graphene_macro",
+    "name": "Graphene Production",
+    "index": 53,
+    "hash": 2247645976,
+    "boundingBox": {
+      "size": [
+        740.31,
+        339.95,
+        1432.74
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "prod_gen_spices_macro",
+    "name": "Spice Production",
+    "index": 65,
+    "hash": 671758549,
+    "boundingBox": {
+      "size": [
+        741.49,
+        378.5,
+        1080.53
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_arg_s_liquid_01_macro",
+    "name": "Argon S Liquid Storage",
+    "index": 33,
+    "hash": 4267216635,
+    "boundingBox": {
+      "size": [
+        282.64,
+        187.03,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "struct_spl_base_01_macro",
+    "name": "Split Base Connection Structure 01",
+    "index": 135,
+    "hash": 3451955341,
+    "boundingBox": {
+      "size": [
+        178.03,
+        398.34,
+        400.07
+      ]
+    }
+  },
+  {
+    "key": "storage_par_m_container_01_macro",
+    "name": "Paranid M Container Storage",
+    "index": 93,
+    "hash": 1524114696,
+    "boundingBox": {
+      "size": [
+        700.15,
+        787.09,
+        764.5
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_nostropoil_macro",
+    "name": "Nostrop Oil Production",
+    "index": 120,
+    "hash": 2901142133,
+    "boundingBox": {
+      "size": [
+        729.9,
+        380.6,
+        441.29
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "pier_tel_harbor_03_macro",
+    "name": "Teladi 3-Dock E Pier",
+    "index": 115,
+    "hash": 3764798620,
+    "boundingBox": {
+      "size": [
+        800.06,
+        400,
+        6238.62
+      ]
+    }
+  },
+  {
+    "key": "storage_arg_l_solid_01_macro",
+    "name": "Argon L Solid Storage",
+    "index": 34,
+    "hash": 1138907744,
+    "boundingBox": {
+      "size": [
+        800,
+        397.8,
+        1600.04
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_tel_m_liquid_01_macro",
+    "name": "Teladi M Liquid Storage",
+    "index": 130,
+    "hash": 822961877,
+    "boundingBox": {
+      "size": [
+        357.88,
+        1199.95,
+        393.24
+      ]
+    }
+  },
+  {
+    "key": "storage_arg_s_container_01_macro",
+    "name": "Argon S Container Storage",
+    "index": 30,
+    "hash": 4265211192,
+    "boundingBox": {
+      "size": [
+        364.22,
+        187.03,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "storage_tel_m_container_01_macro",
+    "name": "Teladi M Container Storage",
+    "index": 127,
+    "hash": 1363493231,
+    "boundingBox": {
+      "size": [
+        380.75,
+        1200,
+        395.04
+      ]
+    }
+  },
+  null,
+  {
+    "key": "defence_bor_claim_01_macro",
+    "name": "Boron Administrative Centre",
+    "index": 220,
+    "hash": 813705151,
+    "boundingBox": {
+      "size": [
+        817.8,
+        2112.63,
+        826.14
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_gen_engineparts_macro",
+    "name": "Engine Part Production",
+    "index": 51,
+    "hash": 132992767,
+    "boundingBox": {
+      "size": [
+        536.75,
+        495.09,
+        797.38
+      ]
+    }
+  },
+  null,
+  {
+    "key": "buildmodule_gen_equip_m_dockarea_01_macro",
+    "name": "S/M Ship Maintenance Bay",
+    "index": 40,
+    "hash": 205883505,
+    "boundingBox": {
+      "size": [
+        1200,
+        533.06,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_siliconwafers_macro",
+    "name": "Silicon Wafer Production",
+    "index": 63,
+    "hash": 1112329243,
+    "boundingBox": {
+      "size": [
+        356.72,
+        276.61,
+        2532.2
+      ]
+    }
+  },
+  {
+    "key": "proc_gen_scrapworks_macro",
+    "name": "Scrap Processor",
+    "index": 43,
+    "hash": 1695455132,
+    "boundingBox": {
+      "size": [
+        792.23,
+        1505.68,
+        3192.5
+      ]
+    }
+  },
+  {
+    "key": "hab_ter_s_01_macro",
+    "name": "Terran S Living Quarters",
+    "index": 180,
+    "hash": 1184132495,
+    "boundingBox": {
+      "size": [
+        800,
+        221.3,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_sunriseflowers_macro",
+    "name": "Sunrise Flower Production",
+    "index": 123,
+    "hash": 1950808114,
+    "boundingBox": {
+      "size": [
+        1600,
+        1118.13,
+        1600
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "struct_tel_vertical_01_macro",
+    "name": "Teladi Vertical Connection Structure 01",
+    "index": 105,
+    "hash": 44763558,
+    "boundingBox": {
+      "size": [
+        357.77,
+        598.3,
+        217.28
+      ]
+    }
+  },
+  {
+    "key": "defence_tel_tube_01_macro",
+    "name": "Teladi Bridge Defence Platform",
+    "index": 109,
+    "hash": 1376527485,
+    "boundingBox": {
+      "size": [
+        258.68,
+        213.38,
+        400
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_par_base_02_macro",
+    "name": "Paranid Base Connection Structure 02",
+    "index": 71,
+    "hash": 570768769,
+    "boundingBox": {
+      "size": [
+        187.51,
+        382.48,
+        800
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_bor_vertical_02_macro",
+    "name": "Boron Vertical Connection Structure 02",
+    "index": 219,
+    "hash": 3753311892,
+    "boundingBox": {
+      "size": [
+        312.98,
+        800,
+        312.98
+      ]
+    }
+  },
+  {
+    "key": "storage_bor_l_container_01_macro",
+    "name": "Boron L Container Storage",
+    "index": 239,
+    "hash": 3857806873,
+    "boundingBox": {
+      "size": [
+        808.6,
+        1628.38,
+        808.6
+      ]
+    }
+  },
+  {
+    "key": "prod_ter_stimulants_macro",
+    "name": "Stimulant Production",
+    "index": 193,
+    "hash": 755441476,
+    "boundingBox": {
+      "size": [
+        1199.76,
+        1396.26,
+        660.35
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "storage_ter_s_liquid_01_macro",
+    "name": "Terran S Liquid Storage",
+    "index": 200,
+    "hash": 3656240531,
+    "boundingBox": {
+      "size": [
+        398.62,
+        800,
+        398.62
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_turretcomponents_macro",
+    "name": "Turret Component Production",
+    "index": 67,
+    "hash": 3626900705,
+    "boundingBox": {
+      "size": [
+        758.89,
+        792.75,
+        753.78
+      ]
+    }
+  },
+  {
+    "key": "prod_par_majadust_macro",
+    "name": "Maja Dust Production",
+    "index": 87,
+    "hash": 1045586082,
+    "boundingBox": {
+      "size": [
+        1200,
+        1065.76,
+        491.02
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "storage_par_l_container_01_macro",
+    "name": "Paranid L Container Storage",
+    "index": 92,
+    "hash": 1681363609,
+    "boundingBox": {
+      "size": [
+        748.78,
+        1568.16,
+        1541.62
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_arg_spacefuel_macro",
+    "name": "Spacefuel Production",
+    "index": 26,
+    "hash": 3606915517,
+    "boundingBox": {
+      "size": [
+        727.94,
+        791.24,
+        710.51
+      ]
+    }
+  },
+  {
+    "key": "struct_spl_cross_01_macro",
+    "name": "Split Cross Connection Structure 01",
+    "index": 138,
+    "hash": 4195123718,
+    "boundingBox": {
+      "size": [
+        489.41,
+        400,
+        470.94
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_ter_equip_l_macro",
+    "name": "Terran L Ship Maintenance Bay",
+    "index": 176,
+    "hash": 1345721774,
+    "boundingBox": {
+      "size": [
+        781.27,
+        1117.64,
+        1419.26
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_ter_m_solid_01_macro",
+    "name": "Terran M Solid Storage",
+    "index": 202,
+    "hash": 2218281180,
+    "boundingBox": {
+      "size": [
+        784.16,
+        1200.11,
+        800.64
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_superfluidcoolant_macro",
+    "name": "Superfluid Coolant Production",
+    "index": 66,
+    "hash": 1744666834,
+    "boundingBox": {
+      "size": [
+        678.24,
+        1168.6,
+        762.56
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_quantumtubes_macro",
+    "name": "Quantum Tube Production",
+    "index": 58,
+    "hash": 2071696648,
+    "boundingBox": {
+      "size": [
+        387.03,
+        1206.17,
+        394.34
+      ]
+    }
+  },
+  {
+    "key": "pier_tel_harbor_02_macro",
+    "name": "Teladi 1-Dock Pier",
+    "index": 114,
+    "hash": 1380397593,
+    "boundingBox": {
+      "size": [
+        2000.28,
+        400,
+        413.69
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "hab_tel_l_01_macro",
+    "name": "Teladi L Biome",
+    "index": 110,
+    "hash": 3909879469,
+    "boundingBox": {
+      "size": [
+        1429.88,
+        1670.93,
+        1429.88
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_gen_equip_xl_macro",
+    "name": "XL Ship Maintenance Bay",
+    "index": 42,
+    "hash": 1558440986,
+    "boundingBox": {
+      "size": [
+        1441.35,
+        2376.36,
+        2132.06
+      ]
+    }
+  },
+  {
+    "key": "hab_pir_l_01_macro",
+    "name": "Argon L Dormitory",
+    "index": 204,
+    "hash": 1657445471,
+    "boundingBox": {
+      "size": [
+        398.17,
+        1600,
+        660.3
+      ]
+    }
+  },
+  null,
+  {
+    "key": "hab_bor_s_01_macro",
+    "name": "Boron S Oasis",
+    "index": 229,
+    "hash": 1372135138,
+    "boundingBox": {
+      "size": [
+        791.09,
+        760.77,
+        809.37
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "hab_tel_m_01_macro",
+    "name": "Teladi M Biome",
+    "index": 111,
+    "hash": 4076301714,
+    "boundingBox": {
+      "size": [
+        1142.48,
+        791.94,
+        1142.48
+      ]
+    }
+  },
+  {
+    "key": "struct_spl_vertical_02_macro",
+    "name": "Split Vertical Connection Structure 02",
+    "index": 140,
+    "hash": 687557358,
+    "boundingBox": {
+      "size": [
+        220.3,
+        799.92,
+        380.67
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_arg_base_01_macro",
+    "name": "Argon Base Connection Structure 01",
+    "index": 1,
+    "hash": 2757566338,
+    "boundingBox": {
+      "size": [
+        288.2,
+        179.86,
+        400
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_par_s_liquid_01_macro",
+    "name": "Paranid S Liquid Storage",
+    "index": 97,
+    "hash": 481746864,
+    "boundingBox": {
+      "size": [
+        399.79,
+        1115.4,
+        403.36
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_bor_bogas_macro",
+    "name": "BoGas Production",
+    "index": 236,
+    "hash": 3840865441,
+    "boundingBox": {
+      "size": [
+        595.25,
+        385.28,
+        2012.64
+      ]
+    }
+  },
+  {
+    "key": "defence_arg_tube_01_macro",
+    "name": "Argon Bridge Defence Platform",
+    "index": 9,
+    "hash": 3080039141,
+    "boundingBox": {
+      "size": [
+        269.68,
+        122.22,
+        400.07
+      ]
+    }
+  },
+  {
+    "key": "storage_ter_s_container_01_macro",
+    "name": "Terran S Container Storage",
+    "index": 197,
+    "hash": 1458381729,
+    "boundingBox": {
+      "size": [
+        398.62,
+        800,
+        398.62
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_gen_scanningarrays_macro",
+    "name": "Scanning Array Production",
+    "index": 60,
+    "hash": 745974280,
+    "boundingBox": {
+      "size": [
+        823.93,
+        371.79,
+        1164.7
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_spl_vertical_01_macro",
+    "name": "Split Vertical Connection Structure 01",
+    "index": 139,
+    "hash": 3552893853,
+    "boundingBox": {
+      "size": [
+        212.34,
+        400,
+        385.65
+      ]
+    }
+  },
+  null,
+  {
+    "key": "dockarea_arg_m_02_tradestation_01_macro",
+    "name": "8M Standard Dock Area",
+    "index": 16,
+    "hash": 3411562927,
+    "boundingBox": {
+      "size": [
+        1200,
+        263.34,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "storage_par_m_liquid_01_macro",
+    "name": "Paranid M Liquid Storage",
+    "index": 96,
+    "hash": 3870819536,
+    "boundingBox": {
+      "size": [
+        700.15,
+        787.09,
+        764.5
+      ]
+    }
+  },
+  {
+    "key": "defence_par_disc_01_macro",
+    "name": "Paranid Disc Defence Platform",
+    "index": 79,
+    "hash": 1277570845,
+    "boundingBox": {
+      "size": [
+        400,
+        383.3,
+        400
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_bor_l_liquid_01_macro",
+    "name": "Boron L Liquid Storage",
+    "index": 242,
+    "hash": 754125406,
+    "boundingBox": {
+      "size": [
+        808.6,
+        1667.46,
+        808.6
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "struct_arg_base_03_macro",
+    "name": "Argon Base Connection Structure 03",
+    "index": 3,
+    "hash": 3570839398,
+    "boundingBox": {
+      "size": [
+        321.19,
+        179.86,
+        1600
+      ]
+    }
+  },
+  {
+    "key": "prod_spl_medicalsupplies_macro",
+    "name": "Split Medical Supply Production",
+    "index": 151,
+    "hash": 3173131383,
+    "boundingBox": {
+      "size": [
+        675.94,
+        1545.43,
+        365.63
+      ]
+    }
+  },
+  null,
+  {
+    "key": "buildmodule_gen_equip_l_macro",
+    "name": "L Ship Maintenance Bay",
+    "index": 41,
+    "hash": 296086572,
+    "boundingBox": {
+      "size": [
+        781.27,
+        1117.64,
+        1419.26
+      ]
+    }
+  },
+  {
+    "key": "storage_ter_m_container_01_macro",
+    "name": "Terran M Container Storage",
+    "index": 196,
+    "hash": 3187554911,
+    "boundingBox": {
+      "size": [
+        784.16,
+        1200.11,
+        800.64
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "struct_tel_vertical_02_macro",
+    "name": "Teladi Vertical Connection Structure 02",
+    "index": 106,
+    "hash": 169637911,
+    "boundingBox": {
+      "size": [
+        357.77,
+        800,
+        207.13
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_ter_siliconcarbide_macro",
+    "name": "Silicon Carbide Production",
+    "index": 192,
+    "hash": 293785858,
+    "boundingBox": {
+      "size": [
+        800.36,
+        1403.77,
+        660.66
+      ]
+    }
+  },
+  {
+    "key": "struct_ter_base_01_macro",
+    "name": "Terran Base Connection Structure 01",
+    "index": 165,
+    "hash": 1682590991,
+    "boundingBox": {
+      "size": [
+        234.96,
+        100,
+        400
+      ]
+    }
+  },
+  {
+    "key": "struct_tel_base_01_macro",
+    "name": "Teladi Base Connection Structure 01",
+    "index": 101,
+    "hash": 2795206872,
+    "boundingBox": {
+      "size": [
+        367.63,
+        326.62,
+        491.9
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_l_liquid_01_macro",
+    "name": "Split L Liquid Storage",
+    "index": 156,
+    "hash": 272456649,
+    "boundingBox": {
+      "size": [
+        572.2,
+        1600,
+        606.03
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_missilecomponents_macro",
+    "name": "Missile Component Production",
+    "index": 56,
+    "hash": 460036416,
+    "boundingBox": {
+      "size": [
+        689.04,
+        370.65,
+        1145.68
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_par_medicalsupplies_macro",
+    "name": "Paranid Medical Supply Production",
+    "index": 89,
+    "hash": 354136157,
+    "boundingBox": {
+      "size": [
+        675.94,
+        1545.43,
+        365.63
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "struct_bor_base_04_macro",
+    "name": "Boron Base Connection Structure 04",
+    "index": 214,
+    "hash": 2459995105,
+    "boundingBox": {
+      "size": [
+        599.6,
+        331.22,
+        1600.43
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "struct_bor_vertical_01_macro",
+    "name": "Boron Vertical Connection Structure 01",
+    "index": 218,
+    "hash": 470877585,
+    "boundingBox": {
+      "size": [
+        318.78,
+        400,
+        318.78
+      ]
+    }
+  },
+  {
+    "key": "struct_par_cross_02_macro",
+    "name": "Paranid Cross Connection Structure 02",
+    "index": 74,
+    "hash": 797939252,
+    "boundingBox": {
+      "size": [
+        800,
+        400,
+        800
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_par_base_01_macro",
+    "name": "Paranid Base Connection Structure 01",
+    "index": 70,
+    "hash": 1702462022,
+    "boundingBox": {
+      "size": [
+        144.2,
+        382.48,
+        400
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "prod_gen_antimattercells_macro",
+    "name": "Antimatter Cell Production",
+    "index": 46,
+    "hash": 2607459661,
+    "boundingBox": {
+      "size": [
+        969.51,
+        498.4,
+        2557.88
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_par_vertical_02_macro",
+    "name": "Paranid Vertical Connection Structure 02",
+    "index": 77,
+    "hash": 168286878,
+    "boundingBox": {
+      "size": [
+        255.43,
+        800,
+        255.34
+      ]
+    }
+  },
+  {
+    "key": "pier_spl_harbor_02_macro",
+    "name": "Split 1-Dock Pier",
+    "index": 148,
+    "hash": 1357629373,
+    "boundingBox": {
+      "size": [
+        2000,
+        400,
+        360.28
+      ]
+    }
+  },
+  null,
+  {
+    "key": "pier_arg_harbor_02_macro",
+    "name": "Argon 1-Dock Pier",
+    "index": 21,
+    "hash": 3787989565,
+    "boundingBox": {
+      "size": [
+        1997.76,
+        400,
+        400
+      ]
+    }
+  },
+  {
+    "key": "prod_bor_medicalsupplies_macro",
+    "name": "Boron Medical Supply Production",
+    "index": 237,
+    "hash": 3175088795,
+    "boundingBox": {
+      "size": [
+        439.4,
+        1623.37,
+        1800
+      ]
+    }
+  },
+  {
+    "key": "storage_tel_l_liquid_01_macro",
+    "name": "Teladi L Liquid Storage",
+    "index": 129,
+    "hash": 1833553390,
+    "boundingBox": {
+      "size": [
+        800,
+        1199.92,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "prod_gen_smartchips_macro",
+    "name": "Smart Chip Production",
+    "index": 64,
+    "hash": 2548215291,
+    "boundingBox": {
+      "size": [
+        393.72,
+        1143.4,
+        286.92
+      ]
+    }
+  },
+  null,
+  {
+    "key": "dockarea_arg_m_station_01_macro",
+    "name": "1M6S Standard Dock Area",
+    "index": 10,
+    "hash": 1012745924,
+    "boundingBox": {
+      "size": [
+        400.01,
+        257.21,
+        400.01
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_par_sojahusk_macro",
+    "name": "Soja Husk Production",
+    "index": 91,
+    "hash": 3710126684,
+    "boundingBox": {
+      "size": [
+        598.33,
+        1136.32,
+        622.12
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_arg_m_solid_01_macro",
+    "name": "Argon M Solid Storage",
+    "index": 35,
+    "hash": 662029681,
+    "boundingBox": {
+      "size": [
+        569.06,
+        507.51,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_arg_wheat_macro",
+    "name": "Wheat Production",
+    "index": 27,
+    "hash": 1795725286,
+    "boundingBox": {
+      "size": [
+        1212.76,
+        390.24,
+        2872.84
+      ]
+    }
+  },
+  null,
+  {
+    "key": "hab_bor_m_01_macro",
+    "name": "Boron M Oasis",
+    "index": 228,
+    "hash": 2358679367,
+    "boundingBox": {
+      "size": [
+        790,
+        948.82,
+        1200.01
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_advancedelectronics_macro",
+    "name": "Advanced Electronics Production",
+    "index": 45,
+    "hash": 164095901,
+    "boundingBox": {
+      "size": [
+        769.89,
+        359.31,
+        1161.21
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "storage_spl_m_liquid_01_macro",
+    "name": "Split M Liquid Storage",
+    "index": 157,
+    "hash": 519091676,
+    "boundingBox": {
+      "size": [
+        527.55,
+        800,
+        737.18
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_gen_water_macro",
+    "name": "Water Production",
+    "index": 68,
+    "hash": 3545908766,
+    "boundingBox": {
+      "size": [
+        754.88,
+        380.21,
+        1855.08
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "storage_ter_m_liquid_01_macro",
+    "name": "Terran M Liquid Storage",
+    "index": 199,
+    "hash": 3997050476,
+    "boundingBox": {
+      "size": [
+        784.16,
+        1200.11,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_arg_meat_macro",
+    "name": "Meat Production",
+    "index": 24,
+    "hash": 1624168602,
+    "boundingBox": {
+      "size": [
+        1515,
+        449.01,
+        712.87
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "struct_ter_vertical_02_macro",
+    "name": "Terran Vertical Connection Structure 02",
+    "index": 170,
+    "hash": 382760581,
+    "boundingBox": {
+      "size": [
+        231.55,
+        800,
+        231.55
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_advancedcomposites_macro",
+    "name": "Advanced Composite Production",
+    "index": 44,
+    "hash": 3790385891,
+    "boundingBox": {
+      "size": [
+        832.55,
+        1730.84,
+        364.44
+      ]
+    }
+  },
+  {
+    "key": "pier_bor_harbor_01_macro",
+    "name": "Boron 4-Dock T Pier",
+    "index": 230,
+    "hash": 1323354256,
+    "boundingBox": {
+      "size": [
+        2167.96,
+        400,
+        3600.08
+      ]
+    }
+  },
+  {
+    "key": "hab_pir_m_01_macro",
+    "name": "Argon M Dormitory",
+    "index": 205,
+    "hash": 2787885264,
+    "boundingBox": {
+      "size": [
+        394.88,
+        1200,
+        549.17
+      ]
+    }
+  },
+  {
+    "key": "dockarea_arg_m_station_02_lowtech_macro",
+    "name": "3M6S Basic Dock Area",
+    "index": 15,
+    "hash": 2797453834,
+    "boundingBox": {
+      "size": [
+        400.01,
+        293.52,
+        400.01
+      ]
+    }
+  },
+  {
+    "key": "storage_bor_s_solid_01_macro",
+    "name": "Boron S Solid Storage",
+    "index": 247,
+    "hash": 2329741063,
+    "boundingBox": {
+      "size": [
+        356.25,
+        800,
+        488.42
+      ]
+    }
+  },
+  {
+    "key": "pier_ter_harbor_04_macro",
+    "name": "Terran 4-Dock T Pier",
+    "index": 184,
+    "hash": 830144726,
+    "boundingBox": {
+      "size": [
+        340.85,
+        91.6,
+        339.4
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_pir_l_condensate_01_macro",
+    "name": "Protectyon Shield Generator",
+    "index": 207,
+    "hash": 3989298566,
+    "boundingBox": {
+      "size": [
+        1398.14,
+        1872.49,
+        1324.16
+      ]
+    }
+  },
+  {
+    "key": "struct_bor_base_01_macro",
+    "name": "Boron Base Connection Structure 01",
+    "index": 211,
+    "hash": 237852344,
+    "boundingBox": {
+      "size": [
+        314.7,
+        256.27,
+        400
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_s_container_01_macro",
+    "name": "Split S Container Storage",
+    "index": 155,
+    "hash": 3361322876,
+    "boundingBox": {
+      "size": [
+        300.24,
+        735.34,
+        387.81
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "dockarea_ter_m_station_01_hightech_macro",
+    "name": "Terran 4M10S Luxury Dock Area",
+    "index": 174,
+    "hash": 3268450973,
+    "boundingBox": {
+      "size": [
+        1200,
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "key": "struct_bor_cross_02_macro",
+    "name": "Boron Cross Connection Structure 02",
+    "index": 217,
+    "hash": 1921985364,
+    "boundingBox": {
+      "size": [
+        1483.91,
+        324.45,
+        1600
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "pier_bor_harbor_03_macro",
+    "name": "Boron 3-Dock E Pier",
+    "index": 232,
+    "hash": 21886268,
+    "boundingBox": {
+      "size": [
+        2277.42,
+        400,
+        6394.13
+      ]
+    }
+  },
+  {
+    "key": "defence_ter_claim_01_macro",
+    "name": "Terran Administrative Centre",
+    "index": 171,
+    "hash": 3333320876,
+    "boundingBox": {
+      "size": [
+        372.97,
+        1889.31,
+        800
+      ]
+    }
+  },
+  {
+    "key": "defence_par_claim_01_macro",
+    "name": "Paranid Administrative Centre",
+    "index": 78,
+    "hash": 2090123179,
+    "boundingBox": {
+      "size": [
+        1200.08,
+        1981.44,
+        1200.08
+      ]
+    }
+  },
+  {
+    "key": "prod_ter_scrap_recycler_macro",
+    "name": "Terran Scrap Recycler",
+    "index": 191,
+    "hash": 261994327,
+    "boundingBox": {
+      "size": [
+        800.01,
+        3505.52,
+        1198.14
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_m_container_01_macro",
+    "name": "Split M Container Storage",
+    "index": 154,
+    "hash": 140271849,
+    "boundingBox": {
+      "size": [
+        527.55,
+        800,
+        736.67
+      ]
+    }
+  },
+  {
+    "key": "defence_tel_claim_01_macro",
+    "name": "Teladi Administrative Centre",
+    "index": 107,
+    "hash": 3860383897,
+    "boundingBox": {
+      "size": [
+        1227.32,
+        2504.03,
+        1227.32
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "storage_arg_l_container_01_macro",
+    "name": "Argon L Container Storage",
+    "index": 28,
+    "hash": 639309722,
+    "boundingBox": {
+      "size": [
+        800,
+        481.55,
+        1600.04
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_bor_equip_l_macro",
+    "name": "Boron L Ship Maintenance Bay",
+    "index": 225,
+    "hash": 1763474020,
+    "boundingBox": {
+      "size": [
+        800.02,
+        831.14,
+        2271.48
+      ]
+    }
+  },
+  {
+    "key": "storage_bor_m_container_01_macro",
+    "name": "Boron M Container Storage",
+    "index": 240,
+    "hash": 1637146537,
+    "boundingBox": {
+      "size": [
+        514.22,
+        1285.21,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "buildmodule_bor_ships_m_dockarea_01_macro",
+    "name": "Boron S/M Ship Fabrication Bay",
+    "index": 208,
+    "hash": 3911568294,
+    "boundingBox": {
+      "size": [
+        1322.55,
+        638.9,
+        1282.02
+      ]
+    }
+  },
+  {
+    "key": "storage_ter_l_solid_01_macro",
+    "name": "Terran L Solid Storage",
+    "index": 201,
+    "hash": 598829297,
+    "boundingBox": {
+      "size": [
+        800,
+        1600,
+        800
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_par_sojabeans_macro",
+    "name": "Soja Bean Production",
+    "index": 90,
+    "hash": 1035557540,
+    "boundingBox": {
+      "size": [
+        955.29,
+        2366.69,
+        1067.55
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "defence_bor_tube_01_macro",
+    "name": "Boron Bridge Defence Platform",
+    "index": 222,
+    "hash": 3676507753,
+    "boundingBox": {
+      "size": [
+        328.1,
+        367.55,
+        800
+      ]
+    }
+  },
+  {
+    "key": "pier_par_harbor_01_macro",
+    "name": "Paranid 3-Dock T Pier",
+    "index": 84,
+    "hash": 1712847547,
+    "boundingBox": {
+      "size": [
+        2400,
+        401.31,
+        3600
+      ]
+    }
+  },
+  {
+    "key": "dockarea_arg_m_station_02_macro",
+    "name": "3M6S Standard Dock Area",
+    "index": 13,
+    "hash": 3238097466,
+    "boundingBox": {
+      "size": [
+        400.01,
+        293.52,
+        400.01
+      ]
+    }
+  },
+  {
+    "key": "dockarea_arg_m_station_02_hightech_macro",
+    "name": "3M6S Luxury Dock Area",
+    "index": 14,
+    "hash": 4117158878,
+    "boundingBox": {
+      "size": [
+        400.01,
+        293.52,
+        400.01
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_teladianium_macro",
+    "name": "Teladianium Production",
+    "index": 125,
+    "hash": 2745204426,
+    "boundingBox": {
+      "size": [
+        771.94,
+        769.53,
+        1522.97
+      ]
+    }
+  },
+  null,
+  {
+    "key": "defence_spl_claim_01_macro",
+    "name": "Split Administrative Centre",
+    "index": 141,
+    "hash": 1704869469,
+    "boundingBox": {
+      "size": [
+        1242.31,
+        1973.29,
+        1433.64
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_swampplants_macro",
+    "name": "Swamp Plant Production",
+    "index": 124,
+    "hash": 2207485205,
+    "boundingBox": {
+      "size": [
+        1965.59,
+        437.83,
+        1200
+      ]
+    }
+  },
+  {
+    "key": "prod_spl_scruffinfruit_macro",
+    "name": "Scruffin Production",
+    "index": 152,
+    "hash": 1546576377,
+    "boundingBox": {
+      "size": [
+        1200,
+        322.25,
+        2000
+      ]
+    }
+  },
+  {
+    "key": "struct_bor_base_05_macro",
+    "name": "Boron Base Connection Structure 05",
+    "index": 215,
+    "hash": 424291832,
+    "boundingBox": {
+      "size": [
+        318.59,
+        731.24,
+        1600.43
+      ]
+    }
+  },
+  {
+    "key": "struct_ter_base_02_macro",
+    "name": "Terran Base Connection Structure 02",
+    "index": 166,
+    "hash": 2054188535,
+    "boundingBox": {
+      "size": [
+        234.97,
+        100,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_antimatterconverters_macro",
+    "name": "Antimatter Converter Production",
+    "index": 47,
+    "hash": 1980473234,
+    "boundingBox": {
+      "size": [
+        714.64,
+        1591.08,
+        932.96
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_arg_s_solid_01_macro",
+    "name": "Argon S Solid Storage",
+    "index": 36,
+    "hash": 2480728868,
+    "boundingBox": {
+      "size": [
+        304.66,
+        187.03,
+        800
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_par_s_solid_01_macro",
+    "name": "Paranid S Solid Storage",
+    "index": 100,
+    "hash": 82041889,
+    "boundingBox": {
+      "size": [
+        399.79,
+        1115.4,
+        403.36
+      ]
+    }
+  },
+  {
+    "key": "storage_ter_s_solid_01_macro",
+    "name": "Terran S Solid Storage",
+    "index": 203,
+    "hash": 2764143215,
+    "boundingBox": {
+      "size": [
+        398.62,
+        800,
+        398.62
+      ]
+    }
+  },
+  null,
+  {
+    "key": "defence_spl_tube_01_macro",
+    "name": "Split Bridge Defence Platform",
+    "index": 143,
+    "hash": 3471205287,
+    "boundingBox": {
+      "size": [
+        151.25,
+        377.07,
+        400
+      ]
+    }
+  },
+  null,
+  {
+    "key": "defence_tel_disc_01_macro",
+    "name": "Teladi Disc Defence Platform",
+    "index": 108,
+    "hash": 2594709538,
+    "boundingBox": {
+      "size": [
+        400,
+        299.17,
+        400
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_ter_equip_m_dockarea_01_macro",
+    "name": "Terran S/M Ship Maintenance Bay",
+    "index": 175,
+    "hash": 2619997446,
+    "boundingBox": {
+      "size": [
+        1200,
+        489.12,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_weaponcomponents_macro",
+    "name": "Weapon Component Production",
+    "index": 69,
+    "hash": 3378872096,
+    "boundingBox": {
+      "size": [
+        504.73,
+        1176.91,
+        1535.47
+      ]
+    }
+  },
+  {
+    "key": "prod_bor_plankton_macro",
+    "name": "Plankton Production",
+    "index": 238,
+    "hash": 1799763163,
+    "boundingBox": {
+      "size": [
+        1936.96,
+        1720.38,
+        800
+      ]
+    }
+  },
+  {
+    "key": "pier_ter_tradestation_01_macro",
+    "name": "Terran Trading Station Hexa-Dock Pier",
+    "index": 185,
+    "hash": 429510975,
+    "boundingBox": {
+      "size": [
+        3946.8,
+        400,
+        5559.88
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_gen_shieldcomponents_macro",
+    "name": "Shield Component Production",
+    "index": 62,
+    "hash": 2624258423,
+    "boundingBox": {
+      "size": [
+        670.07,
+        475.57,
+        1552.18
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_ter_l_container_01_macro",
+    "name": "Terran L Container Storage",
+    "index": 195,
+    "hash": 3367592810,
+    "boundingBox": {
+      "size": [
+        800,
+        1600,
+        800
+      ]
+    }
+  },
+  {
+    "key": "storage_bor_m_solid_01_macro",
+    "name": "Boron M Solid Storage",
+    "index": 246,
+    "hash": 1309008996,
+    "boundingBox": {
+      "size": [
+        514.22,
+        1285.21,
+        800
+      ]
+    }
+  },
+  {
+    "key": "defence_spl_disc_01_macro",
+    "name": "Split Disc Defence Platform",
+    "index": 142,
+    "hash": 3786897154,
+    "boundingBox": {
+      "size": [
+        567.63,
+        377.07,
+        500.97
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_arg_medicalsupplies_macro",
+    "name": "Argon Medical Supply Production",
+    "index": 25,
+    "hash": 532423779,
+    "boundingBox": {
+      "size": [
+        675.94,
+        1545.43,
+        365.63
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_microchips_macro",
+    "name": "Microchip Production",
+    "index": 55,
+    "hash": 1387223821,
+    "boundingBox": {
+      "size": [
+        898.99,
+        477.14,
+        1556.86
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "storage_bor_s_container_01_macro",
+    "name": "Boron S Container Storage",
+    "index": 241,
+    "hash": 1721250794,
+    "boundingBox": {
+      "size": [
+        356.25,
+        800,
+        488.42
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_bor_base_02_macro",
+    "name": "Boron Base Connection Structure 02",
+    "index": 212,
+    "hash": 3781434081,
+    "boundingBox": {
+      "size": [
+        318.92,
+        331.22,
+        800.43
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_gen_ships_m_dockarea_01_macro",
+    "name": "S/M Ship Fabrication Bay",
+    "index": 37,
+    "hash": 980419628,
+    "boundingBox": {
+      "size": [
+        1200,
+        489.12,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "storage_arg_l_liquid_01_macro",
+    "name": "Argon L Liquid Storage",
+    "index": 31,
+    "hash": 2439049820,
+    "boundingBox": {
+      "size": [
+        800,
+        468.8,
+        1600.04
+      ]
+    }
+  },
+  {
+    "key": "dockarea_bor_m_station_01_standard_macro",
+    "name": "Boron 4M14S Luxury Dock Area",
+    "index": 223,
+    "hash": 432435945,
+    "boundingBox": {
+      "size": [
+        1631.24,
+        400,
+        2000
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "struct_arg_vertical_01_macro",
+    "name": "Argon Vertical Connection Structure 01",
+    "index": 5,
+    "hash": 1993599060,
+    "boundingBox": {
+      "size": [
+        134.58,
+        400.05,
+        209.32
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "struct_par_vertical_01_macro",
+    "name": "Paranid Vertical Connection Structure 01",
+    "index": 76,
+    "hash": 3584654462,
+    "boundingBox": {
+      "size": [
+        255.43,
+        400,
+        255.34
+      ]
+    }
+  },
+  null,
+  {
+    "key": "hab_spl_m_01_macro",
+    "name": "Split M Parlour",
+    "index": 145,
+    "hash": 1378116699,
+    "boundingBox": {
+      "size": [
+        513.84,
+        799.13,
+        558.29
+      ]
+    }
+  },
+  {
+    "key": "struct_arg_vertical_02_macro",
+    "name": "Argon Vertical Connection Structure 02",
+    "index": 6,
+    "hash": 834929515,
+    "boundingBox": {
+      "size": [
+        134.58,
+        800.05,
+        209.32
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_plasmaconductors_macro",
+    "name": "Plasma Conductor Production",
+    "index": 57,
+    "hash": 2975276002,
+    "boundingBox": {
+      "size": [
+        841.61,
+        780.45,
+        1162.9
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_ter_ships_l_macro",
+    "name": "Terran L Ship Fabrication Bay",
+    "index": 163,
+    "hash": 4205414605,
+    "boundingBox": {
+      "size": [
+        1577.36,
+        963.32,
+        1857.68
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "prod_ter_energycells_macro",
+    "name": "Terran Energy Cell Production",
+    "index": 187,
+    "hash": 3804059216,
+    "boundingBox": {
+      "size": [
+        394.26,
+        50,
+        1000
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_s_solid_01_macro",
+    "name": "Split S Solid Storage",
+    "index": 161,
+    "hash": 2945506958,
+    "boundingBox": {
+      "size": [
+        300.24,
+        735.34,
+        387.81
+      ]
+    }
+  },
+  null,
+  {
+    "key": "pier_bor_harbor_02_macro",
+    "name": "Boron 1-Dock Pier",
+    "index": 231,
+    "hash": 147671059,
+    "boundingBox": {
+      "size": [
+        2294.77,
+        400,
+        400
+      ]
+    }
+  },
+  {
+    "key": "storage_par_l_liquid_01_macro",
+    "name": "Paranid L Liquid Storage",
+    "index": 95,
+    "hash": 3027003021,
+    "boundingBox": {
+      "size": [
+        714.97,
+        1568.16,
+        757.62
+      ]
+    }
+  },
+  {
+    "key": "pier_par_harbor_02_macro",
+    "name": "Paranid 1-Dock Pier",
+    "index": 85,
+    "hash": 504543029,
+    "boundingBox": {
+      "size": [
+        2000,
+        400,
+        400
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "pier_arg_harbor_01_macro",
+    "name": "Argon 3-Dock T Pier",
+    "index": 20,
+    "hash": 3288873379,
+    "boundingBox": {
+      "size": [
+        2400,
+        400,
+        3600
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_par_majasnails_macro",
+    "name": "Maja Snail Production",
+    "index": 88,
+    "hash": 1742580961,
+    "boundingBox": {
+      "size": [
+        584.27,
+        2293.98,
+        799.62
+      ]
+    }
+  },
+  {
+    "key": "storage_tel_m_solid_01_macro",
+    "name": "Teladi M Solid Storage",
+    "index": 133,
+    "hash": 3170047177,
+    "boundingBox": {
+      "size": [
+        352.85,
+        1199.95,
+        389.83
+      ]
+    }
+  },
+  {
+    "key": "pier_spl_harbor_01_macro",
+    "name": "Split 4-Dock T Pier",
+    "index": 147,
+    "hash": 581485943,
+    "boundingBox": {
+      "size": [
+        2163.85,
+        400,
+        3600
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_bor_ships_xl_macro",
+    "name": "Boron XL Ship Fabrication Bay",
+    "index": 210,
+    "hash": 1168411474,
+    "boundingBox": {
+      "size": [
+        1338.12,
+        2165.22,
+        2271.48
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "prod_tel_hullparts_macro",
+    "name": "Teladi Hull Part Production",
+    "index": 118,
+    "hash": 1606618560,
+    "boundingBox": {
+      "size": [
+        460.81,
+        287.83,
+        1231.5
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "storage_tel_l_solid_01_macro",
+    "name": "Teladi L Solid Storage",
+    "index": 132,
+    "hash": 1227440061,
+    "boundingBox": {
+      "size": [
+        800,
+        1199.92,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "defence_ter_disc_01_macro",
+    "name": "Terran Disc Defence Platform",
+    "index": 172,
+    "hash": 2477991624,
+    "boundingBox": {
+      "size": [
+        800,
+        400,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_engineparts_macro",
+    "name": "Teladi Engine Part Production",
+    "index": 117,
+    "hash": 882625016,
+    "boundingBox": {
+      "size": [
+        536.75,
+        495.09,
+        797.38
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_medicalsupplies_macro",
+    "name": "Teladi Medical Supply Production",
+    "index": 119,
+    "hash": 2805055807,
+    "boundingBox": {
+      "size": [
+        675.94,
+        1545.43,
+        365.63
+      ]
+    }
+  },
+  {
+    "key": "defence_arg_claim_01_macro",
+    "name": "Argon Administrative Centre",
+    "index": 7,
+    "hash": 430148853,
+    "boundingBox": {
+      "size": [
+        2000,
+        1925.29,
+        2000
+      ]
+    }
+  },
+  {
+    "key": "storage_par_m_solid_01_macro",
+    "name": "Paranid M Solid Storage",
+    "index": 99,
+    "hash": 3348013123,
+    "boundingBox": {
+      "size": [
+        700.15,
+        787.09,
+        764.5
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_bor_equip_xl_macro",
+    "name": "Boron XL Ship Maintenance Bay",
+    "index": 226,
+    "hash": 1661683492,
+    "boundingBox": {
+      "size": [
+        1102.8,
+        2165.22,
+        2271.48
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_ter_cross_01_macro",
+    "name": "Terran Cross Connection Structure 01",
+    "index": 168,
+    "hash": 2564634387,
+    "boundingBox": {
+      "size": [
+        800,
+        400,
+        800
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "hab_par_l_01_macro",
+    "name": "Paranid L Dome",
+    "index": 81,
+    "hash": 451811841,
+    "boundingBox": {
+      "size": [
+        689.91,
+        1814.96,
+        828.15
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_bor_cross_01_macro",
+    "name": "Boron Cross Connection Structure 01",
+    "index": 216,
+    "hash": 623073004,
+    "boundingBox": {
+      "size": [
+        791.33,
+        400,
+        810.3
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "pier_ter_harbor_03_macro",
+    "name": "Terran 3-Dock E Pier",
+    "index": 183,
+    "hash": 2648412567,
+    "boundingBox": {
+      "size": [
+        800.04,
+        400,
+        6399.99
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "storage_tel_s_container_01_macro",
+    "name": "Teladi S Container Storage",
+    "index": 128,
+    "hash": 3711405996,
+    "boundingBox": {
+      "size": [
+        380.75,
+        679.38,
+        329.74
+      ]
+    }
+  },
+  {
+    "key": "struct_tel_base_02_macro",
+    "name": "Teladi Base Connection Structure 02",
+    "index": 102,
+    "hash": 2227162148,
+    "boundingBox": {
+      "size": [
+        306.44,
+        326.62,
+        800
+      ]
+    }
+  },
+  {
+    "key": "buildmodule_ter_equip_xl_macro",
+    "name": "Terran XL Ship Maintenance Bay",
+    "index": 177,
+    "hash": 4220786553,
+    "boundingBox": {
+      "size": [
+        1441.35,
+        2376.36,
+        2132.06
+      ]
+    }
+  },
+  null,
+  {
+    "key": "dockarea_arg_m_station_01_lowtech_macro",
+    "name": "1M6S Basic Dock Area",
+    "index": 12,
+    "hash": 1923826492,
+    "boundingBox": {
+      "size": [
+        400.01,
+        257.21,
+        400.01
+      ]
+    }
+  },
+  null,
+  {
+    "key": "pier_bor_harbor_04_macro",
+    "name": "Boron Trading Station 4-Dock Pier",
+    "index": 233,
+    "hash": 350971435,
+    "boundingBox": {
+      "size": [
+        384.63,
+        73.18,
+        345.22
+      ]
+    }
+  },
+  {
+    "key": "struct_par_cross_03_macro",
+    "name": "Paranid Cross Connection Structure 03",
+    "index": 75,
+    "hash": 2070643644,
+    "boundingBox": {
+      "size": [
+        740.82,
+        411.69,
+        646.48
+      ]
+    }
+  },
+  {
+    "key": "struct_par_base_03_macro",
+    "name": "Paranid Base Connection Structure 03",
+    "index": 72,
+    "hash": 38446183,
+    "boundingBox": {
+      "size": [
+        189.08,
+        382.48,
+        1600
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_tel_cross_01_macro",
+    "name": "Teladi Cross Connection Structure 01",
+    "index": 104,
+    "hash": 862389862,
+    "boundingBox": {
+      "size": [
+        400,
+        400,
+        400
+      ]
+    }
+  },
+  {
+    "key": "defence_bor_disc_01_macro",
+    "name": "Boron Disc Defence Platform",
+    "index": 221,
+    "hash": 3489451986,
+    "boundingBox": {
+      "size": [
+        791.33,
+        400,
+        739.64
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "struct_bor_base_03_macro",
+    "name": "Boron Base Connection Structure 03",
+    "index": 213,
+    "hash": 2258074029,
+    "boundingBox": {
+      "size": [
+        318.59,
+        331.22,
+        1600.43
+      ]
+    }
+  },
+  {
+    "key": "hab_tel_s_01_macro",
+    "name": "Teladi S Biome",
+    "index": 112,
+    "hash": 2402532109,
+    "boundingBox": {
+      "size": [
+        812.86,
+        454.39,
+        796.75
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_tel_spaceweed_macro",
+    "name": "Spaceweed Production",
+    "index": 122,
+    "hash": 65371205,
+    "boundingBox": {
+      "size": [
+        713.67,
+        753.98,
+        1075.76
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_arg_foodrations_macro",
+    "name": "Food Ration Production",
+    "index": 23,
+    "hash": 2992577772,
+    "boundingBox": {
+      "size": [
+        941.7,
+        782.77,
+        368.68
+      ]
+    }
+  },
+  {
+    "key": "prod_ter_medicalsupplies_macro",
+    "name": "Terran Medical Supply Production",
+    "index": 188,
+    "hash": 563392088,
+    "boundingBox": {
+      "size": [
+        800,
+        1343.61,
+        442.49
+      ]
+    }
+  },
+  {
+    "key": "hab_arg_l_01_macro",
+    "name": "Argon L Habitat",
+    "index": 17,
+    "hash": 511954303,
+    "boundingBox": {
+      "size": [
+        414.76,
+        1600,
+        569.32
+      ]
+    }
+  },
+  {
+    "key": "storage_bor_m_liquid_01_macro",
+    "name": "Boron M Liquid Storage",
+    "index": 243,
+    "hash": 2164712793,
+    "boundingBox": {
+      "size": [
+        514.22,
+        1200,
+        800
+      ]
+    }
+  },
+  {
+    "key": "hab_pir_s_01_macro",
+    "name": "Argon S Dormitory",
+    "index": 206,
+    "hash": 3864675668,
+    "boundingBox": {
+      "size": [
+        338.73,
+        800,
+        392.94
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_m_solid_01_macro",
+    "name": "Split M Solid Storage",
+    "index": 160,
+    "hash": 2154533442,
+    "boundingBox": {
+      "size": [
+        527.55,
+        800,
+        736.67
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_ter_base_03_macro",
+    "name": "Terran Base Connection Structure 03",
+    "index": 167,
+    "hash": 1050478683,
+    "boundingBox": {
+      "size": [
+        400,
+        100,
+        1600
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "pier_tel_harbor_01_macro",
+    "name": "Teladi 3-Dock T Pier",
+    "index": 113,
+    "hash": 519010427,
+    "boundingBox": {
+      "size": [
+        2399.91,
+        400,
+        3600
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_tel_base_03_macro",
+    "name": "Teladi Base Connection Structure 03",
+    "index": 103,
+    "hash": 1704574,
+    "boundingBox": {
+      "size": [
+        306.44,
+        326.62,
+        1600
+      ]
+    }
+  },
+  {
+    "key": "storage_ter_l_liquid_01_macro",
+    "name": "Terran L Liquid Storage",
+    "index": 198,
+    "hash": 201946863,
+    "boundingBox": {
+      "size": [
+        800,
+        1600,
+        800
+      ]
+    }
+  },
+  null,
+  {
+    "key": "hab_spl_l_01_macro",
+    "name": "Split L Parlour",
+    "index": 144,
+    "hash": 1939841116,
+    "boundingBox": {
+      "size": [
+        467.7,
+        1600,
+        490.31
+      ]
+    }
+  },
+  null,
+  {
+    "key": "pier_ter_harbor_01_macro",
+    "name": "Terran 3-Dock T Pier",
+    "index": 181,
+    "hash": 474178012,
+    "boundingBox": {
+      "size": [
+        2400,
+        400.01,
+        3600
+      ]
+    }
+  },
+  {
+    "key": "hab_arg_s_01_macro",
+    "name": "Argon S Habitat",
+    "index": 19,
+    "hash": 3006892057,
+    "boundingBox": {
+      "size": [
+        250.98,
+        800,
+        415.62
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_spl_l_solid_01_macro",
+    "name": "Split L Solid Storage",
+    "index": 159,
+    "hash": 2456831589,
+    "boundingBox": {
+      "size": [
+        572.2,
+        1600,
+        606.03
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_hullparts_macro",
+    "name": "Hull Part Production",
+    "index": 54,
+    "hash": 176963162,
+    "boundingBox": {
+      "size": [
+        460.81,
+        287.83,
+        1231.5
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "pier_arg_harbor_03_macro",
+    "name": "Argon 3-Dock E Pier",
+    "index": 22,
+    "hash": 1408859661,
+    "boundingBox": {
+      "size": [
+        800,
+        399.82,
+        6178.5
+      ]
+    }
+  },
+  {
+    "key": "hab_bor_l_01_macro",
+    "name": "Boron L Oasis",
+    "index": 227,
+    "hash": 2069890693,
+    "boundingBox": {
+      "size": [
+        889.29,
+        1518.06,
+        1600
+      ]
+    }
+  },
+  {
+    "key": "pier_par_harbor_03_macro",
+    "name": "Paranid 3-Dock E Pier",
+    "index": 86,
+    "hash": 945898463,
+    "boundingBox": {
+      "size": [
+        800,
+        401.31,
+        6167.04
+      ]
+    }
+  },
+  {
+    "key": "storage_tel_s_liquid_01_macro",
+    "name": "Teladi S Liquid Storage",
+    "index": 131,
+    "hash": 2891311827,
+    "boundingBox": {
+      "size": [
+        361.96,
+        748.22,
+        330.97
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "hab_ter_m_01_macro",
+    "name": "Terran M Living Quarters",
+    "index": 179,
+    "hash": 2717678838,
+    "boundingBox": {
+      "size": [
+        1200,
+        221.3,
+        1200
+      ]
+    }
+  },
+  {
+    "key": "pier_spl_harbor_03_macro",
+    "name": "Split 3-Dock E Pier",
+    "index": 149,
+    "hash": 1566697548,
+    "boundingBox": {
+      "size": [
+        800.08,
+        400.01,
+        6350.98
+      ]
+    }
+  },
+  {
+    "key": "storage_arg_m_liquid_01_macro",
+    "name": "Argon M Liquid Storage",
+    "index": 32,
+    "hash": 2713516423,
+    "boundingBox": {
+      "size": [
+        592.18,
+        444.08,
+        800
+      ]
+    }
+  },
+  {
+    "key": "struct_par_cross_01_macro",
+    "name": "Paranid Cross Connection Structure 01",
+    "index": 73,
+    "hash": 3280673068,
+    "boundingBox": {
+      "size": [
+        400,
+        400,
+        400
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "hab_ter_l_01_macro",
+    "name": "Terran L Living Quarters",
+    "index": 178,
+    "hash": 100482230,
+    "boundingBox": {
+      "size": [
+        1600,
+        221.3,
+        1600
+      ]
+    }
+  },
+  {
+    "key": "prod_bor_bofu_macro",
+    "name": "BoFu Production",
+    "index": 235,
+    "hash": 1161618073,
+    "boundingBox": {
+      "size": [
+        2000,
+        1284.66,
+        613.27
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "hab_par_s_01_macro",
+    "name": "Paranid S Dome",
+    "index": 83,
+    "hash": 2870078199,
+    "boundingBox": {
+      "size": [
+        283.46,
+        770.99,
+        333.94
+      ]
+    }
+  },
+  {
+    "key": "struct_arg_cross_01_macro",
+    "name": "Argon Cross Connection Structure 01",
+    "index": 4,
+    "hash": 3155961771,
+    "boundingBox": {
+      "size": [
+        400,
+        399.95,
+        400
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "buildmodule_gen_ships_xl_macro",
+    "name": "XL Ship Fabrication Bay",
+    "index": 39,
+    "hash": 252180501,
+    "boundingBox": {
+      "size": [
+        3600,
+        2190.52,
+        2559.54
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  {
+    "key": "prod_ter_computronicsubstrate_macro",
+    "name": "Computronic Substrate Production",
+    "index": 186,
+    "hash": 4019347014,
+    "boundingBox": {
+      "size": [
+        1199.76,
+        1219.22,
+        660.35
+      ]
+    }
+  },
+  {
+    "key": "struct_arg_base_02_macro",
+    "name": "Argon Base Connection Structure 02",
+    "index": 2,
+    "hash": 3546911489,
+    "boundingBox": {
+      "size": [
+        288.2,
+        179.86,
+        800
+      ]
+    }
+  },
+  {
+    "key": "storage_tel_l_container_01_macro",
+    "name": "Teladi L Container Storage",
+    "index": 126,
+    "hash": 423540032,
+    "boundingBox": {
+      "size": [
+        800,
+        1199.92,
+        800
+      ]
+    }
+  },
+  {
+    "key": "hab_par_m_01_macro",
+    "name": "Paranid M Dome",
+    "index": 82,
+    "hash": 3154478364,
+    "boundingBox": {
+      "size": [
+        648.28,
+        790.39,
+        588.51
+      ]
+    }
+  },
+  null,
+  {
+    "key": "storage_tel_s_solid_01_macro",
+    "name": "Teladi S Solid Storage",
+    "index": 134,
+    "hash": 3881134370,
+    "boundingBox": {
+      "size": [
+        352.85,
+        748.22,
+        329.85
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_tel_scanningarrays_macro",
+    "name": "Teladi Scanning Array Production",
+    "index": 121,
+    "hash": 3752748149,
+    "boundingBox": {
+      "size": [
+        823.93,
+        371.79,
+        1164.7
+      ]
+    }
+  },
+  null,
+  {
+    "key": "struct_spl_base_03_macro",
+    "name": "Split Base Connection Structure 03",
+    "index": 137,
+    "hash": 2265080381,
+    "boundingBox": {
+      "size": [
+        265.97,
+        400,
+        1600.14
+      ]
+    }
+  },
+  null,
+  {
+    "key": "defence_arg_disc_01_macro",
+    "name": "Argon Disc Defence Platform",
+    "index": 8,
+    "hash": 3161791058,
+    "boundingBox": {
+      "size": [
+        400.07,
+        153.97,
+        400.07
+      ]
+    }
+  },
+  {
+    "key": "prod_ter_metallicmicrolattice_macro",
+    "name": "Metallic Microlattice Production",
+    "index": 189,
+    "hash": 3979772174,
+    "boundingBox": {
+      "size": [
+        800,
+        1368.47,
+        795.34
+      ]
+    }
+  },
+  {
+    "key": "pier_ter_harbor_02_macro",
+    "name": "Terran 1-Dock Pier",
+    "index": 182,
+    "hash": 712677018,
+    "boundingBox": {
+      "size": [
+        2000,
+        400,
+        400
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "prod_ter_proteinpaste_macro",
+    "name": "Protein Paste Production",
+    "index": 190,
+    "hash": 797672437,
+    "boundingBox": {
+      "size": [
+        1200.03,
+        399.2,
+        1200.03
+      ]
+    }
+  },
+  null,
+  null,
+  {
+    "key": "struct_ter_vertical_01_macro",
+    "name": "Terran Vertical Connection Structure 01",
+    "index": 169,
+    "hash": 503418970,
+    "boundingBox": {
+      "size": [
+        231.55,
+        400,
+        231.55
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_gen_claytronics_macro",
+    "name": "Claytronics Production",
+    "index": 48,
+    "hash": 429392965,
+    "boundingBox": {
+      "size": [
+        747.93,
+        611.05,
+        700.71
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_s_liquid_01_macro",
+    "name": "Split S Liquid Storage",
+    "index": 158,
+    "hash": 1725777381,
+    "boundingBox": {
+      "size": [
+        300.24,
+        735.34,
+        369.55
+      ]
+    }
+  },
+  null,
+  {
+    "key": "buildmodule_ter_ships_xl_macro",
+    "name": "Terran XL Ship Fabrication Bay",
+    "index": 164,
+    "hash": 1771460633,
+    "boundingBox": {
+      "size": [
+        3600,
+        2190.52,
+        2132.05
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "hab_spl_s_01_macro",
+    "name": "Split S Parlour",
+    "index": 146,
+    "hash": 2449266935,
+    "boundingBox": {
+      "size": [
+        391.98,
+        799.13,
+        369.65
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_scrap_recycler_macro",
+    "name": "Scrap Recycler",
+    "index": 61,
+    "hash": 3837712423,
+    "boundingBox": {
+      "size": [
+        800.01,
+        3505.52,
+        1198.14
+      ]
+    }
+  },
+  {
+    "key": "prod_gen_energycells_macro",
+    "name": "Energy Cell Production",
+    "index": 50,
+    "hash": 1744875294,
+    "boundingBox": {
+      "size": [
+        2400,
+        1361.32,
+        708.3
+      ]
+    }
+  },
+  null,
+  {
+    "key": "pier_bor_tradestation_01_macro",
+    "name": "Boron Trading Station Hexa-Dock Pier",
+    "index": 234,
+    "hash": 1382435628,
+    "boundingBox": {
+      "size": [
+        6534.08,
+        1292.62,
+        6536.83
+      ]
+    }
+  },
+  null,
+  {
+    "key": "prod_gen_refinedmetals_macro",
+    "name": "Refined Metal Production",
+    "index": 59,
+    "hash": 431790780,
+    "boundingBox": {
+      "size": [
+        755.94,
+        656.2,
+        1719.58
+      ]
+    }
+  },
+  {
+    "key": "storage_spl_l_container_01_macro",
+    "name": "Split L Container Storage",
+    "index": 153,
+    "hash": 2531011987,
+    "boundingBox": {
+      "size": [
+        572.2,
+        1600,
+        606.03
+      ]
+    }
+  },
+  {
+    "key": "storage_par_l_solid_01_macro",
+    "name": "Paranid L Solid Storage",
+    "index": 98,
+    "hash": 4063328562,
+    "boundingBox": {
+      "size": [
+        714.97,
+        1568.16,
+        757.62
+      ]
+    }
+  },
+  {
+    "key": "defence_ter_tube_01_macro",
+    "name": "Terran Bridge Defence Platform",
+    "index": 173,
+    "hash": 1086709358,
+    "boundingBox": {
+      "size": [
+        234.97,
+        100,
+        800
+      ]
+    }
+  },
+  {
+    "key": "prod_tel_advancedcomposites_macro",
+    "name": "Teladi Advanced Composite Production",
+    "index": 116,
+    "hash": 2212605445,
+    "boundingBox": {
+      "size": [
+        832.55,
+        1730.84,
+        364.44
+      ]
+    }
+  },
+  null,
+  null,
+  null,
+  null,
+  {
+    "key": "storage_bor_l_solid_01_macro",
+    "name": "Boron L Solid Storage",
+    "index": 245,
+    "hash": 1619683880,
+    "boundingBox": {
+      "size": [
+        808.6,
+        1628.38,
+        808.6
+      ]
+    }
+  },
+  null,
+  {
+    "key": "defence_par_tube_01_macro",
+    "name": "Paranid Bridge Defence Platform",
+    "index": 80,
+    "hash": 3029600184,
+    "boundingBox": {
+      "size": [
+        121.2,
+        352.51,
+        400
+      ]
+    }
+  },
+  null
+]
