@@ -41,6 +41,7 @@ function getResourceMetadata(key) {
 
 let viewer = null;
 let currentPlan = null;
+let currentLoadedSampleKey = null;
 let selectedIndex = null;
 let activeCategoryFilter = 'all';
 let activeMacroFilter = null;
@@ -177,11 +178,42 @@ function hideInitialAppLoader() {
   }
 }
 
+function findMatchingSampleKey(planData, xmlText) {
+  if (!planData || !SAMPLES) return null;
+  const planId = (planData.id || '').trim();
+  const planName = (planData.name || '').trim();
+
+  for (const key of Object.keys(SAMPLES)) {
+    const sampleXml = SAMPLES[key];
+    if (!sampleXml) continue;
+
+    if (xmlText && sampleXml.trim() === xmlText.trim()) {
+      return key;
+    }
+
+    try {
+      const idMatch = sampleXml.match(/<plan\s+[^>]*id="([^"]+)"/i);
+      const nameMatch = sampleXml.match(/<plan\s+[^>]*name="([^"]+)"/i);
+      const sId = idMatch ? idMatch[1].trim() : '';
+      const sName = nameMatch ? nameMatch[1].trim() : '';
+
+      if (planId && sId && planId === sId) {
+        return key;
+      }
+      if (planName && sName && planName === sName) {
+        return key;
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
 function loadSample(sampleKey) {
   const xml = SAMPLES[sampleKey];
   if (xml) {
     try {
-      loadPlanFromXml(xml);
+      currentLoadedSampleKey = sampleKey;
+      loadPlanFromXml(xml, sampleKey);
       const selector = document.getElementById('sample-selector');
       if (selector) selector.value = sampleKey;
       setDefaultSampleKey(sampleKey);
@@ -195,7 +227,7 @@ function loadSample(sampleKey) {
   }
 }
 
-async function loadPlanFromXml(xmlText) {
+async function loadPlanFromXml(xmlText, sourceSampleKey = null) {
   // Clear all panels silently before loading different model
   clearAllPanels(true);
 
@@ -244,6 +276,20 @@ async function loadPlanFromXml(xmlText) {
 
     // Recalculate model measurements based on loaded Three.js meshes
     recalculateMeasurements();
+
+    // Check if the loaded plan is in the Samples list
+    const matchedSampleKey = sourceSampleKey || findMatchingSampleKey(planData, xmlText);
+    if (matchedSampleKey && SAMPLES[matchedSampleKey]) {
+      currentLoadedSampleKey = matchedSampleKey;
+      const selector = document.getElementById('sample-selector');
+      if (selector) selector.value = matchedSampleKey;
+      updateCustomSampleDropdownSelection(matchedSampleKey);
+    } else {
+      currentLoadedSampleKey = null;
+      const selector = document.getElementById('sample-selector');
+      if (selector) selector.value = '';
+      updateCustomSampleDropdownSelection(null);
+    }
 
     showNotification(`Successfully loaded plan "${planData.name}" with ${planData.modules.length} modules!`, 'success');
   } catch (err) {
@@ -1238,7 +1284,9 @@ function setupEventListeners() {
   const sampleSelector = document.getElementById('sample-selector');
   if (sampleSelector) {
     sampleSelector.addEventListener('change', (e) => {
-      loadSample(e.target.value);
+      if (e.target.value) {
+        loadSample(e.target.value);
+      }
     });
   }
 
@@ -1904,6 +1952,10 @@ function clearAllPanels(silent = false) {
   if (countSpan) countSpan.textContent = '0 / 0';
 
   if (!silent) {
+    currentLoadedSampleKey = null;
+    const selector = document.getElementById('sample-selector');
+    if (selector) selector.value = '';
+    updateCustomSampleDropdownSelection(null);
     showNotification('All panels and viewport cleared.', 'info');
   }
 
@@ -2343,11 +2395,15 @@ function initSamplesStorage() {
 function populateSampleSelector() {
   const selector = document.getElementById('sample-selector');
   const orderedKeys = getOrderedSampleKeys();
-  const currentVal = selector ? selector.value : null;
   const defaultKey = getDefaultSampleKey();
 
   if (selector) {
     selector.innerHTML = '';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'Samples';
+    selector.appendChild(defaultOpt);
+
     orderedKeys.forEach(key => {
       const name = getSamplePlanName(key);
       const option = document.createElement('option');
@@ -2356,8 +2412,10 @@ function populateSampleSelector() {
       selector.appendChild(option);
     });
 
-    if (currentVal && SAMPLES[currentVal]) {
-      selector.value = currentVal;
+    if (currentLoadedSampleKey && SAMPLES[currentLoadedSampleKey]) {
+      selector.value = currentLoadedSampleKey;
+    } else if (currentLoadedSampleKey === null) {
+      selector.value = '';
     } else if (defaultKey && SAMPLES[defaultKey]) {
       selector.value = defaultKey;
     } else if (orderedKeys.length > 0) {
@@ -2397,22 +2455,30 @@ function closeSampleDropdown() {
 }
 
 function updateCustomSampleDropdownSelection(sampleKey) {
+  currentLoadedSampleKey = (sampleKey && SAMPLES[sampleKey]) ? sampleKey : null;
   const labelEl = document.getElementById('sample-dropdown-current-label');
-  if (labelEl && SAMPLES[sampleKey]) {
-    labelEl.textContent = getSamplePlanName(sampleKey);
+  if (labelEl) {
+    if (currentLoadedSampleKey && SAMPLES[currentLoadedSampleKey]) {
+      labelEl.textContent = getSamplePlanName(currentLoadedSampleKey);
+    } else {
+      labelEl.textContent = 'Samples';
+    }
   }
+  const defaultKey = getDefaultSampleKey();
   const items = document.querySelectorAll('#sample-dropdown-list .sample-dropdown-item');
   items.forEach(item => {
-    const isSelected = (item.dataset.key === sampleKey);
+    const isSelected = Boolean(currentLoadedSampleKey && item.dataset.key === currentLoadedSampleKey);
     item.classList.toggle('active', isSelected);
     const checkEl = item.querySelector('.sample-item-check');
     if (checkEl) {
-      checkEl.style.display = isSelected ? 'inline-block' : 'none';
-      checkEl.title = isSelected ? 'Checked as default sample loaded on reload' : '';
+      const isDefault = (item.dataset.key === defaultKey);
+      checkEl.style.display = isDefault ? 'inline-block' : 'none';
+      checkEl.title = isDefault ? 'Checked as default sample loaded on reload' : '';
     }
     const defaultBadge = item.querySelector('.sample-item-default-badge');
     if (defaultBadge) {
-      defaultBadge.style.display = isSelected ? 'inline-block' : 'none';
+      const isDefault = (item.dataset.key === defaultKey);
+      defaultBadge.style.display = isDefault ? 'inline-block' : 'none';
     }
   });
 }
@@ -2425,10 +2491,14 @@ function renderCustomSampleDropdown() {
 
   const orderedKeys = getOrderedSampleKeys();
   const defaultKey = getDefaultSampleKey();
-  const currentKey = (selector && selector.value && SAMPLES[selector.value]) ? selector.value : (defaultKey || orderedKeys[0] || '');
+  const currentKey = currentLoadedSampleKey;
 
-  if (labelEl && currentKey && SAMPLES[currentKey]) {
-    labelEl.textContent = getSamplePlanName(currentKey);
+  if (labelEl) {
+    if (currentKey && SAMPLES[currentKey]) {
+      labelEl.textContent = getSamplePlanName(currentKey);
+    } else {
+      labelEl.textContent = 'Samples';
+    }
   }
 
   listContainer.innerHTML = '';
@@ -2436,19 +2506,20 @@ function renderCustomSampleDropdown() {
   orderedKeys.forEach(key => {
     const name = getSamplePlanName(key);
     const moduleCount = getSampleModuleCount(key);
-    const isSelected = (key === currentKey);
+    const isSelected = Boolean(currentKey && key === currentKey);
+    const isDefault = (key === defaultKey);
 
     const item = document.createElement('div');
     item.className = `sample-dropdown-item${isSelected ? ' active' : ''}`;
     item.dataset.key = key;
-    item.title = `${isSelected ? '✓ Current default sample (loaded on reload) • ' : ''}Left-click to load as default • Right-drag to reorder\n${name} (${moduleCount} modules)`;
+    item.title = `${isDefault ? '✓ Current default sample (loaded on reload) • ' : ''}Left-click to load as default • Right-drag to reorder\n${name} (${moduleCount} modules)`;
 
     item.innerHTML = `
       <span class="sample-drag-handle" title="Right-mouse drag to reorder">⠿</span>
       <span class="sample-item-name">${name}</span>
       <span class="sample-item-badge">${moduleCount}m</span>
-      <span class="sample-item-default-badge" style="${isSelected ? 'display:inline-block;' : 'display:none;'}">DEFAULT</span>
-      <span class="sample-item-check" title="${isSelected ? 'Checked as default sample loaded on reload' : ''}" style="${isSelected ? 'display:inline-block;' : 'display:none;'}">✓</span>
+      <span class="sample-item-default-badge" style="${isDefault ? 'display:inline-block;' : 'display:none;'}">DEFAULT</span>
+      <span class="sample-item-check" title="${isDefault ? 'Checked as default sample loaded on reload' : ''}" style="${isDefault ? 'display:inline-block;' : 'display:none;'}">✓</span>
     `;
 
     // Left click selects and loads
