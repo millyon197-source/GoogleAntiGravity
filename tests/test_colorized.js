@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CATEGORY_COLORS, getModuleCategory } from './src/modules.js';
+import { CATEGORY_COLORS, getModuleCategory } from '../src/modules.js';
 
 console.log('[*] Testing Colorized checkbox toggling and material restoration logic...');
 

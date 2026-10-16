@@ -1,6 +1,7 @@
+import path from 'path';
 import fs from 'fs';
 
-const hashTablePath = './dae_hash_table.json';
+const hashTablePath = path.resolve(process.cwd(), 'dae_hash_table.json');
 const DAE_HASH_TABLE = JSON.parse(fs.readFileSync(hashTablePath, 'utf8'));
 
 console.log('[*] Inspecting DAE Mesh Local Offsets across macro categories...');

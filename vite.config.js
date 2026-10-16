@@ -35,6 +35,33 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('three/examples') || id.includes('three\\examples')) {
+            return 'three-addons';
+          }
+          if (id.includes('node_modules/three')) {
+            return 'three-core';
+          }
+          if (
+            id.includes('snap-points-db') ||
+            id.includes('modules-cost-db') ||
+            id.includes('dae_hash_table') ||
+            id.includes('module-bounds-hashtable')
+          ) {
+            return 'x4-databases';
+          }
+          if (id.includes('samples.js')) {
+            return 'x4-samples';
+          }
+          if (id.includes('blueprint-exporter.js')) {
+            return 'blueprint-exporter';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 800
   }
 });

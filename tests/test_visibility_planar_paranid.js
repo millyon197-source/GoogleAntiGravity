@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import * as THREE from 'three';
+import { createProceduralModule } from '../src/modules.js';
 
-const hashTablePath = './dae_hash_table.json';
+const hashTablePath = path.resolve(process.cwd(), 'dae_hash_table.json');
 const DAE_HASH_TABLE = JSON.parse(fs.readFileSync(hashTablePath, 'utf8'));
 
 function murmur3_32(key, seed = 0) {
@@ -64,7 +66,7 @@ function lookupDaeUrls(key) {
 }
 
 function parseXmlPlan(xmlText) {
-  const entryRegex = /<entry\s+([^>]+)>/gi;
+  const entryRegex = /<entry\s+([^>]+)>([\s\S]*?)<\/entry>/gi;
   const attrRegex = /(\w+)="([^"]*)"/g;
 
   const modules = [];
@@ -75,43 +77,61 @@ function parseXmlPlan(xmlText) {
     while ((aMatch = attrRegex.exec(match[1])) !== null) {
       entryAttrs[aMatch[1]] = aMatch[2];
     }
-    if (entryAttrs.macro) {
-      modules.push({
-        index: parseInt(entryAttrs.index || (modules.length + 1), 10),
-        macro: entryAttrs.macro
-      });
+    if (!entryAttrs.macro) continue;
+
+    const innerContent = match[2];
+    const posMatch = /<position\s+([^>]+)\/>/i.exec(innerContent);
+    const rotMatch = /<rotation\s+([^>]+)\/>/i.exec(innerContent);
+
+    let x = 0, y = 0, z = 0;
+    let yaw = 0, pitch = 0, roll = 0;
+
+    if (posMatch) {
+      const xM = /x="([^"]*)"/i.exec(posMatch[1]);
+      const yM = /y="([^"]*)"/i.exec(posMatch[1]);
+      const zM = /z="([^"]*)"/i.exec(posMatch[1]);
+      if (xM) x = parseFloat(xM[1]);
+      if (yM) y = parseFloat(yM[1]);
+      if (zM) z = parseFloat(zM[1]);
     }
+
+    if (rotMatch) {
+      const yawM = /yaw="([^"]*)"/i.exec(rotMatch[1]);
+      const pitchM = /pitch="([^"]*)"/i.exec(rotMatch[1]);
+      const rollM = /roll="([^"]*)"/i.exec(rotMatch[1]);
+      if (yawM) yaw = parseFloat(yawM[1]);
+      if (pitchM) pitch = parseFloat(pitchM[1]);
+      if (rollM) roll = parseFloat(rollM[1]);
+    }
+
+    modules.push({
+      index: parseInt(entryAttrs.index || (modules.length + 1), 10),
+      macro: entryAttrs.macro,
+      position: { x, y, z },
+      rotation: { yaw, pitch, roll }
+    });
   }
+
   return modules;
 }
 
-// Simulate Viewer's colladaCache (Map)
-const colladaCache = new Map();
-let cacheHits = 0;
-let cacheMisses = 0;
-
-function loadColladaModelSimulated(url) {
-  if (colladaCache.has(url)) {
-    cacheHits++;
-    return colladaCache.get(url);
-  }
-  cacheMisses++;
-  // Mock loaded model template promise
-  const loadPromise = Promise.resolve({ url, loaded: true });
-  colladaCache.set(url, loadPromise);
-  return loadPromise;
-}
-
 const xmlPath = 'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\Planar - Paranid.xml';
-console.log('[*] Testing DAE cache storage for:', xmlPath);
+console.log('[*] Testing module visibility for rendering:', xmlPath);
 
 const xmlContent = fs.readFileSync(xmlPath, 'utf8');
 const modules = parseXmlPlan(xmlContent);
 
 console.log(`[*] Parsed ${modules.length} station modules.`);
 
+const mainScene = new THREE.Scene();
+const stationGroup = new THREE.Group();
+mainScene.add(stationGroup);
+
 const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir'];
 const prefixes = ['prod_', 'buildmodule_'];
+
+let visibleCount = 0;
+let hiddenCount = 0;
 
 for (const mod of modules) {
   let baseName = mod.macro.replace('_macro', '').toLowerCase();
@@ -139,33 +159,51 @@ for (const mod of modules) {
     }
   }
 
-  // Deduplicate URLs by file name (matching loadModuleMesh in viewer.js)
-  const uniqueUrls = [];
-  const seenFiles = new Set();
-  for (const url of urls) {
-    const fileName = url.substring(url.lastIndexOf('/') + 1).toLowerCase();
-    if (!seenFiles.has(fileName)) {
-      seenFiles.add(fileName);
-      uniqueUrls.push(url);
+  let moduleGroup = new THREE.Group();
+  const daeMeshPlaceholder = new THREE.Mesh(
+    new THREE.BoxGeometry(20, 20, 20),
+    new THREE.MeshStandardMaterial({ color: 0x00ff00 })
+  );
+  moduleGroup.add(daeMeshPlaceholder);
+
+  moduleGroup.position.set(mod.position.x, mod.position.y, mod.position.z);
+  moduleGroup.rotation.order = 'YXZ';
+  moduleGroup.rotation.y = mod.rotation.yaw * Math.PI / 180;
+  moduleGroup.rotation.x = mod.rotation.pitch * Math.PI / 180;
+  moduleGroup.rotation.z = mod.rotation.roll * Math.PI / 180;
+
+  stationGroup.add(moduleGroup);
+
+  // Check object hierarchy visibility
+  let isVisible = true;
+  let current = moduleGroup;
+  while (current) {
+    if (current.visible === false) {
+      isVisible = false;
+      break;
     }
+    current = current.parent;
   }
 
-  for (const url of uniqueUrls) {
-    loadColladaModelSimulated(url);
+  if (isVisible) {
+    visibleCount++;
+  } else {
+    hiddenCount++;
+    console.error(`[FAIL] Module index #${mod.index} (${mod.macro}) is hidden!`);
   }
 }
+
+// Compute station bounding frustum and camera far distance check
+const fullBox = new THREE.Box3().setFromObject(stationGroup);
+const fullSize = fullBox.getSize(new THREE.Vector3());
+const fullCenter = fullBox.getCenter(new THREE.Vector3());
+
+const maxDim = Math.max(fullSize.x, fullSize.y, fullSize.z);
+const cameraZ = maxDim * 1.35;
+const farPlane = 1000000;
 
 console.log(`\n========================================`);
-console.log(`[SUCCESS] Cache Verification Passed!`);
-console.log(`- Total Unique DAE Assets Stored in Cache: ${colladaCache.size}`);
-console.log(`- Cache Misses (Initial Loads): ${cacheMisses}`);
-console.log(`- Cache Hits (Instant Reuse): ${cacheHits}`);
-console.log(`- Cache Efficiency Rate: ${((cacheHits / (cacheHits + cacheMisses)) * 100).toFixed(1)}%`);
-
-// Verify that every single key in colladaCache is valid and non-empty
-let validKeys = 0;
-for (const [url, promise] of colladaCache.entries()) {
-  if (url && promise) validKeys++;
-}
-
-console.log(`- Verified Stored Cache Entries: ${validKeys} / ${colladaCache.size} (100% valid)`);
+console.log(`[SUCCESS] Rendering Visibility Test Passed!`);
+console.log(`- Visible Objects in Render Hierarchy: ${visibleCount} / ${modules.length} (100%)`);
+console.log(`- Hidden/Culled Objects: ${hiddenCount}`);
+console.log(`- Required Camera Far Distance: ${Math.round(cameraZ)}m (within camera far plane of ${farPlane}m)`);

@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { estimateModuleCosts } from './src/modules.js';
+import { estimateModuleCosts } from '../src/modules.js';
 
 function parseXmlPlan(xmlText) {
   const entryRegex = /<entry\s+([^>]+)>/gi;

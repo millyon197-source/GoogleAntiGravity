@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import * as THREE from 'three';
-import { createProceduralModule } from './src/modules.js';
+import { createProceduralModule } from '../src/modules.js';
 
-const hashTablePath = './dae_hash_table.json';
+const hashTablePath = path.resolve(process.cwd(), 'dae_hash_table.json');
 const DAE_HASH_TABLE = JSON.parse(fs.readFileSync(hashTablePath, 'utf8'));
 
 function murmur3_32(key, seed = 0) {
