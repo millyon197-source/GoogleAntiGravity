@@ -22,6 +22,10 @@ import {
   doBoxesOverlap,
   ensureNoBoundingBoxOverlaps
 } from './module-display-panel.js';
+import {
+  CameraController,
+  TransformGizmoCoordinator
+} from '@x4/adapter-three';
 
 function sendLogToVSC(msg, type = 'log') {
   if (type === 'warn') {
@@ -197,6 +201,8 @@ export class StationViewer {
     this.pendingSingleModule = null;
     this.fefbModuleIndex = null;
     this.gizmoWorldOffset = new THREE.Vector3(0, 0, 0);
+    this.gizmoCoordinator = null;
+    this.cameraController = null;
 
     this.init();
   }
@@ -469,6 +475,19 @@ export class StationViewer {
     this.transformControlsRotate.addEventListener('objectChange', () => {
       this.hasGizmoMoved = true;
       this.handleModuleRotating();
+    });
+
+    this.cameraController = new CameraController({
+      camera: this.camera,
+      controls: this.controls,
+      scene: this.scene,
+      modulesGroup: this.modulesGroup
+    });
+
+    this.gizmoCoordinator = new TransformGizmoCoordinator({
+      camera: this.camera,
+      transformControls: this.transformControls,
+      transformControlsRotate: this.transformControlsRotate
     });
 
     // 5. Lighting
@@ -2653,12 +2672,18 @@ export class StationViewer {
   }
 
   isGizmoDragging() {
+    if (this.gizmoCoordinator) {
+      return this.gizmoCoordinator.isGizmoDragging() || !!this._isGizmoDragging;
+    }
     const isTransDragging = !!(this.transformControls && this.transformControls.dragging);
     const isRotDragging = !!(this.transformControlsRotate && this.transformControlsRotate.dragging);
     return isTransDragging || isRotDragging || !!this._isGizmoDragging;
   }
 
   isGizmoAttached() {
+    if (this.gizmoCoordinator) {
+      return this.gizmoCoordinator.isGizmoAttached();
+    }
     return !!(
       (this.transformControls && this.transformControls.object) ||
       (this.transformControlsRotate && this.transformControlsRotate.object)
@@ -2669,12 +2694,13 @@ export class StationViewer {
    * Calculates the appropriate gizmo size based on camera distance to the gizmo location.
    */
   getAppropriateGizmoSize(distance) {
+    if (this.gizmoCoordinator) {
+      return this.gizmoCoordinator.getAppropriateGizmoSize(distance);
+    }
     if (!distance || isNaN(distance)) return 0.85;
     if (distance < 150) {
-      // Close-up zoomed in: keep gizmo compact so it doesn't overwhelm the view
       return Math.max(0.68, Math.min(0.85, 0.68 + (distance / 150) * 0.17));
     } else if (distance > 2000) {
-      // Far zoomed out: slightly larger for easy selection
       return Math.min(1.10, 0.85 + ((distance - 2000) / 8000) * 0.25);
     }
     return 0.85;
@@ -2685,6 +2711,13 @@ export class StationViewer {
    * Uses raycasting from camera through pointer/viewport center against the module meshes or bounding box.
    */
   getModuleZoomedLocation(targetModule) {
+    if (this.gizmoCoordinator) {
+      return this.gizmoCoordinator.getModuleZoomedLocation(
+        targetModule,
+        this.mouse,
+        (mod) => (this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(mod) : new THREE.Box3().setFromObject(mod))
+      );
+    }
     if (!targetModule) return null;
 
     const pointerNdc = (this.mouse && typeof this.mouse.x === 'number' && !isNaN(this.mouse.x))
@@ -2752,6 +2785,23 @@ export class StationViewer {
     if (!this.isGizmoAttached()) return;
     if (this.isGizmoDragging()) return;
     if (this._isEnsuringGizmoVisible) return;
+
+    if (this.gizmoCoordinator) {
+      this.gizmoCoordinator.transformControls = this.transformControls;
+      this.gizmoCoordinator.transformControlsRotate = this.transformControlsRotate;
+      this.gizmoCoordinator.ensureActiveGizmoVisible(
+        { isZooming: options.isZooming || this._isZooming, force: options.force },
+        this.mouse,
+        (mod) => (this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(mod) : new THREE.Box3().setFromObject(mod))
+      );
+      if (this.gizmoCoordinator.gizmoWorldOffset) {
+        if (!this.gizmoWorldOffset) {
+          this.gizmoWorldOffset = new THREE.Vector3();
+        }
+        this.gizmoWorldOffset.copy(this.gizmoCoordinator.gizmoWorldOffset);
+      }
+      return;
+    }
 
     const isZooming = options.isZooming || this._isZooming || options.force;
     if (!isZooming) return;

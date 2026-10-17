@@ -9,7 +9,8 @@ export default defineConfig({
     alias: {
       '@x4/domain': path.resolve(__dirname, 'packages/domain/src/index.js'),
       '@x4/application': path.resolve(__dirname, 'packages/application/src/index.js'),
-      '@x4/adapter-xml': path.resolve(__dirname, 'packages/adapter-xml/src/index.js')
+      '@x4/adapter-xml': path.resolve(__dirname, 'packages/adapter-xml/src/index.js'),
+      '@x4/adapter-three': path.resolve(__dirname, 'packages/adapter-three/src/index.js')
     }
   },
   plugins: [

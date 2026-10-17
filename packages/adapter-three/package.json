@@ -1,0 +1,15 @@
+{
+  "name": "@x4/adapter-three",
+  "version": "1.0.0",
+  "description": "Three.js 3D rendering and interaction adapter for X4 Station Visualizer",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@x4/application": "^1.0.0",
+    "@x4/domain": "^1.0.0",
+    "three": "^0.160.0"
+  }
+}

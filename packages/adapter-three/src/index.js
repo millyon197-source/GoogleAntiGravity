@@ -1,0 +1,10 @@
+/**
+ * Adapter Three Layer Public API
+ * Hexagonal 3D Viewport & Interaction Adapters for Three.js.
+ */
+export { ThreeRenderEngine } from './engine/three-render-engine.js';
+export { CameraController } from './camera/camera-controller.js';
+export { TransformGizmoCoordinator } from './gizmos/transform-gizmo-coordinator.js';
+export { DimensionOverlayManager } from './overlays/dimension-overlay-manager.js';
+export { PlotBoundsManager } from './plot/plot-bounds-manager.js';
+export { SelectionManager } from './selection/selection-manager.js';

@@ -13,6 +13,7 @@
     "test": "node tests/run-all.js"
   },
   "dependencies": {
+    "@x4/adapter-three": "^1.0.0",
     "@x4/adapter-xml": "^1.0.0",
     "@x4/application": "^1.0.0",
     "@x4/domain": "^1.0.0",
