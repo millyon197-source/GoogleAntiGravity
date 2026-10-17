@@ -196,6 +196,7 @@ export class StationViewer {
     this.dragStartCollectiveBox = null;
     this.pendingSingleModule = null;
     this.fefbModuleIndex = null;
+    this.gizmoWorldOffset = new THREE.Vector3(0, 0, 0);
 
     this.init();
   }
@@ -260,9 +261,21 @@ export class StationViewer {
         cancelAnimationFrame(this.cameraTransitionAnimId);
         this.cameraTransitionAnimId = null;
       }
+      if (this._isGizmoDragging && this.gizmoActiveType === 'move') {
+        return;
+      }
       this._isGizmoDragging = true;
       this.gizmoActiveType = 'move';
       this.hasGizmoMoved = false;
+
+      if (this.gizmoWorldOffset && this.gizmoWorldOffset.lengthSq() > 0.0001) {
+        if (this.transformControls?.worldPositionStart) {
+          this.transformControls.worldPositionStart.add(this.gizmoWorldOffset);
+        }
+        if (this.transformControls?.pointStart) {
+          this.transformControls.pointStart.sub(this.gizmoWorldOffset);
+        }
+      }
 
       // Compute and record the collective bounding box at drag start
       const targetModules = (target === this.multiSelectPivot)
@@ -324,9 +337,22 @@ export class StationViewer {
         cancelAnimationFrame(this.cameraTransitionAnimId);
         this.cameraTransitionAnimId = null;
       }
+      if (this._isGizmoDragging && this.gizmoActiveType === 'rotate') {
+        return;
+      }
       this._isGizmoDragging = true;
       this.gizmoActiveType = 'rotate';
       this.hasGizmoMoved = false;
+
+      if (this.gizmoWorldOffset && this.gizmoWorldOffset.lengthSq() > 0.0001) {
+        if (this.transformControlsRotate?.worldPositionStart) {
+          this.transformControlsRotate.worldPositionStart.add(this.gizmoWorldOffset);
+        }
+        if (this.transformControlsRotate?.pointStart) {
+          this.transformControlsRotate.pointStart.sub(this.gizmoWorldOffset);
+        }
+      }
+
       const mod = this.currentPlan?.modules?.find(m => m.index === target.userData.index);
       this.dragStartRotation = mod && mod.rotation ? {
         yaw: mod.rotation.yaw,
@@ -340,6 +366,7 @@ export class StationViewer {
     this.transformControls.setMode('translate');
     this.transformControls.size = 0.85;
     this.transformControls.space = 'world';
+    this.setupTransformControlsOverride(this.transformControls);
 
     // Style center transform diamond (XYZ handle)
     const setupCenterDiamond = (tc) => {
@@ -398,6 +425,7 @@ export class StationViewer {
     this.transformControlsRotate.setMode('rotate');
     this.transformControlsRotate.size = 0.85;
     this.transformControlsRotate.space = 'local';
+    this.setupTransformControlsOverride(this.transformControlsRotate);
 
     // Hide outer screen-space trackball rings (E, XYZE) so only Yaw, Pitch, and Roll rings appear
     const hideOuterRings = (tc) => {
@@ -2524,6 +2552,9 @@ export class StationViewer {
 
   attachGizmoToModule(targetModule) {
     if (!targetModule) return;
+    if (this.gizmoWorldOffset) {
+      this.gizmoWorldOffset.set(0, 0, 0);
+    }
     this.gizmoTargetModuleIndex = targetModule.userData?.index ?? null;
     if (this.transformControls && (this.gizmoMode === 'combined' || this.gizmoMode === 'translate')) {
       this.transformControls.attach(targetModule);
@@ -2577,12 +2608,48 @@ export class StationViewer {
   }
 
   detachGizmo() {
+    if (this.gizmoWorldOffset) {
+      this.gizmoWorldOffset.set(0, 0, 0);
+    }
     if (this.transformControls && this.transformControls.object) {
       this.transformControls.detach();
     }
     if (this.transformControlsRotate && this.transformControlsRotate.object) {
       this.transformControlsRotate.detach();
     }
+  }
+
+  /**
+   * Overrides TransformControls.updateMatrixWorld to apply gizmoWorldOffset
+   * to handles and interaction plane when the gizmo is visually relocated to visible viewport during zoom.
+   */
+  setupTransformControlsOverride(tc) {
+    if (!tc) return;
+    const scope = this;
+    const origUpdate = tc.updateMatrixWorld ? tc.updateMatrixWorld.bind(tc) : null;
+    tc.updateMatrixWorld = function(force) {
+      if (origUpdate) {
+        origUpdate(force);
+      } else if (THREE.Object3D.prototype.updateMatrixWorld) {
+        THREE.Object3D.prototype.updateMatrixWorld.call(this, force);
+      }
+      if (scope.gizmoWorldOffset && scope.gizmoWorldOffset.lengthSq() > 0.0001) {
+        if (this.worldPosition) {
+          this.worldPosition.add(scope.gizmoWorldOffset);
+        }
+        if (this.camera && this.eye && this.cameraPosition && this.camera.isPerspectiveCamera && this.worldPosition) {
+          this.eye.copy(this.cameraPosition).sub(this.worldPosition).normalize();
+        }
+        if (this._gizmo && this._gizmo.worldPosition) {
+          this._gizmo.worldPosition.copy(this.worldPosition);
+          this._gizmo.updateMatrixWorld(force);
+        }
+        if (this._plane && this._plane.worldPosition) {
+          this._plane.worldPosition.copy(this.worldPosition);
+          this._plane.updateMatrixWorld(force);
+        }
+      }
+    };
   }
 
   isGizmoDragging() {
@@ -2717,17 +2784,25 @@ export class StationViewer {
       const isOutsideViewport = isBehindCamera || Math.abs(ndcX) > maxDisplayMargin || Math.abs(ndcY) > maxDisplayMargin;
 
       if (isOutsideViewport) {
-        // Move the gizmo to the zoomed location on the active module
+        // Move ONLY the visual gizmo to the zoomed location on the active module without displacing the module
         const zoomedLoc = this.getModuleZoomedLocation(activeTarget);
         if (zoomedLoc) {
-          activeTarget.position.copy(zoomedLoc);
-          activeTarget.updateMatrixWorld(true);
+          if (!this.gizmoWorldOffset) {
+            this.gizmoWorldOffset = new THREE.Vector3();
+          }
+          this.gizmoWorldOffset.subVectors(zoomedLoc, gizmoPos);
+        }
+      } else {
+        if (this.gizmoWorldOffset) {
+          this.gizmoWorldOffset.set(0, 0, 0);
         }
       }
 
       // Size gizmo appropriately based on distance from camera to the active gizmo location
-      const currentGizmoPos = new THREE.Vector3();
-      activeTarget.getWorldPosition(currentGizmoPos);
+      const currentGizmoPos = gizmoPos.clone();
+      if (this.gizmoWorldOffset && this.gizmoWorldOffset.lengthSq() > 0.0001) {
+        currentGizmoPos.add(this.gizmoWorldOffset);
+      }
       const distToCamera = this.camera.position.distanceTo(currentGizmoPos);
       const appropriateSize = this.getAppropriateGizmoSize(distToCamera);
 
@@ -2749,6 +2824,9 @@ export class StationViewer {
   }
 
   deselect(restoreGrid = true, clearGizmoTarget = true) {
+    if (this.gizmoWorldOffset) {
+      this.gizmoWorldOffset.set(0, 0, 0);
+    }
     this.selectedModuleIndex = null;
     this.clearMultiSelection();
     if (clearGizmoTarget) {

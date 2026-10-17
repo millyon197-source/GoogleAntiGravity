@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { StationViewer } from '../src/viewer.js';
 
 console.log('[*] Testing active gizmo repositioning to zoomed location and sizing appropriately when outside viewport...');
@@ -115,8 +116,12 @@ viewer.ensureActiveGizmoVisible({ isZooming: true });
 assert(viewer.camera.position.equals(camPosBefore),
   'Camera position is NEVER forcibly shifted away from the user zoom position');
 
-// Gizmo is moved to the zoomed location on the module
-const camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
+assert(testModule.position.distanceTo(new THREE.Vector3(600, 0, 0)) < 0.001,
+  'Target module position remains completely UNTOUCHED when gizmo relocates to viewport (no module jump)');
+
+// Gizmo visual handles/pickers moved to the zoomed location on the module
+const activeGizmoPos = testModule.position.clone().add(viewer.gizmoWorldOffset);
+const camSpace = activeGizmoPos.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
 const zDist = -camSpace.z;
 const fovRad = THREE.MathUtils.degToRad(viewer.camera.fov);
 const halfH = zDist * Math.tan(fovRad / 2);
@@ -137,7 +142,11 @@ viewer.camera.updateMatrixWorld(true);
 
 viewer.ensureActiveGizmoVisible({ isZooming: true });
 
-const camSpaceBehind = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
+assert(testModule.position.distanceTo(new THREE.Vector3(0, 0, 50)) < 0.001,
+  'Target module position remains untouched when behind camera');
+
+const activeGizmoBehind = testModule.position.clone().add(viewer.gizmoWorldOffset);
+const camSpaceBehind = activeGizmoBehind.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
 assert(-camSpaceBehind.z >= 15, `Gizmo moved in front of camera at safe viewing distance (${(-camSpaceBehind.z).toFixed(1)}m >= 15m)`);
 
 console.log('\n--- Test 5: Gizmo Sized Appropriately for Close-up and Distant Zoom ---');
@@ -174,6 +183,45 @@ viewer.ensureActiveGizmoVisible({ isZooming: false, force: false });
 
 assert(testModule.position.equals(modPosBeforePan),
   'When user is panning (isZooming is false), gizmo position is not moved, preserving manual pan freedom');
+
+console.log('\n--- Test 8: Dragging Relocated Gizmo Translates Module by Drag Delta Without Initial Jump ---');
+
+const mockDom = { style: {}, addEventListener: () => {}, removeEventListener: () => {} };
+const realTc = new TransformControls(viewer.camera, mockDom);
+realTc.setMode('translate');
+realTc.space = 'world';
+viewer.scene.add(realTc);
+viewer.setupTransformControlsOverride(realTc);
+viewer.transformControls = realTc;
+
+testModule.position.set(500, 0, 0);
+testModule.updateMatrixWorld(true);
+realTc.attach(testModule);
+
+viewer.camera.position.set(0, 0, 200);
+viewer.camera.lookAt(0, 0, 0);
+viewer.camera.updateMatrixWorld(true);
+
+viewer.ensureActiveGizmoVisible({ force: true });
+
+assert(testModule.position.x === 500, 'Module remains strictly at (500, 0, 0) during zoom');
+assert(viewer.gizmoWorldOffset.lengthSq() > 0.0001, 'Gizmo offset was activated to place handles in viewport');
+assert(realTc.worldPosition.distanceTo(testModule.position.clone().add(viewer.gizmoWorldOffset)) < 0.001,
+  'TransformControls worldPosition reflects the relocated viewport location');
+
+// Start drag on X axis
+realTc.axis = 'X';
+realTc.pointerDown({ x: 0, y: 0, button: 0 });
+if (viewer.gizmoWorldOffset.lengthSq() > 0.0001) {
+  realTc.worldPositionStart.add(viewer.gizmoWorldOffset);
+  realTc.pointStart.sub(viewer.gizmoWorldOffset);
+}
+
+// Drag pointer by dx = 0.1
+realTc.pointerMove({ x: 0.1, y: 0, button: -1 });
+const deltaX = testModule.position.x - 500;
+assert(deltaX > 0, `Dragging relocated gizmo translated the module by delta: ${deltaX.toFixed(2)}`);
+assert(Math.abs(testModule.position.x - 500 - deltaX) < 0.0001, 'Module moved relative to original position without teleporting to gizmo');
 
 if (allPassed) {
   console.log('\n[PASS] All active gizmo visibility, repositioning, and sizing tests passed successfully!');
