@@ -1,5 +1,6 @@
 import { lookupModuleBounds, getInitialModuleSize, getInitialModuleDimensions, getInitialModuleBounds } from './module-bounds-hashtable.js';
 import { getModuleCategory } from './modules.js';
+import { PlotBounds, StationLayoutEngine } from './domain/index.js';
 
 const STORAGE_KEY = 'x4_module_display_panel_config';
 const PLOT_STORAGE_KEY = 'x4_layout_plot_config';
@@ -805,34 +806,20 @@ export function sortModulesByLayerCategoryOrder(modules, layerOrder = null) {
  */
 export function getPlotBoundingBox(plotCfg = null) {
   const pConfig = plotCfg || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
-  const plusX = Math.max(0, Number(pConfig.x?.plus ?? 10));
-  const minusX = Math.max(0, Number(pConfig.x?.minus ?? 10));
-  const plusY = Math.max(0, Number(pConfig.y?.plus ?? 10));
-  const minusY = Math.max(0, Number(pConfig.y?.minus ?? 10));
-  const plusZ = Math.max(0, Number(pConfig.z?.plus ?? 10));
-  const minusZ = Math.max(0, Number(pConfig.z?.minus ?? 10));
-
-  const minX = -minusX * 1000;
-  const maxX = plusX * 1000;
-  const minY = -minusY * 1000;
-  const maxY = plusY * 1000;
-  const minZ = -plusZ * 1000;
-  const maxZ = minusZ * 1000;
-
-  const widthX = Math.max(1000, maxX - minX);
-  const heightY = Math.max(1000, maxY - minY);
-  const depthZ = Math.max(1000, maxZ - minZ);
-
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-  const centerZ = (minZ + maxZ) / 2;
-
+  const bounds = new PlotBounds(pConfig);
   return {
-    minX, maxX,
-    minY, maxY,
-    minZ, maxZ,
-    widthX, heightY, depthZ,
-    centerX, centerY, centerZ
+    minX: bounds.minX,
+    maxX: bounds.maxX,
+    minY: bounds.minY,
+    maxY: bounds.maxY,
+    minZ: bounds.minZ,
+    maxZ: bounds.maxZ,
+    widthX: bounds.widthX,
+    heightY: bounds.heightY,
+    depthZ: bounds.depthZ,
+    centerX: bounds.centerX,
+    centerY: bounds.centerY,
+    centerZ: bounds.centerZ
   };
 }
 
@@ -842,33 +829,8 @@ export function getPlotBoundingBox(plotCfg = null) {
  * is outside the current plot size BB location.
  */
 export function clampModulePositionToPlot(pos, size, plotCfg = null) {
-  if (!pos) return;
-  const bb = getPlotBoundingBox(plotCfg);
-
-  const halfX = (size?.x ?? 0) / 2;
-  const halfY = (size?.y ?? 0) / 2;
-  const halfZ = (size?.z ?? 0) / 2;
-
-  // Clamp X
-  if (bb.maxX - bb.minX >= (size?.x ?? 0)) {
-    pos.x = Math.max(bb.minX + halfX, Math.min(bb.maxX - halfX, pos.x));
-  } else {
-    pos.x = bb.centerX;
-  }
-
-  // Clamp Y
-  if (bb.maxY - bb.minY >= (size?.y ?? 0)) {
-    pos.y = Math.max(bb.minY + halfY, Math.min(bb.maxY - halfY, pos.y));
-  } else {
-    pos.y = bb.centerY;
-  }
-
-  // Clamp Z
-  if (bb.maxZ - bb.minZ >= (size?.z ?? 0)) {
-    pos.z = Math.max(bb.minZ + halfZ, Math.min(bb.maxZ - halfZ, pos.z));
-  } else {
-    pos.z = bb.centerZ;
-  }
+  const pConfig = plotCfg || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
+  return StationLayoutEngine.clampModulePositionToPlot(pos, size, pConfig);
 }
 
 /**
@@ -944,24 +906,7 @@ export function swapLayerCheckboxCategory(targetCheckboxIndex, newCategory) {
  * @returns {boolean} True if bounding boxes overlap across all 3 axes
  */
 export function doBoxesOverlap(posA, sizeA, posB, sizeB, margin = 0) {
-  if (!posA || !sizeA || !posB || !sizeB) return false;
-  const halfXA = ((sizeA.x ?? sizeA[0]) || 0) / 2;
-  const halfYA = ((sizeA.y ?? sizeA[1]) || 0) / 2;
-  const halfZA = ((sizeA.z ?? sizeA[2]) || 0) / 2;
-
-  const halfXB = ((sizeB.x ?? sizeB[0]) || 0) / 2;
-  const halfYB = ((sizeB.y ?? sizeB[1]) || 0) / 2;
-  const halfZB = ((sizeB.z ?? sizeB[2]) || 0) / 2;
-
-  const distX = Math.abs(posA.x - posB.x);
-  const distY = Math.abs(posA.y - posB.y);
-  const distZ = Math.abs(posA.z - posB.z);
-
-  const overlapX = distX < (halfXA + halfXB + margin - 0.05);
-  const overlapY = distY < (halfYA + halfYB + margin - 0.05);
-  const overlapZ = distZ < (halfZA + halfZB + margin - 0.05);
-
-  return overlapX && overlapY && overlapZ;
+  return StationLayoutEngine.doBoxesOverlap(posA, sizeA, posB, sizeB, margin);
 }
 
 /**
@@ -976,131 +921,18 @@ export function doBoxesOverlap(posA, sizeA, posB, sizeB, margin = 0) {
  * @returns {number} Number of overlaps resolved
  */
 export function ensureNoBoundingBoxOverlaps(modules, plotConfig = null, options = {}) {
-  if (!Array.isArray(modules) || modules.length < 2) return 0;
-
   const pConfig = plotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
-  const gap = typeof options.gap === 'number' ? options.gap : 15;
-  const getSize = options.getModuleSize || ((m) => {
-    if (m.initialSize) return m.initialSize;
-    if (m.userData?.initialSize) return m.userData.initialSize;
-    const macro = m.userData?.macro || m.macro || m.key || '';
-    const arr = getInitialModuleSize(macro);
-    return { x: arr[0], y: arr[1], z: arr[2] };
-  });
-
-  const getPos = (m) => {
-    if (m.position && typeof m.position.x === 'number') return m.position;
-    if (typeof m.x === 'number') return m;
-    return { x: 0, y: 0, z: 0 };
+  const opts = {
+    ...options,
+    getModuleSize: options.getModuleSize || ((m) => {
+      if (m.initialSize) return m.initialSize;
+      if (m.userData?.initialSize) return m.userData.initialSize;
+      const macro = m.userData?.macro || m.macro || m.key || '';
+      const arr = getInitialModuleSize(macro);
+      return { x: arr[0], y: arr[1], z: arr[2] };
+    })
   };
-
-  const bb = getPlotBoundingBox(pConfig);
-  const { minX, maxX, minY, maxY, minZ, maxZ } = bb;
-
-  let totalResolved = 0;
-  let iterations = 0;
-  const maxIterations = 40;
-
-  while (iterations++ < maxIterations) {
-    let hadOverlapInPass = false;
-
-    for (let i = 0; i < modules.length; i++) {
-      const modA = modules[i];
-      const posA = getPos(modA);
-      const sizeA = getSize(modA);
-      const halfXA = (sizeA.x || 100) / 2;
-      const halfYA = (sizeA.y || 100) / 2;
-      const halfZA = (sizeA.z || 100) / 2;
-
-      for (let j = i + 1; j < modules.length; j++) {
-        const modB = modules[j];
-        const posB = getPos(modB);
-        const sizeB = getSize(modB);
-        const halfXB = (sizeB.x || 100) / 2;
-        const halfYB = (sizeB.y || 100) / 2;
-        const halfZB = (sizeB.z || 100) / 2;
-
-        if (doBoxesOverlap(posA, sizeA, posB, sizeB, gap)) {
-          hadOverlapInPass = true;
-          totalResolved++;
-
-          const dx = (halfXA + halfXB + gap) - Math.abs(posA.x - posB.x);
-          const dy = (halfYA + halfYB + gap) - Math.abs(posA.y - posB.y);
-          const dz = (halfZA + halfZB + gap) - Math.abs(posA.z - posB.z);
-
-          const signX = posB.x >= posA.x ? 1 : -1;
-          const signZ = posB.z >= posA.z ? 1 : -1;
-          const signY = posB.y >= posA.y ? 1 : -1;
-
-          let resolved = false;
-
-          // Try 1: Separate along X
-          const targetXB = posB.x + signX * dx;
-          if (targetXB + halfXB <= maxX && targetXB - halfXB >= minX) {
-            posB.x = targetXB;
-            resolved = true;
-          } else {
-            const targetXA = posA.x - signX * dx;
-            if (targetXA + halfXA <= maxX && targetXA - halfXA >= minX) {
-              posA.x = targetXA;
-              resolved = true;
-            }
-          }
-
-          // Try 2: If X cannot accommodate without exceeding plot, separate along Z
-          if (!resolved) {
-            const targetZB = posB.z + signZ * dz;
-            if (targetZB + halfZB <= maxZ && targetZB - halfZB >= minZ) {
-              posB.z = targetZB;
-              resolved = true;
-            } else {
-              const targetZA = posA.z - signZ * dz;
-              if (targetZA + halfZA <= maxZ && targetZA - halfZA >= minZ) {
-                posA.z = targetZA;
-                resolved = true;
-              }
-            }
-          }
-
-          // Try 3: If Z cannot accommodate, separate along Y (new layer)
-          if (!resolved) {
-            const targetYB = posB.y + (signY || 1) * dy;
-            if (targetYB + halfYB <= maxY && targetYB - halfYB >= minY) {
-              posB.y = targetYB;
-              resolved = true;
-            } else {
-              const targetYA = posA.y - (signY || 1) * dy;
-              if (targetYA + halfYA <= maxY && targetYA - halfYA >= minY) {
-                posA.y = targetYA;
-                resolved = true;
-              }
-            }
-          }
-
-          // Try 4: Fallback upward in Y
-          if (!resolved) {
-            posB.y = Math.min(maxY - halfYB, posB.y + dy);
-          }
-
-          clampModulePositionToPlot(posA, sizeA, pConfig);
-          clampModulePositionToPlot(posB, sizeB, pConfig);
-
-          if (options.applyToObjects) {
-            const targetA = modA.module || modA;
-            const targetB = modB.module || modB;
-            if (typeof targetA.position?.set === 'function') targetA.position.set(posA.x, posA.y, posA.z);
-            else if (targetA.position) { targetA.position.x = posA.x; targetA.position.y = posA.y; targetA.position.z = posA.z; }
-            if (typeof targetB.position?.set === 'function') targetB.position.set(posB.x, posB.y, posB.z);
-            else if (targetB.position) { targetB.position.x = posB.x; targetB.position.y = posB.y; targetB.position.z = posB.z; }
-          }
-        }
-      }
-    }
-
-    if (!hadOverlapInPass) break;
-  }
-
-  return totalResolved;
+  return StationLayoutEngine.ensureNoBoundingBoxOverlaps(modules, pConfig, opts);
 }
 
 /**
