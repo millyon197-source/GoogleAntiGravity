@@ -11,6 +11,7 @@ import {
 import { generatePlanXML, downloadXMLFile, showCreateBlueprintModal, setFefbModuleIndex, getFefbModuleIndex } from './blueprint-exporter.js';
 import { initModuleDisplayPanel, setActiveBlueprint, setPlotConfig } from './module-display-panel.js';
 import { getInitialModuleDimensions } from './module-bounds-hashtable.js';
+import { UndoRedoManager } from './application/index.js';
 
 const RESOURCE_METADATA = {
   hullParts: { name: 'Hull Parts', desc: 'Primary structural material', colorClass: 'text-cyan' },
@@ -1967,24 +1968,19 @@ function clearAllPanels(silent = false) {
 // ==============================================================================
 // Undo Move Management
 // ==============================================================================
-export const undoList = [];
+export const historyManager = new UndoRedoManager({ getFriendlyName });
+export const undoList = historyManager.undoStack;
 
 /**
  * Collapse Undo history to zero entries and update UI
  */
 export function collapseUndoHistory() {
-  undoList.length = 0;
+  historyManager.clear();
   updateUndoButtonUI();
 }
 
 export function recordMove(move) {
-  const friendlyName = getFriendlyName(move.macro || '');
-  const enrichedMove = {
-    ...move,
-    friendlyName: friendlyName,
-    id: Date.now() + '-' + Math.random().toString(36).substr(2, 4)
-  };
-  undoList.push(enrichedMove);
+  historyManager.recordAction(move);
   updateUndoButtonUI(true); // true = animate activation flash to show presence
 }
 
@@ -1993,8 +1989,8 @@ export function updateUndoButtonUI(justActivated = false) {
   const undoHub = document.getElementById('undo-hub');
   const countBadge = document.getElementById('undo-count-badge');
 
-  const count = undoList.length;
-  const isEnabled = count > 0;
+  const count = historyManager.count;
+  const isEnabled = historyManager.canUndo();
 
   if (undoHub) {
     if (isEnabled) {
@@ -2012,32 +2008,7 @@ export function updateUndoButtonUI(justActivated = false) {
     if (isEnabled) {
       btnUndo.style.display = 'inline-flex';
       btnUndo.classList.add('has-undo');
-
-      const lastMove = undoList[undoList.length - 1];
-      let tooltipDesc = '';
-      if (lastMove.type === 'move' && lastMove.from && lastMove.to) {
-        if (lastMove.operation === 'diamond_center') {
-          tooltipDesc = `Center in Plot: Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) moved to center`;
-        } else {
-          tooltipDesc = `Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) moved from (${lastMove.from.x}, ${lastMove.from.y}, ${lastMove.from.z}) to (${lastMove.to.x}, ${lastMove.to.y}, ${lastMove.to.z})`;
-        }
-      } else if (lastMove.type === 'group_move' && Array.isArray(lastMove.moves)) {
-        if (lastMove.operation === 'diamond_center') {
-          tooltipDesc = `Center in Plot: ${lastMove.moves.length} modules moved together to center`;
-        } else {
-          tooltipDesc = `Group move: ${lastMove.moves.length} modules moved together`;
-        }
-      } else if (lastMove.type === 'rotate' && lastMove.fromRot && lastMove.toRot) {
-        tooltipDesc = `Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) rotated`;
-      } else if (lastMove.type === 'plot_resize') {
-        const fromCfg = lastMove.fromConfig;
-        const fromSize = fromCfg ? `${fromCfg.x.plus + fromCfg.x.minus}x${fromCfg.y.plus + fromCfg.y.minus}x${fromCfg.z.plus + fromCfg.z.minus} km` : '';
-        tooltipDesc = `Fit Plot to Blueprint: Plot size changed (revert to ${fromSize})`;
-      } else if (lastMove.type === 'set_fefb') {
-        tooltipDesc = `Set FEFB: Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) (revert to ${lastMove.previousFefb !== null && lastMove.previousFefb !== undefined ? `Module #${lastMove.previousFefb}` : 'none'})`;
-      }
-
-      btnUndo.title = `Undo last module move (Ctrl+Z) • ${count} move${count > 1 ? 's' : ''} in undo history • Right-click to clear list${tooltipDesc ? `\n${tooltipDesc}` : ''}`;
+      btnUndo.title = historyManager.formatTooltip();
 
       if (countBadge) {
         countBadge.textContent = count;
@@ -2062,13 +2033,13 @@ export function updateUndoButtonUI(justActivated = false) {
 }
 
 export function performUndo() {
-  if (undoList.length === 0) {
+  if (!historyManager.canUndo()) {
     showNotification('Undo list is exhausted. No more moves to undo.', 'info');
     updateUndoButtonUI();
     return;
   }
 
-  const lastMove = undoList.pop();
+  const lastMove = historyManager.undo();
   if (!lastMove || !viewer) return;
 
   const friendlyName = lastMove.friendlyName || getFriendlyName(lastMove.macro || '');
