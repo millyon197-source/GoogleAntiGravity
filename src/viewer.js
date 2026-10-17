@@ -4,7 +4,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { MeshLoader } from './mesh-loader.js';
 import { createProceduralModule, getModuleCategory, getFriendlyName, CATEGORY_COLORS } from './modules.js';
-import DAE_HASH_TABLE from '../dae_hash_table.json';
+import DAE_HASH_TABLE from '../dae_hash_table.json' with { type: 'json' };
 import { MACRO_TO_NAME_DB } from './modules-cost-db.js';
 import { getModuleSnapPoints } from './snap-points-db.js';
 import { lookupModuleBounds, getInitialModuleSize, getInitialModuleDimensions, getInitialModuleBounds } from './module-bounds-hashtable.js';
@@ -239,6 +239,12 @@ export class StationViewer {
       RIGHT: THREE.MOUSE.PAN
     };
 
+    this.controls.addEventListener('change', () => {
+      if (this.isGizmoAttached() && this._isZooming) {
+        this.ensureActiveGizmoVisible({ isZooming: true });
+      }
+    });
+
     // Helper to start tracking a translation move
     const onTranslateStart = () => {
       const target = this.transformControls?.object;
@@ -463,6 +469,38 @@ export class StationViewer {
         event.preventDefault();
       }
     });
+
+    // Zoom tracking to ensure active gizmo remains visible in viewport display while zooming
+    this._isZooming = false;
+    this._zoomTimeout = null;
+
+    this.boundOnWheel = () => {
+      this._isZooming = true;
+      if (this._zoomTimeout) clearTimeout(this._zoomTimeout);
+      this._zoomTimeout = setTimeout(() => {
+        this._isZooming = false;
+      }, 400);
+
+      if (this.isGizmoAttached()) {
+        this.ensureActiveGizmoVisible({ isZooming: true });
+      }
+    };
+    this.renderer.domElement.addEventListener('wheel', this.boundOnWheel, { passive: true });
+
+    this.boundOnTouchMove = (event) => {
+      if (event.touches && event.touches.length === 2) {
+        this._isZooming = true;
+        if (this._zoomTimeout) clearTimeout(this._zoomTimeout);
+        this._zoomTimeout = setTimeout(() => {
+          this._isZooming = false;
+        }, 400);
+
+        if (this.isGizmoAttached()) {
+          this.ensureActiveGizmoVisible({ isZooming: true });
+        }
+      }
+    };
+    this.renderer.domElement.addEventListener('touchmove', this.boundOnTouchMove, { passive: true });
     window.addEventListener('pointermove', this.boundOnPointerMove);
     window.addEventListener('pointerup', this.boundOnPointerUp);
 
@@ -2503,6 +2541,14 @@ export class StationViewer {
         this.transformControlsRotate.enabled = false;
       }
     }
+    if (this.isGizmoAttached()) {
+      const gizmoPos = new THREE.Vector3();
+      targetModule.getWorldPosition(gizmoPos);
+      const camDist = this.camera.position.distanceTo(gizmoPos);
+      if (camDist < 2500) {
+        this.ensureActiveGizmoVisible({ force: true });
+      }
+    }
   }
 
   attachGizmoToSelectedModule() {
@@ -2550,6 +2596,92 @@ export class StationViewer {
       (this.transformControls && this.transformControls.object) ||
       (this.transformControlsRotate && this.transformControlsRotate.object)
     );
+  }
+
+  /**
+   * Ensures that when zoomed in on a module and the gizmo is active,
+   * the gizmo remains safely visible within the viewport display while zooming.
+   * Prevents the gizmo from drifting off the screen edges or being clipped by the camera near plane.
+   */
+  ensureActiveGizmoVisible(options = {}) {
+    if (!this.isGizmoAttached()) return;
+    if (this.isGizmoDragging()) return;
+    if (this._isEnsuringGizmoVisible) return;
+
+    const isZooming = options.isZooming || this._isZooming || options.force;
+    if (!isZooming) return;
+
+    const activeTarget = this.transformControls?.object || this.transformControlsRotate?.object;
+    if (!activeTarget) return;
+
+    this._isEnsuringGizmoVisible = true;
+    try {
+      const gizmoPos = new THREE.Vector3();
+      activeTarget.getWorldPosition(gizmoPos);
+
+      this.camera.updateMatrixWorld(true);
+
+      // Transform gizmo position into camera view space
+      const camSpace = gizmoPos.clone().applyMatrix4(this.camera.matrixWorldInverse);
+      let zDist = -camSpace.z;
+
+      const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+      const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
+
+      let adjusted = false;
+
+      // 1. Near clipping & camera pass-through check
+      // Ensure the gizmo stays at least minSafeDist in front of the camera
+      const minSafeDist = Math.max(15, (this.camera.near || 1) + 5);
+      if (zDist < minSafeDist) {
+        const deficit = minSafeDist - zDist;
+        this.camera.position.addScaledVector(camForward, -deficit);
+        if (this.controls && this.controls.target) {
+          this.controls.target.addScaledVector(camForward, -deficit);
+        }
+        zDist = minSafeDist;
+        camSpace.z = -minSafeDist;
+        adjusted = true;
+      }
+
+      // 2. Viewport bounds check in Normalized Device Coordinates (NDC)
+      const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 60);
+      const halfH = zDist * Math.tan(fovRad / 2);
+      const halfW = halfH * (this.camera.aspect || 1);
+
+      if (halfH > 0 && halfW > 0) {
+        const ndcX = camSpace.x / halfW;
+        const ndcY = camSpace.y / halfH;
+
+        // Safe viewport margin: keep gizmo center within [-maxNdc, maxNdc]
+        // 0.70 leaves 15% clearance from viewport edges so the handles (size 0.85) remain fully visible
+        const maxNdc = 0.70;
+        const clampedNdcX = Math.max(-maxNdc, Math.min(maxNdc, ndcX));
+        const clampedNdcY = Math.max(-maxNdc, Math.min(maxNdc, ndcY));
+
+        if (clampedNdcX !== ndcX || clampedNdcY !== ndcY) {
+          const dCamX = camSpace.x - clampedNdcX * halfW;
+          const dCamY = camSpace.y - clampedNdcY * halfH;
+
+          const worldShift = new THREE.Vector3();
+          worldShift.addScaledVector(camRight, dCamX);
+          worldShift.addScaledVector(camUp, dCamY);
+
+          this.camera.position.add(worldShift);
+          if (this.controls && this.controls.target) {
+            this.controls.target.add(worldShift);
+          }
+          adjusted = true;
+        }
+      }
+
+      if (adjusted) {
+        this.camera.updateMatrixWorld(true);
+      }
+    } finally {
+      this._isEnsuringGizmoVisible = false;
+    }
   }
 
   deselect(restoreGrid = true, clearGizmoTarget = true) {
@@ -4190,6 +4322,10 @@ export class StationViewer {
     // 5. Update controls (Orbit damping, auto-rotation)
     this.controls.update();
 
+    if (this.isGizmoAttached() && this._isZooming) {
+      this.ensureActiveGizmoVisible({ isZooming: true });
+    }
+
     // 6. Render Scene
     this.renderer.render(this.scene, this.camera);
   }
@@ -4908,6 +5044,16 @@ export class StationViewer {
     }
     if (this.boundOnPointerUp) {
       window.removeEventListener('pointerup', this.boundOnPointerUp);
+    }
+    if (this.boundOnWheel && this.renderer?.domElement) {
+      this.renderer.domElement.removeEventListener('wheel', this.boundOnWheel);
+    }
+    if (this.boundOnTouchMove && this.renderer?.domElement) {
+      this.renderer.domElement.removeEventListener('touchmove', this.boundOnTouchMove);
+    }
+    if (this._zoomTimeout) {
+      clearTimeout(this._zoomTimeout);
+      this._zoomTimeout = null;
     }
     if (this.renderer) {
       this.renderer.dispose();
