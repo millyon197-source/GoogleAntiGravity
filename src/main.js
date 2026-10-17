@@ -9,7 +9,7 @@ import {
   CATEGORY_NAMES 
 } from './modules.js';
 import { generatePlanXML, downloadXMLFile, showCreateBlueprintModal, setFefbModuleIndex, getFefbModuleIndex } from './blueprint-exporter.js';
-import { initModuleDisplayPanel, setActiveBlueprint } from './module-display-panel.js';
+import { initModuleDisplayPanel, setActiveBlueprint, setPlotConfig } from './module-display-panel.js';
 import { getInitialModuleDimensions } from './module-bounds-hashtable.js';
 
 const RESOURCE_METADATA = {
@@ -1967,7 +1967,7 @@ function clearAllPanels(silent = false) {
 // ==============================================================================
 // Undo Move Management
 // ==============================================================================
-const undoList = [];
+export const undoList = [];
 
 /**
  * Collapse Undo history to zero entries and update UI
@@ -1977,7 +1977,7 @@ export function collapseUndoHistory() {
   updateUndoButtonUI();
 }
 
-function recordMove(move) {
+export function recordMove(move) {
   const friendlyName = getFriendlyName(move.macro || '');
   const enrichedMove = {
     ...move,
@@ -1988,7 +1988,7 @@ function recordMove(move) {
   updateUndoButtonUI(true); // true = animate activation flash to show presence
 }
 
-function updateUndoButtonUI(justActivated = false) {
+export function updateUndoButtonUI(justActivated = false) {
   const btnUndo = document.getElementById('btn-undo');
   const undoHub = document.getElementById('undo-hub');
   const countBadge = document.getElementById('undo-count-badge');
@@ -2016,11 +2016,25 @@ function updateUndoButtonUI(justActivated = false) {
       const lastMove = undoList[undoList.length - 1];
       let tooltipDesc = '';
       if (lastMove.type === 'move' && lastMove.from && lastMove.to) {
-        tooltipDesc = `Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) moved from (${lastMove.from.x}, ${lastMove.from.y}, ${lastMove.from.z}) to (${lastMove.to.x}, ${lastMove.to.y}, ${lastMove.to.z})`;
+        if (lastMove.operation === 'diamond_center') {
+          tooltipDesc = `Center in Plot: Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) moved to center`;
+        } else {
+          tooltipDesc = `Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) moved from (${lastMove.from.x}, ${lastMove.from.y}, ${lastMove.from.z}) to (${lastMove.to.x}, ${lastMove.to.y}, ${lastMove.to.z})`;
+        }
       } else if (lastMove.type === 'group_move' && Array.isArray(lastMove.moves)) {
-        tooltipDesc = `Group move: ${lastMove.moves.length} modules moved together`;
+        if (lastMove.operation === 'diamond_center') {
+          tooltipDesc = `Center in Plot: ${lastMove.moves.length} modules moved together to center`;
+        } else {
+          tooltipDesc = `Group move: ${lastMove.moves.length} modules moved together`;
+        }
       } else if (lastMove.type === 'rotate' && lastMove.fromRot && lastMove.toRot) {
         tooltipDesc = `Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) rotated`;
+      } else if (lastMove.type === 'plot_resize') {
+        const fromCfg = lastMove.fromConfig;
+        const fromSize = fromCfg ? `${fromCfg.x.plus + fromCfg.x.minus}x${fromCfg.y.plus + fromCfg.y.minus}x${fromCfg.z.plus + fromCfg.z.minus} km` : '';
+        tooltipDesc = `Fit Plot to Blueprint: Plot size changed (revert to ${fromSize})`;
+      } else if (lastMove.type === 'set_fefb') {
+        tooltipDesc = `Set FEFB: Module #${lastMove.moduleIndex} (${lastMove.friendlyName || 'Module'}) (revert to ${lastMove.previousFefb !== null && lastMove.previousFefb !== undefined ? `Module #${lastMove.previousFefb}` : 'none'})`;
       }
 
       btnUndo.title = `Undo last module move (Ctrl+Z) • ${count} move${count > 1 ? 's' : ''} in undo history • Right-click to clear list${tooltipDesc ? `\n${tooltipDesc}` : ''}`;
@@ -2047,7 +2061,7 @@ function updateUndoButtonUI(justActivated = false) {
   }
 }
 
-function performUndo() {
+export function performUndo() {
   if (undoList.length === 0) {
     showNotification('Undo list is exhausted. No more moves to undo.', 'info');
     updateUndoButtonUI();
@@ -2093,7 +2107,8 @@ function performUndo() {
     viewer.restoreFullPlanGrid();
 
     const remaining = undoList.length;
-    showNotification(`Undid multi-module move: ${lastMove.moves.length} modules reverted to previous positions${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
+    const prefix = lastMove.operation === 'diamond_center' ? 'Undid centering' : 'Undid multi-module move';
+    showNotification(`${prefix}: ${lastMove.moves.length} modules reverted to previous positions${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
 
   } else if (lastMove.type === 'move' && lastMove.from) {
     viewer.setModulePosition(lastMove.moduleIndex, lastMove.from);
@@ -2113,7 +2128,8 @@ function performUndo() {
     recalculateMeasurements();
 
     const remaining = undoList.length;
-    showNotification(`Undid move: Module #${lastMove.moduleIndex} (${friendlyName}) reverted to (${lastMove.from.x}, ${lastMove.from.y}, ${lastMove.from.z})${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
+    const prefix = lastMove.operation === 'diamond_center' ? 'Undid centering' : 'Undid move';
+    showNotification(`${prefix}: Module #${lastMove.moduleIndex} (${friendlyName}) reverted to (${lastMove.from.x}, ${lastMove.from.y}, ${lastMove.from.z})${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
 
   } else if (lastMove.type === 'rotate' && lastMove.fromRot) {
     viewer.setModuleRotation(lastMove.moduleIndex, lastMove.fromRot);
@@ -2137,6 +2153,33 @@ function performUndo() {
 
     const remaining = undoList.length;
     showNotification(`Undid rotation: Module #${lastMove.moduleIndex} (${friendlyName}) reverted to Yaw: ${lastMove.fromRot.yaw}°, Pitch: ${lastMove.fromRot.pitch}°, Roll: ${lastMove.fromRot.roll}°${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
+
+  } else if (lastMove.type === 'plot_resize' && lastMove.fromConfig) {
+    setPlotConfig(lastMove.fromConfig, true);
+    viewer.restoreFullPlanGrid();
+    viewer.updatePlotBoxViolations();
+    const cfg = lastMove.fromConfig;
+    const totX = cfg.x.plus + cfg.x.minus;
+    const totY = cfg.y.plus + cfg.y.minus;
+    const totZ = cfg.z.plus + cfg.z.minus;
+    viewer.showFloatingPlotSize(totX, totY, totZ);
+    if (viewer.floatingHudTimeout) clearTimeout(viewer.floatingHudTimeout);
+    viewer.floatingHudTimeout = setTimeout(() => viewer.hideFloatingPlotSize(), 1500);
+
+    updateStationStats();
+    recalculateMeasurements();
+
+    const remaining = undoList.length;
+    showNotification(`Undid plot resize: Reverted Plot Bounding Box to ${totX}x${totY}x${totZ} km${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
+
+  } else if (lastMove.type === 'set_fefb') {
+    const prevFefb = lastMove.previousFefb;
+    if (viewer) viewer.fefbModuleIndex = prevFefb;
+    if (currentPlan) currentPlan.fefbModuleIndex = prevFefb;
+    setFefbModuleIndex(prevFefb);
+
+    const remaining = undoList.length;
+    showNotification(`Undid setting FEFB: Reverted FEFB to ${prevFefb !== null && prevFefb !== undefined ? `Module #${prevFefb}` : 'none'}${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
   }
 
   updateUndoButtonUI();
@@ -3242,7 +3285,6 @@ function setupCenterModulesModalEvents() {
     btnConfirm.addEventListener('click', () => {
       if (viewer) {
         viewer.executePendingCenterAction();
-        collapseUndoHistory();
         viewer.restoreFullPlanGrid();
         updateStationStats();
         recalculateMeasurements();
@@ -3258,9 +3300,20 @@ function setupCenterModulesModalEvents() {
       if (targetMod) {
         const modIndex = targetMod.userData?.index !== undefined ? targetMod.userData.index : 1;
         const macroName = targetMod.userData?.friendlyName || targetMod.userData?.macro || `Module #${modIndex}`;
+        const prevFefb = viewer?.fefbModuleIndex !== undefined ? viewer.fefbModuleIndex : (currentPlan?.fefbModuleIndex !== undefined ? currentPlan.fefbModuleIndex : getFefbModuleIndex());
         if (viewer) viewer.fefbModuleIndex = modIndex;
         if (currentPlan) currentPlan.fefbModuleIndex = modIndex;
         setFefbModuleIndex(modIndex);
+        recordMove({
+          type: 'set_fefb',
+          operation: 'diamond_fefb',
+          previousFefb: prevFefb ?? null,
+          newFefb: modIndex,
+          moduleIndex: modIndex,
+          macro: targetMod.userData?.macro,
+          friendlyName: macroName,
+          timestamp: Date.now()
+        });
         showNotification(`Module #${modIndex} (${macroName}) set as First Element for branching (FEFB)`, 'success');
       }
       closeCenterModal();

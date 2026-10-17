@@ -75,7 +75,7 @@ Translate all modules so that their collective center aligns with the geometric 
 | **`G`** | Toggle **Combined (All: Move + Rotate)** gizmo mode |
 | **`D`** | Toggle component **Bounding Box Dimensions** overlay |
 | **`S`** | Toggle **Magnetic Snap Points** display |
-| **`Ctrl + Z`** | **Undo** module translations and reorientations |
+| **`Ctrl + Z`** | **Undo** last action (module moves, rotations, diamond center, fit plot, FEFB) |
 | **`Esc`** | Detach 3D gizmo / clear active module selection |
 
 ## 📂 Project Structure

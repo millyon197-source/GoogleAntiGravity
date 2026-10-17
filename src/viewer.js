@@ -3006,6 +3006,8 @@ export class StationViewer {
   fitPlotBBToModules() {
     if (!this.modulesGroup || this.modulesGroup.children.length === 0) return;
 
+    const oldCfg = JSON.parse(JSON.stringify(this.currentPlotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG));
+
     const box = new THREE.Box3();
     this.modulesGroup.children.forEach(mod => {
       if (!mod || !mod.visible) return;
@@ -3036,6 +3038,16 @@ export class StationViewer {
       z: fitAxis(toKm(-box.min.z), toKm(box.max.z))
     };
 
+    const isDifferent = (
+      oldCfg.x.plus !== newCfg.x.plus ||
+      oldCfg.x.minus !== newCfg.x.minus ||
+      oldCfg.y.plus !== newCfg.y.plus ||
+      oldCfg.y.minus !== newCfg.y.minus ||
+      oldCfg.z.plus !== newCfg.z.plus ||
+      oldCfg.z.minus !== newCfg.z.minus ||
+      oldCfg.enabled !== newCfg.enabled
+    );
+
     // Persists globally and for the active blueprint, refreshes pill UI and 3D plot box
     setPlotConfig(newCfg, true);
     this.restoreFullPlanGrid();
@@ -3048,6 +3060,17 @@ export class StationViewer {
     this.showFloatingPlotSize(totX, totY, totZ, ev ? ev.clientX : null, ev ? ev.clientY : null);
     if (this.floatingHudTimeout) clearTimeout(this.floatingHudTimeout);
     this.floatingHudTimeout = setTimeout(() => this.hideFloatingPlotSize(), 1500);
+
+    if (isDifferent && this.onMoveCommitted) {
+      this.onMoveCommitted({
+        type: 'plot_resize',
+        operation: 'diamond_fit',
+        description: 'Fit Plot to Blueprint',
+        fromConfig: oldCfg,
+        toConfig: newCfg,
+        timestamp: Date.now()
+      });
+    }
   }
 
   onPointerDown(event) {
@@ -3746,6 +3769,8 @@ export class StationViewer {
   centerModulesToPlotBB(targetModules, delta) {
     if (!targetModules || targetModules.length === 0) return;
 
+    const moves = [];
+
     targetModules.forEach(mod => {
       const modIndex = mod.userData.index;
       const fromPos = {
@@ -3775,14 +3800,39 @@ export class StationViewer {
         this.onModuleMoved(modIndex, toPos, true);
       }
 
+      moves.push({
+        moduleIndex: modIndex,
+        macro: mod.userData.macro,
+        from: fromPos,
+        to: toPos
+      });
+
       if (mod.userData.multiDragStartPos) {
         mod.userData.multiDragStartPos = mod.position.clone();
       }
     });
 
-    // After middle mouse button center move, collapse the Undo history to zero entries and move grid centered
-    if (this.onUndoHistoryCollapse) {
-      this.onUndoHistoryCollapse();
+    if (moves.length > 0 && this.onMoveCommitted) {
+      if (moves.length === 1) {
+        this.onMoveCommitted({
+          type: 'move',
+          operation: 'diamond_center',
+          ...moves[0],
+          delta: {
+            dx: moves[0].to.x - moves[0].from.x,
+            dy: moves[0].to.y - moves[0].from.y,
+            dz: moves[0].to.z - moves[0].from.z
+          },
+          timestamp: Date.now()
+        });
+      } else {
+        this.onMoveCommitted({
+          type: 'group_move',
+          operation: 'diamond_center',
+          moves: moves,
+          timestamp: Date.now()
+        });
+      }
     }
     this.restoreFullPlanGrid();
 
