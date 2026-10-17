@@ -2599,9 +2599,87 @@ export class StationViewer {
   }
 
   /**
+   * Calculates the appropriate gizmo size based on camera distance to the gizmo location.
+   */
+  getAppropriateGizmoSize(distance) {
+    if (!distance || isNaN(distance)) return 0.85;
+    if (distance < 150) {
+      // Close-up zoomed in: keep gizmo compact so it doesn't overwhelm the view
+      return Math.max(0.68, Math.min(0.85, 0.68 + (distance / 150) * 0.17));
+    } else if (distance > 2000) {
+      // Far zoomed out: slightly larger for easy selection
+      return Math.min(1.10, 0.85 + ((distance - 2000) / 8000) * 0.25);
+    }
+    return 0.85;
+  }
+
+  /**
+   * Computes the 3D location on the target module at the zoomed camera location.
+   * Uses raycasting from camera through pointer/viewport center against the module meshes or bounding box.
+   */
+  getModuleZoomedLocation(targetModule) {
+    if (!targetModule) return null;
+
+    const pointerNdc = (this.mouse && typeof this.mouse.x === 'number' && !isNaN(this.mouse.x))
+      ? new THREE.Vector2(this.mouse.x, this.mouse.y)
+      : new THREE.Vector2(0, 0);
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(pointerNdc, this.camera);
+
+    const minSafeDist = Math.max(15, (this.camera.near || 1) + 5);
+
+    // 1. First attempt: raycast against meshes belonging to this module
+    const intersects = raycaster.intersectObjects([targetModule], true);
+    if (intersects && intersects.length > 0) {
+      const hit = intersects[0].point.clone();
+      const hitCamSpace = hit.clone().applyMatrix4(this.camera.matrixWorldInverse);
+      if (-hitCamSpace.z >= minSafeDist) {
+        return hit;
+      }
+    }
+
+    // 2. Second attempt: raycast against the module's world bounding box
+    const box = this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(targetModule) : new THREE.Box3().setFromObject(targetModule);
+    if (box && !box.isEmpty()) {
+      const hitPoint = new THREE.Vector3();
+      if (raycaster.ray.intersectBox(box, hitPoint)) {
+        const hitCamSpace = hitPoint.clone().applyMatrix4(this.camera.matrixWorldInverse);
+        if (-hitCamSpace.z >= minSafeDist) {
+          return hitPoint;
+        }
+      }
+      
+      // Determine safe depth in front of the camera
+      const center = box.getCenter(new THREE.Vector3());
+      const camSpaceCenter = center.clone().applyMatrix4(this.camera.matrixWorldInverse);
+      const safeDepth = Math.max(25, -camSpaceCenter.z > 0 ? -camSpaceCenter.z : 100);
+
+      // Viewport frustum extents at safeDepth
+      const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 60);
+      const halfH = safeDepth * Math.tan(fovRad / 2);
+      const halfW = halfH * (this.camera.aspect || 1);
+
+      // Safe viewport margin limit (0.75 leaves room inside display)
+      const maxMargin = 0.75;
+      const targetCamSpace = new THREE.Vector3(
+        Math.max(-halfW * maxMargin, Math.min(halfW * maxMargin, camSpaceCenter.x)),
+        Math.max(-halfH * maxMargin, Math.min(halfH * maxMargin, camSpaceCenter.y)),
+        -safeDepth
+      );
+
+      return targetCamSpace.applyMatrix4(this.camera.matrixWorld);
+    }
+
+    // Fallback: point directly in front of camera at safe viewing depth
+    const fallbackDepth = 100;
+    return new THREE.Vector3(0, 0, -fallbackDepth).applyMatrix4(this.camera.matrixWorld);
+  }
+
+  /**
    * Ensures that when zoomed in on a module and the gizmo is active,
-   * the gizmo remains safely visible within the viewport display while zooming.
-   * Prevents the gizmo from drifting off the screen edges or being clipped by the camera near plane.
+   * if the gizmo appears outside the viewport display, it is moved to the zoomed location
+   * on the module and sized appropriately, leaving the camera position and target undisturbed.
    */
   ensureActiveGizmoVisible(options = {}) {
     if (!this.isGizmoAttached()) return;
@@ -2623,61 +2701,47 @@ export class StationViewer {
 
       // Transform gizmo position into camera view space
       const camSpace = gizmoPos.clone().applyMatrix4(this.camera.matrixWorldInverse);
-      let zDist = -camSpace.z;
+      const zDist = -camSpace.z;
 
-      const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
-      const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
-      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
-
-      let adjusted = false;
-
-      // 1. Near clipping & camera pass-through check
-      // Ensure the gizmo stays at least minSafeDist in front of the camera
+      // Check if gizmo is behind the camera or outside the visible viewport
       const minSafeDist = Math.max(15, (this.camera.near || 1) + 5);
-      if (zDist < minSafeDist) {
-        const deficit = minSafeDist - zDist;
-        this.camera.position.addScaledVector(camForward, -deficit);
-        if (this.controls && this.controls.target) {
-          this.controls.target.addScaledVector(camForward, -deficit);
-        }
-        zDist = minSafeDist;
-        camSpace.z = -minSafeDist;
-        adjusted = true;
-      }
-
-      // 2. Viewport bounds check in Normalized Device Coordinates (NDC)
       const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 60);
-      const halfH = zDist * Math.tan(fovRad / 2);
+      const halfH = Math.max(0.001, zDist * Math.tan(fovRad / 2));
       const halfW = halfH * (this.camera.aspect || 1);
 
-      if (halfH > 0 && halfW > 0) {
-        const ndcX = camSpace.x / halfW;
-        const ndcY = camSpace.y / halfH;
+      const ndcX = camSpace.x / halfW;
+      const ndcY = camSpace.y / halfH;
 
-        // Safe viewport margin: keep gizmo center within [-maxNdc, maxNdc]
-        // 0.70 leaves 15% clearance from viewport edges so the handles (size 0.85) remain fully visible
-        const maxNdc = 0.70;
-        const clampedNdcX = Math.max(-maxNdc, Math.min(maxNdc, ndcX));
-        const clampedNdcY = Math.max(-maxNdc, Math.min(maxNdc, ndcY));
+      const isBehindCamera = zDist < minSafeDist;
+      const maxDisplayMargin = 0.85; // Outside visible display margin
+      const isOutsideViewport = isBehindCamera || Math.abs(ndcX) > maxDisplayMargin || Math.abs(ndcY) > maxDisplayMargin;
 
-        if (clampedNdcX !== ndcX || clampedNdcY !== ndcY) {
-          const dCamX = camSpace.x - clampedNdcX * halfW;
-          const dCamY = camSpace.y - clampedNdcY * halfH;
-
-          const worldShift = new THREE.Vector3();
-          worldShift.addScaledVector(camRight, dCamX);
-          worldShift.addScaledVector(camUp, dCamY);
-
-          this.camera.position.add(worldShift);
-          if (this.controls && this.controls.target) {
-            this.controls.target.add(worldShift);
-          }
-          adjusted = true;
+      if (isOutsideViewport) {
+        // Move the gizmo to the zoomed location on the active module
+        const zoomedLoc = this.getModuleZoomedLocation(activeTarget);
+        if (zoomedLoc) {
+          activeTarget.position.copy(zoomedLoc);
+          activeTarget.updateMatrixWorld(true);
         }
       }
 
-      if (adjusted) {
-        this.camera.updateMatrixWorld(true);
+      // Size gizmo appropriately based on distance from camera to the active gizmo location
+      const currentGizmoPos = new THREE.Vector3();
+      activeTarget.getWorldPosition(currentGizmoPos);
+      const distToCamera = this.camera.position.distanceTo(currentGizmoPos);
+      const appropriateSize = this.getAppropriateGizmoSize(distToCamera);
+
+      if (this.transformControls) {
+        this.transformControls.size = appropriateSize;
+        if (typeof this.transformControls.updateMatrixWorld === 'function') {
+          this.transformControls.updateMatrixWorld(true);
+        }
+      }
+      if (this.transformControlsRotate) {
+        this.transformControlsRotate.size = appropriateSize;
+        if (typeof this.transformControlsRotate.updateMatrixWorld === 'function') {
+          this.transformControlsRotate.updateMatrixWorld(true);
+        }
       }
     } finally {
       this._isEnsuringGizmoVisible = false;

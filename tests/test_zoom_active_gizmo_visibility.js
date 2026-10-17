@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StationViewer } from '../src/viewer.js';
 
-console.log('[*] Testing active gizmo visibility within display when zoomed in on a module while zooming...');
+console.log('[*] Testing active gizmo repositioning to zoomed location and sizing appropriately when outside viewport...');
 
 let allPassed = true;
 function assert(condition, message) {
@@ -59,13 +59,20 @@ viewer.controls = {
 const testModule = new THREE.Group();
 testModule.userData = { index: 0, macro: 'test_macro' };
 testModule.position.set(0, 0, 0);
+// Add a mesh child to testModule for raycasting
+const geom = new THREE.BoxGeometry(100, 100, 100);
+const mat = new THREE.MeshBasicMaterial();
+const mesh = new THREE.Mesh(geom, mat);
+testModule.add(mesh);
 viewer.scene.add(testModule);
+testModule.updateMatrixWorld(true);
 
 viewer.transformControls = {
   object: testModule,
   dragging: false,
   visible: true,
-  enabled: true
+  enabled: true,
+  size: 0.85
 };
 
 console.log('\n--- Test 1: Inactive Gizmo Check ---');
@@ -78,18 +85,22 @@ assert(viewer.camera.position.equals(origCamPos), 'When gizmo is not attached, c
 console.log('\n--- Test 2: Active Gizmo Within Viewport Display ---');
 viewer.transformControls.object = testModule;
 testModule.position.set(0, 0, 0);
+testModule.updateMatrixWorld(true);
 viewer.camera.position.set(0, 0, 300);
 viewer.camera.lookAt(0, 0, 0);
 viewer.camera.updateMatrixWorld(true);
 viewer.controls.target.set(0, 0, 0);
 
+const origModPos = testModule.position.clone();
 viewer.ensureActiveGizmoVisible({ isZooming: true });
 assert(viewer.camera.position.distanceTo(new THREE.Vector3(0, 0, 300)) < 0.001,
-  'When gizmo is centered in the display, camera position remains unchanged');
+  'When gizmo is inside display, camera position remains untouched at zoomed location');
+assert(testModule.position.distanceTo(origModPos) < 0.001,
+  'When gizmo is inside display, gizmo position remains at module center');
 
-console.log('\n--- Test 3: Gizmo Drifting Off Right Edge Clamped to Safe Display Margin ---');
-// Position module far to the right in screen space
-testModule.position.set(400, 0, 0);
+console.log('\n--- Test 3: Gizmo Outside Viewport (Off Right Edge) Moves Gizmo to Zoomed Location ---');
+// Module center is placed far to the right outside viewport
+testModule.position.set(600, 0, 0);
 testModule.updateMatrixWorld(true);
 
 viewer.camera.position.set(0, 0, 300);
@@ -97,136 +108,75 @@ viewer.camera.lookAt(0, 0, 0);
 viewer.camera.updateMatrixWorld(true);
 viewer.controls.target.set(0, 0, 0);
 
-// Check initial NDC X before constraint
-let camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-let zDist = -camSpace.z;
-let fovRad = THREE.MathUtils.degToRad(viewer.camera.fov);
-let halfH = zDist * Math.tan(fovRad / 2);
-let halfW = halfH * viewer.camera.aspect;
-let initialNdcX = camSpace.x / halfW;
-assert(initialNdcX > 1.0, `Initial gizmo position is off-screen to the right (NDC X: ${initialNdcX.toFixed(2)} > 1.0)`);
-
-// Apply visibility enforcement while zooming
+// Camera remains at (0, 0, 300)
+const camPosBefore = viewer.camera.position.clone();
 viewer.ensureActiveGizmoVisible({ isZooming: true });
 
-// Check new NDC X after constraint
-camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-zDist = -camSpace.z;
-halfH = zDist * Math.tan(fovRad / 2);
-halfW = halfH * viewer.camera.aspect;
-let newNdcX = camSpace.x / halfW;
+assert(viewer.camera.position.equals(camPosBefore),
+  'Camera position is NEVER forcibly shifted away from the user zoom position');
 
-assert(Math.abs(newNdcX - 0.70) < 0.01, `Gizmo clamped to exactly safe display margin (NDC X: ${newNdcX.toFixed(2)} <= 0.70)`);
-assert(newNdcX <= 0.701 && newNdcX >= -0.701, 'Gizmo is now comfortably visible inside display');
+// Gizmo is moved to the zoomed location on the module
+const camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
+const zDist = -camSpace.z;
+const fovRad = THREE.MathUtils.degToRad(viewer.camera.fov);
+const halfH = zDist * Math.tan(fovRad / 2);
+const halfW = halfH * viewer.camera.aspect;
+const ndcX = camSpace.x / halfW;
+const ndcY = camSpace.y / halfH;
 
-console.log('\n--- Test 4: Gizmo Drifting Off Top Edge Clamped to Safe Display Margin ---');
-testModule.position.set(0, 300, 0);
+assert(Math.abs(ndcX) <= 0.85 && Math.abs(ndcY) <= 0.85,
+  `Gizmo was moved to zoomed location inside the viewport display (NDC X: ${ndcX.toFixed(2)}, Y: ${ndcY.toFixed(2)})`);
+
+console.log('\n--- Test 4: Gizmo Behind Camera Moves to Visible Zoomed Location ---');
+testModule.position.set(0, 0, 50);
 testModule.updateMatrixWorld(true);
 
-viewer.camera.position.set(0, 0, 300);
-viewer.camera.lookAt(0, 0, 0);
-viewer.camera.updateMatrixWorld(true);
-viewer.controls.target.set(0, 0, 0);
-
-viewer.ensureActiveGizmoVisible({ isZooming: true });
-
-camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-zDist = -camSpace.z;
-halfH = zDist * Math.tan(fovRad / 2);
-let newNdcY = camSpace.y / halfH;
-
-assert(Math.abs(newNdcY - 0.70) < 0.01, `Gizmo clamped from off-top to safe display margin (NDC Y: ${newNdcY.toFixed(2)} <= 0.70)`);
-
-console.log('\n--- Test 5: Camera Too Close to Gizmo (Near Plane Clipping Prevention) ---');
-// Place camera only 2 meters away from module
-testModule.position.set(0, 0, 0);
-testModule.updateMatrixWorld(true);
-
-viewer.camera.position.set(0, 0, 2);
-viewer.camera.lookAt(0, 0, 0);
-viewer.camera.updateMatrixWorld(true);
-viewer.controls.target.set(0, 0, 0);
-
-viewer.ensureActiveGizmoVisible({ isZooming: true });
-
-camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-zDist = -camSpace.z;
-
-assert(zDist >= 15, `Camera backed up to safe viewing distance (zDist: ${zDist.toFixed(1)}m >= 15m) to avoid near clipping`);
-
-console.log('\n--- Test 6: Camera Dollied Past Gizmo (Gizmo Behind Camera) ---');
-// Place camera at z = -50 while module is at z = 0, camera facing -z
-testModule.position.set(0, 0, 0);
-testModule.updateMatrixWorld(true);
-
-viewer.camera.position.set(0, 0, -50);
+viewer.camera.position.set(0, 0, 0);
 viewer.camera.lookAt(0, 0, -100);
 viewer.camera.updateMatrixWorld(true);
-viewer.controls.target.set(0, 0, -100);
-
-camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-assert(camSpace.z > 0, 'Module is initially behind the camera (camSpace.z > 0)');
 
 viewer.ensureActiveGizmoVisible({ isZooming: true });
 
-camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-zDist = -camSpace.z;
-assert(zDist >= 15, `Camera repositioned so gizmo is back in front of camera (zDist: ${zDist.toFixed(1)}m >= 15m)`);
+const camSpaceBehind = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
+assert(-camSpaceBehind.z >= 15, `Gizmo moved in front of camera at safe viewing distance (${(-camSpaceBehind.z).toFixed(1)}m >= 15m)`);
+
+console.log('\n--- Test 5: Gizmo Sized Appropriately for Close-up and Distant Zoom ---');
+// Close-up zoomed in (< 150m)
+const sizeClose = viewer.getAppropriateGizmoSize(50);
+assert(sizeClose < 0.85 && sizeClose >= 0.68, `Close-up zoom appropriately scales down gizmo (${sizeClose.toFixed(2)} < 0.85)`);
+
+// Far zoomed out (> 2000m)
+const sizeFar = viewer.getAppropriateGizmoSize(4000);
+assert(sizeFar > 0.85, `Far zoom appropriately scales up gizmo (${sizeFar.toFixed(2)} > 0.85)`);
+
+// Standard distance (~500m)
+const sizeStd = viewer.getAppropriateGizmoSize(500);
+assert(Math.abs(sizeStd - 0.85) < 0.001, `Standard distance retains standard 0.85 size (${sizeStd.toFixed(2)})`);
+
+console.log('\n--- Test 6: transformControls.size is Updated Appropriately During Zoom ---');
+testModule.position.set(0, 0, 0);
+testModule.updateMatrixWorld(true);
+viewer.camera.position.set(0, 0, 50); // distance 50
+viewer.camera.lookAt(0, 0, 0);
+viewer.camera.updateMatrixWorld(true);
+
+viewer.ensureActiveGizmoVisible({ isZooming: true });
+assert(viewer.transformControls.size < 0.85,
+  `transformControls.size dynamically adapted to zoomed distance: ${viewer.transformControls.size.toFixed(2)}`);
 
 console.log('\n--- Test 7: Manual Panning Ignored (Not Zooming) ---');
-testModule.position.set(500, 0, 0);
+testModule.position.set(600, 0, 0);
 testModule.updateMatrixWorld(true);
-
-viewer.camera.position.set(0, 0, 300);
-viewer.camera.lookAt(0, 0, 0);
-viewer.camera.updateMatrixWorld(true);
-viewer.controls.target.set(0, 0, 0);
+const modPosBeforePan = testModule.position.clone();
 
 viewer._isZooming = false; // User is panning, NOT zooming
-const camBeforePan = viewer.camera.position.clone();
 viewer.ensureActiveGizmoVisible({ isZooming: false, force: false });
 
-assert(viewer.camera.position.equals(camBeforePan),
-  'When user is panning (isZooming is false), camera position is not altered, preserving manual pan freedom');
-
-console.log('\n--- Test 8: Multi-Step Zoom In Simulation ---');
-// Simulate zooming in from distance 1000m to 50m while off-center
-testModule.position.set(100, 50, 0);
-testModule.updateMatrixWorld(true);
-
-viewer.camera.position.set(0, 0, 1000);
-viewer.camera.lookAt(0, 0, 0);
-viewer.camera.updateMatrixWorld(true);
-viewer.controls.target.set(0, 0, 0);
-
-let allStepsVisible = true;
-// Simulate 15 consecutive zoom-in steps (dolly factor 0.85 per step)
-for (let step = 0; step < 15; step++) {
-  // Simulate zoom moving camera in by 15% towards off-center point (300, 200, 0)
-  const dollyTarget = new THREE.Vector3(300, 200, 0);
-  viewer.camera.position.lerp(dollyTarget, 0.15);
-  viewer.camera.updateMatrixWorld(true);
-
-  // Apply visibility constraint during zoom
-  viewer.ensureActiveGizmoVisible({ isZooming: true });
-
-  camSpace = testModule.position.clone().applyMatrix4(viewer.camera.matrixWorldInverse);
-  zDist = -camSpace.z;
-  halfH = zDist * Math.tan(fovRad / 2);
-  halfW = halfH * viewer.camera.aspect;
-  const currentNdcX = camSpace.x / halfW;
-  const currentNdcY = camSpace.y / halfH;
-
-  if (Math.abs(currentNdcX) > 0.701 || Math.abs(currentNdcY) > 0.701 || zDist < 14.9) {
-    allStepsVisible = false;
-    console.error(`Step ${step} failed: NDC=(${currentNdcX.toFixed(2)}, ${currentNdcY.toFixed(2)}), zDist=${zDist.toFixed(1)}`);
-  }
-}
-
-assert(allStepsVisible, 'Across all 15 continuous zoom-in steps, gizmo remained strictly inside safe display margins and in front of camera');
+assert(testModule.position.equals(modPosBeforePan),
+  'When user is panning (isZooming is false), gizmo position is not moved, preserving manual pan freedom');
 
 if (allPassed) {
-  console.log('\n[PASS] All active gizmo visibility during zoom tests passed successfully!');
+  console.log('\n[PASS] All active gizmo visibility, repositioning, and sizing tests passed successfully!');
   process.exit(0);
 } else {
   console.error('\n[FAIL] Some tests failed.');
