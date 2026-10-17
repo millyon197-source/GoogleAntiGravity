@@ -1,0 +1,13 @@
+{
+  "name": "@x4/application",
+  "version": "1.0.0",
+  "description": "Application layer for X4 Station Visualizer (Inbound/Outbound Ports, Use Cases, Interactors)",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {
+    "@x4/domain": "^1.0.0"
+  }
+}

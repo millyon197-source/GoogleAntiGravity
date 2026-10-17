@@ -1,0 +1,10 @@
+{
+  "name": "@x4/domain",
+  "version": "1.0.0",
+  "description": "Pure domain core for X4 Station Visualizer (Entities, Value Objects, Domain Services)",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  }
+}

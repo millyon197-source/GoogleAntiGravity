@@ -1,6 +1,17 @@
 import { defineConfig } from 'vite';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@x4/domain': path.resolve(__dirname, 'packages/domain/src/index.js'),
+      '@x4/application': path.resolve(__dirname, 'packages/application/src/index.js'),
+      '@x4/adapter-xml': path.resolve(__dirname, 'packages/adapter-xml/src/index.js')
+    }
+  },
   plugins: [
     {
       name: 'vsc-logger',

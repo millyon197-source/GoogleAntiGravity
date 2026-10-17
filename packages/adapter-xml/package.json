@@ -1,0 +1,14 @@
+{
+  "name": "@x4/adapter-xml",
+  "version": "1.0.0",
+  "description": "X4 Station Construction Plan XML Parser and Exporter Adapter",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {
+    "@x4/domain": "^1.0.0",
+    "@x4/application": "^1.0.0"
+  }
+}
