@@ -11,7 +11,7 @@ import {
 import { generatePlanXML, downloadXMLFile, showCreateBlueprintModal, setFefbModuleIndex, getFefbModuleIndex } from './blueprint-exporter.js';
 import { initModuleDisplayPanel, setActiveBlueprint, setPlotConfig } from './module-display-panel.js';
 import { getInitialModuleDimensions } from './module-bounds-hashtable.js';
-import { UndoRedoManager } from './application/index.js';
+import { compositionRoot } from './composition-root.js';
 
 const RESOURCE_METADATA = {
   hullParts: { name: 'Hull Parts', desc: 'Primary structural material', colorClass: 'text-cyan' },
@@ -76,6 +76,7 @@ function initApp() {
       selectModule(index, false); // Clicked in 3D, select in UI list but don't focus camera (to avoid disorienting user)
     }
   });
+  compositionRoot.setViewer(viewer);
 
   // Handle real-time continuous movement from 3D axis translation arrows
   viewer.onModuleMoved = (index, pos, isFinal) => {
@@ -1968,7 +1969,7 @@ function clearAllPanels(silent = false) {
 // ==============================================================================
 // Undo Move Management
 // ==============================================================================
-export const historyManager = new UndoRedoManager({ getFriendlyName });
+export const historyManager = compositionRoot.historyManager;
 export const undoList = historyManager.undoStack;
 
 /**
