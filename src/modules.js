@@ -118,6 +118,38 @@ export function getModuleCategory(macroName) {
 }
 
 /**
+ * Determines whether a module macro represents a Pier Harbor
+ * (e.g., pier_arg_harbor_01, pier_arg_harbor_02, pier_arg_harbor_03, pier_par_harbor_*, pier_tel_harbor_*, pier_spl_harbor_*, pier_ter_harbor_*, pier_bor_harbor_*).
+ * Pier Harbors have the same orientation concerns as the Argon 3 Dock E-Pier, requiring outward-facing dock prong alignment.
+ *
+ * @param {string} macroName X4 module macro identifier.
+ * @returns {boolean}
+ */
+export function isPierHarbor(macroName) {
+  if (!macroName || typeof macroName !== 'string') return false;
+  const name = macroName.toLowerCase();
+  return name.includes('harbor') || (name.includes('pier') && !name.includes('tradestation') && !name.includes('pierce'));
+}
+
+/**
+ * Returns the base local dock prong direction vector for a Pier Harbor.
+ * - E-Piers (harbor_03), T-Piers (harbor_01), and others extend prongs along local +X (1, 0, 0).
+ * - One-Dock Piers (harbor_02) across all factions extend dock along local -X (-1, 0, 0).
+ *
+ * @param {string} macroName X4 module macro identifier.
+ * @param {object} [THREE_LIB] Optional THREE library reference.
+ * @returns {THREE.Vector3|{x: number, y: number, z: number}}
+ */
+export function getPierDockDirection(macroName, THREE_LIB) {
+  const lib = THREE_LIB || (typeof THREE !== 'undefined' ? THREE : null);
+  const dir = [1, 0, 0];
+  if (lib && lib.Vector3) {
+    return new lib.Vector3(dir[0], dir[1], dir[2]);
+  }
+  return { x: dir[0], y: dir[1], z: dir[2] };
+}
+
+/**
  * Convert an internal X4 macro into a readable display name.
  *
  * @param {string} macroName X4 module macro identifier.

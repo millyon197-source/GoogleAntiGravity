@@ -2,7 +2,7 @@
  * Adapter XML Layer Public API
  * X4 Station Construction Plan XML Parser & Exporter implementing Hexagonal Outbound Ports.
  */
-export { XmlBlueprintParser, parseConstructionPlan } from './xml-blueprint-parser.js';
+export { XmlBlueprintParser, parseConstructionPlan, quaternionToEulerYXZ } from './xml-blueprint-parser.js';
 export {
   XmlBlueprintExporter,
   generatePlanXML,

@@ -13,8 +13,8 @@ if (HASH_TABLE_SIZE !== 503 || MODULE_BOUNDS_TABLE.length !== 503) {
 
 const filled = MODULE_BOUNDS_TABLE.filter(x => x !== null);
 console.log(`Filled slots count: ${filled.length}`);
-if (filled.length !== 247) {
-  throw new Error(`Expected 247 entries, got ${filled.length}`);
+if (filled.length !== 248) {
+  throw new Error(`Expected 248 entries, got ${filled.length}`);
 }
 
 // Extract modules from All Modules Showcase
@@ -86,4 +86,11 @@ console.log('Sample entry #1 (lookup):', {
 });
 const rawSample = MODULE_BOUNDS_TABLE.find(x => x && x.key === 'struct_arg_base_01_macro');
 console.log('Sample raw table entry (stored in JSON):', rawSample);
+
+// Verify pier_arg_harbor_04_macro
+const pierSample = lookupModuleBounds('pier_arg_harbor_04_macro');
+if (!pierSample || pierSample.boundingBox.size[0] !== 260 || pierSample.boundingBox.size[1] !== 100 || pierSample.boundingBox.size[2] !== 230) {
+  throw new Error('Verification failed for pier_arg_harbor_04_macro');
+}
+console.log('pier_arg_harbor_04_macro verified:', pierSample.boundingBox.size);
 

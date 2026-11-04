@@ -1,12 +1,17 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { ColladaLoader } from 'three/addons/loaders/ColladaLoader.js';
+import { DDSLoader } from 'three/addons/loaders/DDSLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { MeshLoader } from './mesh-loader.js';
 import { createProceduralModule, getModuleCategory, getFriendlyName, CATEGORY_COLORS } from './modules.js';
 import DAE_HASH_TABLE from '../dae_hash_table.json' with { type: 'json' };
 import { MACRO_TO_NAME_DB } from './modules-cost-db.js';
-import { getModuleSnapPoints } from './snap-points-db.js';
+import { getModuleSnapPoints, setCustomSnapPointEntry, getCustomSnapPointsTable, syncCustomSnapPoints, hasCustomSnapPointsForMacro } from './snap-points-db.js';
 import { lookupModuleBounds, getInitialModuleSize, getInitialModuleDimensions, getInitialModuleBounds } from './module-bounds-hashtable.js';
 import {
   getCurrentPlotConfig,
@@ -26,6 +31,10 @@ import {
   CameraController,
   TransformGizmoCoordinator
 } from '@x4/adapter-three';
+import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
+import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
+import { computeModuleGroupRotation, computeX4RotationFromModuleGroup } from './rotation-math.js';
+
 
 function sendLogToVSC(msg, type = 'log') {
   if (type === 'warn') {
@@ -159,11 +168,25 @@ export class StationViewer {
     this.wireframeMode = false;
     this.ghostMode = false;
     this.hiddenMacros = new Set();
+    // Per-module component (asset file) selections: index -> { macro, files[] }
+    this.moduleComponentSelections = new Map();
     this.currentPlan = null;
     this.currentBuildProgressPercentage = 100;
     this.highlightHelpers = [];
-    this.isColorized = true;
+    this.isColorized = false;
     this.colladaLoader = new ColladaLoader();
+    this.ddsLoader = new DDSLoader();
+    this.composer = null;
+    this.bloomPass = null;
+    this.bloomEnabled = true;
+    this.bloomStrength = 0.35;
+    this.bloomRadius = 0.35;
+    this.bloomThreshold = 0.85;
+    this.glowingEmissiveIntensity = 2.2;
+    this.textureCache = new Map();
+    this.animatedTextures = [];
+    this.animatedParts = [];
+    this.haltedModuleAnimations = new Set();
     this.meshLoader = new MeshLoader('./src/mesh-worker.js');
     this.colladaCache = new Map();
     this.isGridAtComponentScale = false;
@@ -208,6 +231,9 @@ export class StationViewer {
   }
 
   init() {
+    if (typeof window !== 'undefined') {
+      window.THREE = THREE;
+    }
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
 
@@ -225,10 +251,15 @@ export class StationViewer {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
     
     // Clear container and append canvas
     this.container.innerHTML = '';
     this.container.appendChild(this.renderer.domElement);
+
+    // Setup Bloom Post-Processing (applies Gaussian blur filter over glowing lights keeping bloom smooth)
+    this.initBloomComposer(width, height);
 
     // 4. Orbit Controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -521,7 +552,11 @@ export class StationViewer {
     this._isZooming = false;
     this._zoomTimeout = null;
 
-    this.boundOnWheel = () => {
+    this.boundOnWheel = (event) => {
+      if (this.controls) {
+        // Shift+wheel provides a 5x slower, precision zoom increment
+        this.controls.zoomSpeed = (event && event.shiftKey) ? 0.2 : 1.0;
+      }
       this._isZooming = true;
       if (this._zoomTimeout) clearTimeout(this._zoomTimeout);
       this._zoomTimeout = setTimeout(() => {
@@ -532,7 +567,7 @@ export class StationViewer {
         this.ensureActiveGizmoVisible({ isZooming: true });
       }
     };
-    this.renderer.domElement.addEventListener('wheel', this.boundOnWheel, { passive: true });
+    this.renderer.domElement.addEventListener('wheel', this.boundOnWheel, { capture: true, passive: true });
 
     this.boundOnTouchMove = (event) => {
       if (event.touches && event.touches.length === 2) {
@@ -553,7 +588,10 @@ export class StationViewer {
 
     window.addEventListener('pointerdown', (e) => {
       this.lastPointerDownEvent = e;
-      if (e.shiftKey) this.isShiftDown = true;
+      if (e.shiftKey) {
+        this.isShiftDown = true;
+        if (this.controls) this.controls.zoomSpeed = 0.2;
+      }
       if (e.code === 'ShiftLeft') this.isLeftShiftDown = true;
       if (e.code === 'ShiftRight') this.isRightShiftDown = true;
     }, true);
@@ -567,6 +605,7 @@ export class StationViewer {
       }
       if (e.shiftKey) {
         this.isShiftDown = true;
+        if (this.controls) this.controls.zoomSpeed = 0.2;
       }
     });
 
@@ -581,6 +620,7 @@ export class StationViewer {
       if (!e.shiftKey) {
         this.isShiftDown = false;
         this.shiftSnapApplied = false;
+        if (this.controls) this.controls.zoomSpeed = 1.0;
       }
     });
 
@@ -589,6 +629,7 @@ export class StationViewer {
       this.isRightShiftDown = false;
       this.isShiftDown = false;
       this.shiftSnapApplied = false;
+      if (this.controls) this.controls.zoomSpeed = 1.0;
     });
 
     this.renderer.domElement.addEventListener('blur', () => {
@@ -609,6 +650,98 @@ export class StationViewer {
 
     // 10. Start Animation Loop
     this.animate();
+  }
+
+  initBloomComposer(width, height) {
+    try {
+      if (!this.renderer || typeof document === 'undefined') return;
+      this.composer = new EffectComposer(this.renderer);
+
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(renderPass);
+
+      // UnrealBloomPass applies multi-stage progressive Gaussian blur filtering
+      // across downsampled mip levels, keeping bloom halos around FX glowing lights smooth and natural
+      const bloomResolution = new THREE.Vector2(width, height);
+      this.bloomPass = new UnrealBloomPass(
+        bloomResolution,
+        this.bloomStrength ?? 0.35, // bloom strength: comfortable, natural radiance without blowing out the scene
+        this.bloomRadius ?? 0.35,   // bloom radius: tight Gaussian dispersion hugging light sources
+        this.bloomThreshold ?? 0.85 // luminance threshold: isolates glowing lights/emissives while preserving crisp hull metal
+      );
+      this.composer.addPass(this.bloomPass);
+
+      const outputPass = new OutputPass();
+      this.composer.addPass(outputPass);
+    } catch (e) {
+      console.warn('[StationViewer] Bloom composer initialization skipped:', e.message);
+      this.composer = null;
+      this.bloomPass = null;
+    }
+  }
+
+  setBloomEnabled(enabled) {
+    this.bloomEnabled = !!enabled;
+    if (this.bloomPass) {
+      this.bloomPass.enabled = this.bloomEnabled;
+    }
+  }
+
+  setBloomParams({ strength, radius, threshold } = {}) {
+    if (strength !== undefined) {
+      this.bloomStrength = strength;
+      if (this.bloomPass) this.bloomPass.strength = strength;
+    }
+    if (radius !== undefined) {
+      this.bloomRadius = radius;
+      if (this.bloomPass) this.bloomPass.radius = radius;
+    }
+    if (threshold !== undefined) {
+      this.bloomThreshold = threshold;
+      if (this.bloomPass) this.bloomPass.threshold = threshold;
+    }
+  }
+
+  getBloomStrength() {
+    return this.bloomPass ? this.bloomPass.strength : (this.bloomStrength ?? 0.35);
+  }
+
+  getEmissiveIntensity() {
+    return this.glowingEmissiveIntensity ?? 2.2;
+  }
+
+  setEmissiveIntensity(intensity, moduleIndex = null) {
+    this.glowingEmissiveIntensity = Math.max(0, parseFloat(intensity) || 0);
+    const target = (moduleIndex !== null && this.modulesGroup)
+      ? this.modulesGroup.children.find(m => m.userData.index === moduleIndex)
+      : this.modulesGroup;
+
+    if (target) {
+      target.traverse(child => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(mat => {
+            if (mat.emissiveMap || (mat.emissive && (mat.emissive.r > 0 || mat.emissive.g > 0 || mat.emissive.b > 0))) {
+              const mult = mat.blending === THREE.AdditiveBlending ? 1.5 : 1.0;
+              mat.emissiveIntensity = this.glowingEmissiveIntensity * mult;
+              mat.needsUpdate = true;
+            }
+          });
+        }
+        if (child.isLight && child.name === 'fx_point_light') {
+          child.intensity = (this.glowingEmissiveIntensity / 2.2) * 1.8;
+        }
+      });
+    }
+    this.renderScene();
+  }
+
+  renderScene() {
+    if (this.composer && this.bloomEnabled !== false) {
+      this.composer.render();
+    } else if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   setupLighting() {
@@ -959,6 +1092,11 @@ export class StationViewer {
     this.clearFilterHighlights();
     minimizePlotPill();
 
+    // Ensure any custom-snap-points.json entries are synced and active for rendering
+    try {
+      await syncCustomSnapPoints();
+    } catch (_) {}
+
     if (!planData.modules || planData.modules.length === 0) return;
 
     console.log(`[*] Loading ${planData.modules.length} station modules...`);
@@ -1012,11 +1150,8 @@ export class StationViewer {
       moduleGroup.position.set(mod.position.x, mod.position.y, -mod.position.z);
 
       // Rotations are in degrees: yaw (Y), pitch (X), roll (Z)
-      // Apply correct rotation order 'YXZ' which corresponds to X4's rotation sequence
-      moduleGroup.rotation.order = 'YXZ';
-      moduleGroup.rotation.y = mod.rotation.yaw * Math.PI / 180;
-      moduleGroup.rotation.x = (mod.rotation.pitch + 180) * Math.PI / 180;
-      moduleGroup.rotation.z = (mod.rotation.roll + 180) * Math.PI / 180;
+      // Apply unified rotation transformation corresponding to X4's rotation sequence
+      moduleGroup.rotation.copy(computeModuleGroupRotation(mod.rotation?.yaw, mod.rotation?.pitch, mod.rotation?.roll));
 
       // Save references in mesh userData
       moduleGroup.userData.index = mod.index;
@@ -1099,9 +1234,14 @@ export class StationViewer {
     this.updatePlotBoxViolations();
   }
 
-  async loadModuleMesh(mod) {
-    let baseName = mod.macro.replace('_macro', '').toLowerCase();
-    const origBaseName = baseName;
+  /**
+   * Resolves the DAE asset entry (hash-table key, folder path and default component files)
+   * for a module macro, including faction → gen/arg fallbacks.
+   * @param {string} macro
+   * @returns {{ baseName: string, folderPath: string|null, defaultFiles: string[] }}
+   */
+  resolveModuleAssetEntry(macro) {
+    let baseName = String(macro || '').replace('_macro', '').toLowerCase();
 
     // Replace buildmodule_gen_equip_* and buildmodule_gen_ships_* with _arg_ key lookups
     if (baseName.startsWith('buildmodule_gen_equip_') || baseName.startsWith('buildmodule_gen_ships_')) {
@@ -1138,11 +1278,206 @@ export class StationViewer {
         }
       }
     }
-    const uniqueUrls = [];
-    for (const url of urls) {
-      const fileName = url.substring(url.lastIndexOf('/') + 1).toLowerCase();
-        uniqueUrls.push(url);
+
+    if (urls.length === 0) {
+      return { baseName, folderPath: null, defaultFiles: [] };
     }
+    const folderPath = urls[0].substring(0, urls[0].lastIndexOf('/'));
+    const defaultFiles = urls.map(u => u.substring(u.lastIndexOf('/') + 1));
+    return { baseName, folderPath, defaultFiles };
+  }
+
+  /**
+   * Returns the active component file list for a module: the user's selection if one
+   * exists for this module index + macro, otherwise the default hash-table files.
+   */
+  getModuleActiveComponentFiles(index, macro) {
+    const sel = this.moduleComponentSelections?.get(index);
+    if (sel && sel.macro === macro) return [...sel.files];
+    return this.resolveModuleAssetEntry(macro).defaultFiles;
+  }
+
+  /**
+   * Lists every component (.dae) file available in the module's asset folder, flagged with
+   * whether it is currently included in the render.
+   * @param {number} index
+   * @returns {Promise<{ folderPath: string|null, components: Array<{ file: string, checked: boolean, isDefault: boolean }> }>}
+   */
+  async getModuleComponentOptions(index) {
+    const targetModule = this.modulesGroup?.children?.find(c => c.userData.index === index);
+    const macro = targetModule?.userData?.macro;
+    if (!macro) return { folderPath: null, components: [] };
+
+    const { folderPath, defaultFiles } = this.resolveModuleAssetEntry(macro);
+    if (!folderPath) return { folderPath: null, components: [] };
+
+    let folderFiles = [];
+    try {
+      const resp = await fetch(`/api/module-asset-files?folder=${encodeURIComponent(folderPath)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        folderFiles = Array.isArray(data.files) ? data.files : [];
+      }
+    } catch (_) { /* fall back to default list */ }
+
+    const allFiles = [...new Set([...folderFiles, ...defaultFiles])].sort();
+    const active = new Set(this.getModuleActiveComponentFiles(index, macro));
+    const defaults = new Set(defaultFiles);
+    return {
+      folderPath,
+      components: allFiles.map(file => ({ file, checked: active.has(file), isDefault: defaults.has(file) }))
+    };
+  }
+
+  /**
+   * Re-renders a single module's mesh using the given component files, preserving the
+   * module's transform, snap points and selection state.
+   * @param {number} index
+   * @param {string[]} files
+   */
+  async setModuleComponentFiles(index, files) {
+    const targetModule = this.modulesGroup.children.find(c => c.userData.index === index);
+    if (!targetModule) return false;
+    const macro = targetModule.userData.macro;
+
+    if (!this.moduleComponentSelections) this.moduleComponentSelections = new Map();
+    this.moduleComponentSelections.set(index, { macro, files: [...files] });
+
+    const newRoot = files.length > 0 ? await this.loadModuleMesh({ index, macro }) : null;
+    const newMeshGroup = newRoot ? newRoot.getObjectByName('module_mesh_group') : new THREE.Group();
+    newMeshGroup.name = 'module_mesh_group';
+
+    // Swap mesh groups inside the existing module group (transform & snaps untouched)
+    const oldMeshGroup = targetModule.getObjectByName('module_mesh_group');
+    if (oldMeshGroup) {
+      if (this.animatedParts && this.animatedParts.length > 0) {
+        this.animatedParts = this.animatedParts.filter(p => {
+          if (!p.object) return false;
+          let isDescendant = false;
+          oldMeshGroup.traverse(child => {
+            if (child === p.object) isDescendant = true;
+          });
+          return !isDescendant && p.object !== oldMeshGroup;
+        });
+      }
+      targetModule.remove(oldMeshGroup);
+    }
+    targetModule.add(newMeshGroup);
+
+    newMeshGroup.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.userData.moduleIndex = index;
+      }
+    });
+
+    if (this.wireframeMode) this.toggleWireframe(true);
+    if (this.isColorized) this.setColorized(true);
+    targetModule.updateMatrixWorld(true);
+
+    if (this.selectedModuleIndex === index) {
+      this.selectModuleByIndex(index, false);
+    }
+    return true;
+  }
+
+  setModuleAnimationHalted(index, halted) {
+    if (!this.haltedModuleAnimations) this.haltedModuleAnimations = new Set();
+    if (halted) {
+      this.haltedModuleAnimations.add(index);
+    } else {
+      this.haltedModuleAnimations.delete(index);
+    }
+  }
+
+  isModuleAnimationHalted(index) {
+    return !!this.haltedModuleAnimations && this.haltedModuleAnimations.has(index);
+  }
+
+  setBillboardState(state, moduleIndex = null) {
+    let matched = false;
+    this.modulesGroup.traverse(obj => {
+      if (obj.userData && typeof obj.userData.setBillboardState === 'function') {
+        if (moduleIndex !== null && moduleIndex !== undefined) {
+          let cur = obj;
+          let modIdx = cur.userData ? cur.userData.moduleIndex : undefined;
+          while (cur && modIdx === undefined && cur !== this.modulesGroup) {
+            cur = cur.parent;
+            if (cur && cur.userData && cur.userData.moduleIndex !== undefined) {
+              modIdx = cur.userData.moduleIndex;
+            }
+          }
+          if (modIdx !== moduleIndex) return;
+        }
+        obj.userData.setBillboardState(state, true);
+        matched = true;
+      }
+    });
+    if (this.animatedParts) {
+      this.animatedParts.forEach(part => {
+        if (part.object && part.object.userData && typeof part.object.userData.setBillboardState === 'function') {
+          if (moduleIndex === null || moduleIndex === undefined || part.moduleIndex === moduleIndex) {
+            part.object.userData.setBillboardState(state, true);
+            matched = true;
+          }
+        }
+      });
+    }
+    if (typeof this.renderScene === 'function') {
+      this.renderScene();
+    }
+    return matched;
+  }
+
+  getBillboardState(moduleIndex = null) {
+    let foundState = null;
+    this.modulesGroup.traverse(obj => {
+      if (foundState !== null) return;
+      if (obj.userData && (obj.userData.manualBillboardState || obj.userData.currentBillboardState)) {
+        if (moduleIndex !== null && moduleIndex !== undefined) {
+          let cur = obj;
+          let modIdx = cur.userData ? cur.userData.moduleIndex : undefined;
+          while (cur && modIdx === undefined && cur !== this.modulesGroup) {
+            cur = cur.parent;
+            if (cur && cur.userData && cur.userData.moduleIndex !== undefined) {
+              modIdx = cur.userData.moduleIndex;
+            }
+          }
+          if (modIdx !== moduleIndex) return;
+        }
+        foundState = obj.userData.manualBillboardState || obj.userData.currentBillboardState || 'auto';
+      }
+    });
+    return foundState || 'auto';
+  }
+
+  hasModuleBillboards(moduleIndex = null) {
+    let hasBillboards = false;
+    this.modulesGroup.traverse(obj => {
+      if (hasBillboards) return;
+      if (obj.userData && (obj.userData.isolatedBillboards || typeof obj.userData.setBillboardState === 'function' || obj.userData.billboardStateAUvs)) {
+        if (moduleIndex !== null && moduleIndex !== undefined) {
+          let cur = obj;
+          let modIdx = cur.userData ? cur.userData.moduleIndex : undefined;
+          while (cur && modIdx === undefined && cur !== this.modulesGroup) {
+            cur = cur.parent;
+            if (cur && cur.userData && cur.userData.moduleIndex !== undefined) {
+              modIdx = cur.userData.moduleIndex;
+            }
+          }
+          if (modIdx !== moduleIndex) return;
+        }
+        hasBillboards = true;
+      }
+    });
+    return hasBillboards;
+  }
+
+  async loadModuleMesh(mod) {
+    const { baseName, folderPath } = this.resolveModuleAssetEntry(mod.macro);
+    const activeFiles = this.getModuleActiveComponentFiles(mod.index, mod.macro);
+    const uniqueUrls = folderPath ? activeFiles.map(f => `${folderPath}/${f}`) : [];
 
  //   sendLogToVSC(`[*] DAE urls for ${mod.macro} (baseName: ${baseName}): found ${urls.length} URLs )`, 'log');
 
@@ -1156,8 +1491,31 @@ export class StationViewer {
         let sceneTemplate = null;
         const binUrl = url.replace(/\.dae$/i, '.bin');
         const jsonUrl = url.replace(/\.dae$/i, '.json');
+        const partBase = url.split('/').pop().replace(/-lod\d+\.dae$/i, '').toLowerCase();
 
         try {
+          const uLower = url.toLowerCase();
+          if (
+            partBase.startsWith('fx') ||
+            partBase.startsWith('anim') ||
+            partBase.includes('billboard') ||
+            partBase.includes('ads') ||
+            partBase.includes('sign') ||
+            uLower.includes('billboard') ||
+            uLower.includes('ad_signs') ||
+            uLower.includes('/fx_') ||
+            uLower.includes('\\fx_') ||
+            uLower.includes('/anim_') ||
+            uLower.includes('\\anim_') ||
+            uLower.includes('detail_m_main') ||
+            uLower.includes('detail_l_main') ||
+            uLower.includes('detail_s_main') ||
+            uLower.includes('simon') ||
+            (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production')))
+          ) {
+            // fx*, anim*, billboards/signs, detail_m_main, detail_l_main, detail_s_main, simon, and production part_main components contain distinct subnodes (hull, fx, alpha, lightcones, foliage) requiring ColladaLoader
+            throw new Error('Multi-material subnodes, FX, Anim, or Billboards require DAE');
+          }
           // Fast-path: Load Vulkan-aligned binary blob via MeshWorker
           sceneTemplate = await this.loadBinaryModel(binUrl, jsonUrl);
         } catch (binErr) {
@@ -1168,11 +1526,69 @@ export class StationViewer {
 
         if (sceneTemplate) {
           const scene = sceneTemplate.clone();
+          scene.traverse(child => {
+            if (child.userData) {
+              if (child.userData.isolatedBillboards && !child.userData.isolatedBillboards.billboard_cross?.isMesh) {
+                delete child.userData.isolatedBillboards;
+                delete child.userData._crossArrowsPartitioned;
+              }
+              if (child.userData.isolatedBackgrounds && !child.userData.isolatedBackgrounds.bg_cross?.isMesh) {
+                delete child.userData.isolatedBackgrounds;
+                delete child.userData._crossBgPartitioned;
+              }
+              if (child.userData.physicalSigns) {
+                delete child.userData.physicalSigns;
+              }
+            }
+          });
           scene.scale.set(1, 1, 1);
+          scene.name = partBase;
+          scene.userData.partName = partBase;
+          if (mod && mod.index !== undefined) {
+            scene.userData.moduleIndex = mod.index;
+          }
+
+          // Apply connection offsets for child parts with non-zero connection transforms
+          const urlLower = url.toLowerCase();
+          if (urlLower.includes('dockarea_arg_m_02_tradestation_01')) {
+            if (urlLower.includes('anim_hatch_01')) {
+              scene.position.set(-466.9438, 58.5607, -0.07168579);
+              scene.quaternion.set(0, 0.7071068, 0, -0.7071067);
+            } else if (urlLower.includes('anim_hatch_02')) {
+              scene.position.set(467.2225, 58.57285, -0.07168579);
+              scene.quaternion.set(0, 0.7071068, 0, -0.7071067);
+            }
+          } else {
+            let off = COMPONENT_OFFSETS[baseName]?.[partBase];
+            if (!off && urlLower.includes('hab_arg_l_01')) {
+              off = COMPONENT_OFFSETS['hab_arg_l_01']?.[partBase];
+            }
+            if (off) {
+              if (Array.isArray(off)) {
+                scene.position.set(off[0], off[1], off[2]);
+                if (off.length >= 7) {
+                  scene.quaternion.set(off[3], off[4], off[5], off[6]);
+                }
+              } else if (off.position) {
+                scene.position.set(off.position[0], off.position[1], off.position[2]);
+                if (off.quaternion) {
+                  scene.quaternion.set(off.quaternion[0], off.quaternion[1], off.quaternion[2], off.quaternion[3]);
+                }
+              }
+            }
+          }
+          await this.applyTexturesToMeshGroup(scene, url, mod?.index);
+          scene.userData.setBillboardState = (state) => {
+            scene.traverse(child => {
+              if (child !== scene && child.userData && typeof child.userData.setBillboardState === 'function') {
+                child.userData.setBillboardState(state);
+              }
+            });
+          };
           scene.traverse(child => {
             if (child.isMesh) {
-              // Ensure geometry has proper normals for lighting
-              if (child.geometry) {
+              // Ensure geometry has proper normals for lighting if not already authored
+              if (child.geometry && !child.geometry.attributes.normal) {
                 try {
                   child.geometry.computeVertexNormals();
                 } catch (geomErr) {
@@ -1186,23 +1602,73 @@ export class StationViewer {
 
               const childName = (child.name || '').toLowerCase();
               const parentName = (child.parent && child.parent.name || '').toLowerCase();
+              const urlLower = (url || '').toLowerCase();
+              const isDamageArea = childName.includes('damagearea') || 
+                                   parentName.includes('damagearea') || 
+                                   urlLower.includes('damagearea') ||
+                                   childName.includes('triggerpart') ||
+                                   urlLower.includes('triggerpart');
               const isBBox = childName.includes('bbox') || 
                              childName.includes('boundingbox') || 
                              childName.includes('bounding_box') || 
                              childName.includes('collision') ||
                              childName.includes('collision_box') ||
                              childName.includes('collisionbox') ||
+                             childName.includes('geometryinvisible') ||
+                             urlLower.includes('geometryinvisible') ||
+                             isDamageArea ||
                              parentName.includes('bbox') ||
                              parentName.includes('boundingbox') ||
                              parentName.includes('bounding_box') ||
                              parentName.includes('collision');
+              const isFxGlow = childName.includes('fx_glow') || urlLower.includes('fx_glow');
+              const isForcefield = childName.includes('forcefield') || urlLower.includes('forcefield') ||
+                                   childName.includes('shieldfx') || urlLower.includes('shieldfx') ||
+                                   ((childName.includes('shield') || urlLower.includes('shield')) && !urlLower.includes('blast') && !childName.includes('blast'));
+              const isHaze = childName.includes('haze') || urlLower.includes('haze');
+              const isLightCone = childName.includes('lightcone') || urlLower.includes('lightcone');
+              const isBubbles = childName.includes('bubble') || urlLower.includes('bubble');
+              const isPoslight = childName.includes('poslight') || urlLower.includes('poslight');
+              const isSmoke = childName.includes('smoke') || urlLower.includes('smoke') ||
+                              childName.includes('fume') || urlLower.includes('fume') ||
+                              childName.includes('gas') || urlLower.includes('gas');
+              const isVapor = childName.includes('vapor') || urlLower.includes('vapor');
+              const isFire = childName.includes('fire') || urlLower.includes('fire') || childName.includes('hotarea') || urlLower.includes('hotarea');
+              const isDecal = childName.includes('decal') || urlLower.includes('decal') ||
+                              childName.includes('windowfont') || urlLower.includes('windowfont') ||
+                              childName.includes('font') || urlLower.includes('font');
 
-              if (isBBox) {
+              if (isBBox || isFxGlow || isDamageArea) {
                 child.visible = false;    
+                child.castShadow = false;
+                child.receiveShadow = false;
+              }
+
+              if (isForcefield || isHaze || isLightCone || isBubbles || isPoslight || isSmoke || isFire || isVapor) {
+                child.castShadow = false;
+                child.receiveShadow = false;
+              }
+
+              if (isDecal) {
+                child.castShadow = false;
+                child.receiveShadow = true;
               }
 
               // Process materials (handles both single material and array of materials)
               const processMaterial = (mat) => {
+                if (isDamageArea) {
+                  return new THREE.MeshStandardMaterial({
+                    color: 0xFF2222,
+                    roughness: 0.8,
+                    metalness: 0.1,
+                    opacity: 0.15,
+                    transparent: true,
+                    wireframe: true,
+                    visible: false,
+                    side: THREE.DoubleSide
+                  });
+                }
+
                 if (!mat) {
                   return new THREE.MeshStandardMaterial({
                     color: isBBox ? 0x00F5FF : 0x8D99AE,
@@ -1211,8 +1677,31 @@ export class StationViewer {
                     opacity: isBBox ? 0.15 : 1.0,
                     transparent: isBBox ? true : false,
                     wireframe: isBBox ? true : false,
+                    visible: !isFxGlow && !isDamageArea,
                     side: THREE.DoubleSide
                   });
+                }
+
+                if (isBBox) {
+                  return new THREE.MeshStandardMaterial({
+                    color: 0x00F5FF,
+                    roughness: 0.8,
+                    metalness: 0.1,
+                    opacity: 0.15,
+                    transparent: true,
+                    wireframe: true,
+                    visible: true,
+                    side: THREE.DoubleSide,
+                    emissive: new THREE.Color(0x002233)
+                  });
+                }
+
+                // If already a MeshStandardMaterial (e.g. from loadBinaryModel or applyTexturesToMeshGroup), preserve it directly
+                if (mat.isMeshStandardMaterial && (mat.map || mat.emissiveMap || mat.blending === THREE.AdditiveBlending)) {
+                  if (isFxGlow) {
+                    mat.visible = false;
+                  }
+                  return mat;
                 }
                 
                 // Check if the original color is black or too dark
@@ -1225,18 +1714,32 @@ export class StationViewer {
                 }
                 
                 // Force convert any material type to MeshStandardMaterial to guarantee lighting response
+                const isLightConeOrVolumetric = isForcefield || isHaze || isLightCone || isBubbles || isPoslight;
                 const newMat = new THREE.MeshStandardMaterial({
-                  color: isBBox ? 0x00F5FF : baseColor,
-                  map: isBBox ? null : (mat.map || null),
-                  normalMap: isBBox ? null : (mat.normalMap || null),
-                  bumpMap: isBBox ? null : (mat.bumpMap || null),
-                  roughness: isBBox ? 0.8 : 0.6,
-                  metalness: isBBox ? 0.1 : 0.2,
-                  opacity: isBBox ? 0.15 : (mat.opacity !== undefined ? mat.opacity : 1.0),
-                  transparent: isBBox ? true : (mat.transparent || false),
-                  wireframe: isBBox ? true : false,
+                  color: isLightConeOrVolumetric ? 0x000000 : (mat.map ? (mat.color || new THREE.Color(0xffffff)) : baseColor),
+                  map: isLightConeOrVolumetric ? null : (mat.map || null),
+                  normalMap: isLightConeOrVolumetric ? null : (mat.normalMap || null),
+                  normalScale: mat.normalScale || new THREE.Vector2(1, -1), // Convert DirectX normal maps (Green Down) to Three.js OpenGL (Green Up)
+                  roughnessMap: mat.roughnessMap || null,
+                  metalnessMap: mat.metalnessMap || null,
+                  emissiveMap: mat.emissiveMap || null,
+                  bumpMap: mat.bumpMap || null,
+                  roughness: isLightConeOrVolumetric ? 1.0 : (mat.roughness !== undefined ? mat.roughness : 0.6),
+                  metalness: isLightConeOrVolumetric ? 0.0 : (mat.metalness !== undefined ? mat.metalness : 0.2),
+                  opacity: isHaze ? 0.35 : (isForcefield ? 0.65 : (isLightCone ? 0.85 : (isBubbles ? 0.95 : (isPoslight ? 0.9 : (mat.opacity !== undefined ? mat.opacity : 1.0))))),
+                  transparent: isDecal || isLightConeOrVolumetric || mat.transparent || false,
+                  alphaTest: isDecal ? 0.1 : (isLightConeOrVolumetric ? 0.0 : (mat.alphaTest !== undefined ? mat.alphaTest : 0.0)),
+                  depthWrite: (isDecal || isLightConeOrVolumetric) ? false : (mat.depthWrite !== undefined ? mat.depthWrite : true),
+                  polygonOffset: isDecal,
+                  polygonOffsetFactor: isDecal ? -1 : 0,
+                  polygonOffsetUnits: isDecal ? -1 : 0,
+                  wireframe: false,
                   side: THREE.DoubleSide,
-                  emissive: isBBox ? new THREE.Color(0x002233) : new THREE.Color(0x080a12) // subtle dark-nebula emission so it is never pitch-black
+                  visible: !isFxGlow && !isDamageArea,
+                  blending: isLightConeOrVolumetric ? THREE.AdditiveBlending : (mat.blending !== undefined ? mat.blending : THREE.NormalBlending),
+                  toneMapped: (isLightConeOrVolumetric || isDecal) ? false : (mat.toneMapped !== undefined ? mat.toneMapped : true),
+                  emissive: isPoslight ? new THREE.Color(0xffffff) : (isLightConeOrVolumetric ? this.getRaceGlowColor(urlLower) : (mat.emissive || new THREE.Color(0x000000))),
+                  emissiveIntensity: isHaze ? (this.glowingEmissiveIntensity || 2.2) * 0.8 : (isForcefield ? (this.glowingEmissiveIntensity || 2.2) * 1.5 : (isLightCone ? (this.glowingEmissiveIntensity || 2.2) * 1.5 : (isBubbles ? 4.5 : (mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : (mat.emissiveMap ? 1.0 : 0.0)))))
                 });
 
                 // If old material had vertex colors enabled, only keep it if geometry actually supports it
@@ -1247,11 +1750,6 @@ export class StationViewer {
                 }
 
                 newMat.name = mat.name || '';
-
-                // Clean up old material reference
-                if (typeof mat.dispose === 'function') {
-                  mat.dispose();
-                }
 
                 return newMat;
               };
@@ -1264,6 +1762,96 @@ export class StationViewer {
             }
           });
           loadedScenes.push(scene);
+
+          if (partBase.includes('anim_crane_holder') || partBase.includes('anim_arm')) {
+            this.animatedParts.push({
+              object: scene,
+              moduleIndex: mod?.index,
+              update: (time) => {
+                scene.position.z = Math.sin(time * 0.25) * 450;
+              }
+            });
+          } else if (partBase.includes('anim_vent')) {
+            this.animatedParts.push({
+              object: scene,
+              moduleIndex: mod?.index,
+              update: (time) => {
+                scene.rotation.x = Math.sin(time * 1.5) * 0.25;
+              }
+            });
+          } else if ((url.toLowerCase().includes('anim_centrifuge') ||
+                      url.toLowerCase().includes('anim_rotor') ||
+                      url.toLowerCase().includes('anim_rotator') ||
+                      url.toLowerCase().includes('anim_fan') ||
+                      url.toLowerCase().includes('anim_stomp_wheels')) &&
+                     (partBase.includes('anim_centrifuge') ||
+                      partBase.includes('anim_rotor') ||
+                      partBase.includes('anim_rotator') ||
+                      partBase.includes('anim_fan') ||
+                      partBase.includes('anim_stomp_wheels'))) {
+            this.animatedParts.push({
+              object: scene,
+              moduleIndex: mod?.index,
+              update: (time) => {
+                // Continuous industrial rotation (0.157 rad/s)
+                scene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
+              }
+            });
+          } else if (url.toLowerCase().includes('anim_stomp') && partBase.startsWith('anim_stomp') && !partBase.includes('wheels')) {
+            const basePosY = scene.position.y;
+            this.animatedParts.push({
+              object: scene,
+              moduleIndex: mod?.index,
+              update: (time) => {
+                // Hydraulic stamping machine motion: downward crush and retract
+                const phase = (time * 2.2) % (Math.PI * 2);
+                const crush = Math.pow(Math.sin(phase), 4);
+                scene.position.y = basePosY - crush * 8.0;
+              }
+            });
+          } else if (url.toLowerCase().includes('anim_alge') && partBase.includes('anim_alge')) {
+            const baseRotZ = scene.rotation.z;
+            const algeOffset = (partBase.length * 1.3) % Math.PI;
+            this.animatedParts.push({
+              object: scene,
+              moduleIndex: mod?.index,
+              update: (time) => {
+                // Harmonic bio-flora swaying underwater
+                scene.rotation.z = baseRotZ + Math.sin(time * 1.2 + algeOffset) * 0.05;
+              }
+            });
+          } else if (url.toLowerCase().includes('detail_xs_simon')) {
+            const simonConfigs = {
+              'detail_xs_simon_01': { delta: [-334.78, 0.08, -11.66], period: 80.0 },
+              'detail_xs_simon_02': { delta: [120.0, 8.0, -80.0], period: 66.7 },
+              'detail_xs_simon_03': { delta: [-60.0, 5.0, 40.0], period: 20.0 },
+              'detail_xs_simon_04': { delta: [334.77, -0.13, -200.77], period: 53.3 },
+              'detail_xs_simon_05': { delta: [-150.0, -6.0, 70.0], period: 40.0 },
+              'detail_xs_simon_06': { delta: [110.0, 10.0, 90.0], period: 48.3 },
+              'detail_xs_simon_07': { delta: [-140.0, -8.0, -60.0], period: 33.3 },
+              'detail_xs_simon_08': { delta: [-95.10, 33.86, -453.09], period: 60.0 },
+              'detail_xs_simon_09': { delta: [-80.0, 12.0, 120.0], period: 56.7 },
+              'detail_xs_simon_10': { delta: [-120.0, -10.0, 150.0], period: 66.7 },
+              'detail_xs_simon_12': { delta: [258.41, 18.87, -0.91], period: 60.0 },
+              'detail_xs_simon_18': { delta: [-332.63, 84.43, -248.36], period: 60.0 }
+            };
+            const cfg = simonConfigs[partBase] || { delta: [60.0, 5.0, 40.0], period: 40.0 };
+            const basePos = scene.position.clone();
+            const baseRot = scene.rotation.clone();
+            this.animatedParts.push({
+              object: scene,
+              moduleIndex: mod?.index,
+              update: (time) => {
+                const phase = (time * (Math.PI * 2 / cfg.period)) % (Math.PI * 2);
+                const u = (1 - Math.cos(phase)) * 0.5;
+                scene.position.x = basePos.x + u * cfg.delta[0];
+                scene.position.y = basePos.y + u * cfg.delta[1] + Math.sin(time * 2.2) * 1.2;
+                scene.position.z = basePos.z + u * cfg.delta[2];
+                scene.rotation.z = baseRot.z + Math.sin(phase) * 0.08;
+                scene.rotation.x = baseRot.x + Math.sin(time * 2.8) * 0.03;
+              }
+            });
+          }
         }
       } catch (e) {
         sendLogToVSC(`  [-] Failed to load ${url}: ${e.message || e}`, 'warn');
@@ -1274,15 +1862,1686 @@ export class StationViewer {
     if (loadedScenes.length === 0) {
       return null;
     }
-    if (loadedScenes.length === 1) {
-      return loadedScenes[0];
+
+    const offset = PART_MAIN_OFFSETS[baseName];
+
+    const meshGroup = new THREE.Group();
+    meshGroup.name = 'module_mesh_group';
+
+    // Advanced electronics hierarchy: attach capsule holders and shields to rotating centrifuge
+    if (baseName.includes('prod_gen_advancedelectronics')) {
+      const centrifugeChildren = new Set([
+        'anim_capsuleholder11',
+        'anim_capsuleholder12',
+        'anim_capsuleholder13',
+        'anim_capsuleholder14',
+        'anim_capsuleholder15',
+        'anim_capsuleholder16',
+        'anim_capsuleshield',
+        'anim_holdershield'
+      ]);
+
+      let centrifugeScene = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_centrifuge');
+      if (!centrifugeScene && loadedScenes.some(s => centrifugeChildren.has(s.userData.partName || s.name))) {
+        centrifugeScene = new THREE.Group();
+        centrifugeScene.name = 'anim_centrifuge';
+        centrifugeScene.userData.partName = 'anim_centrifuge';
+        const centOff = COMPONENT_OFFSETS['prod_gen_advancedelectronics']?.['anim_centrifuge'] || [110.487, 2.7689, 0.7379];
+        centrifugeScene.position.set(centOff[0], centOff[1], centOff[2]);
+        this.animatedParts.push({
+          object: centrifugeScene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            centrifugeScene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
+          }
+        });
+        meshGroup.add(centrifugeScene);
+      }
+
+      const simonContainerParents = {
+        'detail_s_simon_container_01': 'detail_xs_simon_01',
+        'detail_s_simon_container_02': 'detail_xs_simon_02',
+        'detail_s_simon_container_03': 'detail_xs_simon_03',
+        'detail_s_simon_container_04': 'detail_xs_simon_04',
+        'detail_s_simon_container_05': 'detail_xs_simon_05',
+        'detail_s_simon_container_06': 'detail_xs_simon_06',
+        'detail_s_simon_container_07': 'detail_xs_simon_07',
+        'detail_s_simon_container_08': 'detail_xs_simon_08',
+        'detail_s_simon_container_09': 'detail_xs_simon_09',
+        'detail_s_simon_container_10': 'detail_xs_simon_10',
+        'detail_s_simon_container_12': 'detail_xs_simon_12',
+        'detail_s_simon_container_18': 'detail_xs_simon_18'
+      };
+
+      for (const scene of loadedScenes) {
+        const pName = scene.userData.partName || scene.name;
+        if (centrifugeChildren.has(pName)) {
+          if (centrifugeScene) {
+            centrifugeScene.add(scene);
+          } else {
+            meshGroup.add(scene);
+          }
+        } else if (simonContainerParents[pName]) {
+          const parentBotName = simonContainerParents[pName];
+          const parentBot = loadedScenes.find(s => (s.userData.partName || s.name) === parentBotName);
+          if (parentBot) {
+            parentBot.add(scene);
+          } else {
+            meshGroup.add(scene);
+          }
+        } else {
+          meshGroup.add(scene);
+        }
+      }
+    } else {
+      for (const scene of loadedScenes) {
+        meshGroup.add(scene);
+      }
     }
 
-    const group = new THREE.Group();
-    for (const scene of loadedScenes) {
-      group.add(scene);
+    if (offset) {
+      meshGroup.position.set(-offset[0], offset[1], offset[2]);
     }
-    return group;
+
+    const moduleRoot = new THREE.Group();
+    moduleRoot.add(meshGroup);
+
+    // Cross-link billboard physical signs and dedicated anim_cross backing matrix screens
+    let crossArrowMesh = null;
+    let crossBgMesh = null;
+    moduleRoot.traverse(child => {
+      if (child.isMesh) {
+        if (child.userData?.isolatedBillboards?.physicalSigns) crossArrowMesh = child;
+        if (child.userData?.isolatedBackgrounds) crossBgMesh = child;
+      }
+    });
+    if (crossArrowMesh && crossBgMesh) {
+      for (const sign of crossArrowMesh.userData.isolatedBillboards.physicalSigns) {
+        if (crossBgMesh.userData.isolatedBackgrounds?.[sign.backingName]) {
+          const bg = crossBgMesh.userData.isolatedBackgrounds[sign.backingName];
+          if (bg) {
+            sign.backingMesh = bg;
+            if (!bg.userData) bg.userData = {};
+            bg.userData.physicalSign = sign;
+            bg.userData.foregroundMesh = sign.stateA;
+          }
+        }
+      }
+      crossArrowMesh.userData.isolatedBackgrounds = crossBgMesh.userData.isolatedBackgrounds;
+      crossBgMesh.userData.physicalSigns = crossArrowMesh.userData.isolatedBillboards.physicalSigns;
+      moduleRoot.userData.physicalSigns = crossArrowMesh.userData.isolatedBillboards.physicalSigns;
+      moduleRoot.userData.isolatedBillboards = crossArrowMesh.userData.isolatedBillboards;
+      moduleRoot.userData.isolatedBackgrounds = crossBgMesh.userData.isolatedBackgrounds;
+    }
+
+    moduleRoot.userData.setBillboardState = (state, isManual = true) => {
+      moduleRoot.traverse(child => {
+        if (child !== moduleRoot && child.userData && typeof child.userData.setBillboardState === 'function') {
+          child.userData.setBillboardState(state, isManual);
+        }
+      });
+    };
+    return moduleRoot;
+  }
+
+  async applyTexturesToMeshGroup(group, url, moduleIndex) {
+    if (!group) return;
+    if (!this.animatedTextures) this.animatedTextures = [];
+    const promises = [];
+    const partBase = (url ? url.split('/').pop().split('\\').pop().replace(/-lod\d+\.dae$/i, '').replace(/\.dae$/i, '') : '').toLowerCase();
+    const urlLower = (url || '').toLowerCase();
+    group.traverse(child => {
+      if (child.isMesh) {
+        const childLower = (child.name || '').toLowerCase();
+        const isDamageArea = childLower.includes('damagearea') || urlLower.includes('damagearea') || (child.parent && (child.parent.name || '').toLowerCase().includes('damagearea'));
+        if (isDamageArea) {
+          child.visible = false;
+          child.castShadow = false;
+          child.receiveShadow = false;
+          if (child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(m => { m.visible = false; });
+          }
+          return;
+        }
+
+        const isBBox = childLower.includes('collision') || childLower.includes('bbox') || childLower.includes('geometryinvisible') || urlLower.includes('geometryinvisible');
+        if (isBBox) {
+          child.visible = false;
+          return;
+        }
+
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for (let i = 0; i < mats.length; i++) {
+          const mat = mats[i];
+          const isForcefield = partBase.includes('forcefield') || childLower.includes('forcefield') || (mat && mat.name && mat.name.toLowerCase().includes('forcefield')) ||
+                               partBase.includes('shieldfx') || childLower.includes('shieldfx') ||
+                               partBase.startsWith('fx_shield') || childLower.startsWith('fx_shield') ||
+                               partBase.includes('gate_haze') ||
+                               (mat && mat.name && mat.name.toLowerCase().includes('pattern_hex'));
+          const isHaze = partBase.includes('haze') || childLower.includes('haze') || (mat && mat.name && mat.name.toLowerCase().includes('haze'));
+          const isLightCone = partBase.includes('lightcone') || childLower.includes('lightcone') || (mat && mat.name && mat.name.toLowerCase().includes('lightcone')) ||
+                              partBase.includes('flare') || childLower.includes('flare') || (mat && mat.name && mat.name.toLowerCase().includes('flare'));
+          const isSmoke = partBase.includes('smoke') || childLower.includes('smoke') || (mat && mat.name && mat.name.toLowerCase().includes('smoke')) ||
+                          partBase.includes('fume') || childLower.includes('fume') || (mat && mat.name && mat.name.toLowerCase().includes('fume')) ||
+                          partBase.includes('gas') || childLower.includes('gas') || (mat && mat.name && mat.name.toLowerCase().includes('gas'));
+          const isLava = partBase.includes('lava') || childLower.includes('lava') || (mat && mat.name && mat.name.toLowerCase().includes('lava'));
+          const isFire = partBase.includes('fire') || childLower.includes('fire') || (mat && mat.name && mat.name.toLowerCase().includes('fire')) || partBase.includes('hotarea') || childLower.includes('hotarea');
+          const isVapor = partBase.includes('vapor') || childLower.includes('vapor') || (mat && mat.name && mat.name.toLowerCase().includes('vapor'));
+          const isMud = partBase.includes('anim_mud') || childLower.includes('anim_mud');
+          const isEscalator = partBase.includes('escalator') || childLower.includes('escalator') || partBase.includes('conveyor') || (mat && mat.name && mat.name.toLowerCase().includes('conveyor'));
+          const isDetailL = partBase.includes('detail_l_main') || childLower.includes('detail_l_main');
+          const isDetailM = partBase.includes('detail_m_main') || childLower.includes('detail_m_main');
+          const isDetailS = partBase.includes('detail_s_main') || childLower.includes('detail_s_main');
+          const isDamageArea = childLower.includes('damagearea') || urlLower.includes('damagearea') || (mat && mat.name && mat.name.toLowerCase().includes('damagearea')) || (child.parent && (child.parent.name || '').toLowerCase().includes('damagearea'));
+          const isPoslight = !isDamageArea && (partBase.includes('poslight') || childLower.includes('poslight') || (mat && mat.name && mat.name.toLowerCase().includes('poslight')) || (mat && mat.name && (mat.name.toLowerCase().includes('gradient_colour') || mat.name.toLowerCase().includes('gradientcolour') || mat.name.toLowerCase().includes('gradient_color') || mat.name.toLowerCase().includes('gradientcolor'))));
+          const isBubbles = partBase.includes('bubble') || childLower.includes('bubble') || (mat && mat.name && mat.name.toLowerCase().includes('bubble'));
+          const isHexShield = (mat && mat.name && mat.name.toLowerCase().includes('pattern_hex')) || partBase.startsWith('fx_shield') || childLower.startsWith('fx_shield');
+          const isAnimCross = partBase.includes('anim_cross') || childLower.includes('anim_cross');
+          const isCrossModule = urlLower.includes('cross') || urlLower.includes('connectionmodules');
+          const isCrossAnimArrows = isCrossModule && (partBase.includes('anim_arrows') || childLower.includes('anim_arrows'));
+          const hasValidDiffuse = mat && mat.isMeshStandardMaterial && mat.map && (
+            (mat.map.image && (mat.map.image.width > 0 || mat.map.image.videoWidth > 0)) ||
+            (mat.map.mipmaps && mat.map.mipmaps.length > 0)
+          );
+          if (hasValidDiffuse && !isForcefield && !isHaze && !isLightCone && !isEscalator && !isDetailL && !isDetailM && !isDetailS && !isPoslight && !isBubbles && !isHexShield && !isSmoke && !isLava && !isFire && !isVapor && !isCrossAnimArrows && !isAnimCross) continue; // Already has diffuse map
+          promises.push((async () => {
+            const rawMatName = mat ? (mat.name || '') : '';
+            const matName = (rawMatName && rawMatName !== 'theresonlyone') ? rawMatName : (child.name || '');
+            const texUrls = this.resolveTextureForModel(url, matName);
+            if (texUrls.diffuse) {
+              const [diffuseTex, normalTex, roughnessTex, metalnessTex, emissiveTex] = await Promise.all([
+                this.loadDdsTexture(texUrls.diffuse),
+                texUrls.normal ? this.loadDdsTexture(texUrls.normal) : null,
+                texUrls.roughness ? this.loadDdsTexture(texUrls.roughness) : null,
+                texUrls.metalness ? this.loadDdsTexture(texUrls.metalness) : null,
+                texUrls.emissive ? this.loadDdsTexture(texUrls.emissive) : null
+              ]);
+
+              if (diffuseTex) {
+                const isAlpha = partBase.includes('alpha') || matName.toLowerCase().includes('alpha') || (child.name || '').toLowerCase().includes('alpha');
+                const isFoliage = partBase.includes('foliage') || matName.toLowerCase().includes('foliage') || partBase.includes('foilage') || matName.toLowerCase().includes('foilage');
+                const isGlass = partBase.includes('glass') || matName.toLowerCase().includes('glass');
+                const isWater = partBase.includes('part_water') || matName.toLowerCase().includes('water');
+                const isFxGlow = partBase.includes('fx_glow') || (child.name || '').toLowerCase().includes('fx_glow') || matName.toLowerCase().includes('fx_glow');
+                const isWindowfont = partBase.includes('windowfont') || (child.name || '').toLowerCase().includes('windowfont') || matName.toLowerCase().includes('windowfont');
+                const isDecal = partBase.includes('decal') || (child.name || '').toLowerCase().includes('decal') || matName.toLowerCase().includes('decal') ||
+                                isWindowfont || partBase.includes('font') || (child.name || '').toLowerCase().includes('font') || matName.toLowerCase().includes('font');
+                const isLightCone = partBase.includes('lightcone') || matName.toLowerCase().includes('lightcone') || (child.name || '').toLowerCase().includes('lightcone') ||
+                                    partBase.includes('flare') || matName.toLowerCase().includes('flare');
+                const isSmoke = partBase.includes('smoke') || (child.name || '').toLowerCase().includes('smoke') || matName.toLowerCase().includes('smoke') ||
+                                partBase.includes('fume') || (child.name || '').toLowerCase().includes('fume') || matName.toLowerCase().includes('fume') ||
+                                partBase.includes('gas') || (child.name || '').toLowerCase().includes('gas') || matName.toLowerCase().includes('gas');
+                const isLava = partBase.includes('lava') || (child.name || '').toLowerCase().includes('lava') || matName.toLowerCase().includes('lava');
+                const isFire = partBase.includes('fire') || (child.name || '').toLowerCase().includes('fire') || matName.toLowerCase().includes('fire') || partBase.includes('hotarea') || (child.name || '').toLowerCase().includes('hotarea');
+                const isVapor = partBase.includes('vapor') || (child.name || '').toLowerCase().includes('vapor') || matName.toLowerCase().includes('vapor');
+                const isMud = partBase.includes('anim_mud') || (child.name || '').toLowerCase().includes('anim_mud');
+                const isLightConeOrGlow = isFxGlow || isForcefield || isHaze || isBubbles || isLightCone ||
+                                          partBase.includes('fx_lightcone') || matName.toLowerCase().includes('fx_lightcone');
+                const isDetailMain = partBase.includes('detail_s_main') || partBase.includes('detail_m_main') || partBase.includes('detail_l_main') ||
+                                     (child.name || '').toLowerCase().includes('detail_s_main') || (child.name || '').toLowerCase().includes('detail_m_main') || (child.name || '').toLowerCase().includes('detail_l_main');
+                const isDockOrDefense = urlLower.includes('dock') || urlLower.includes('defence') || urlLower.includes('defense');
+                const hasFx = matName.toLowerCase().includes('fx') || (child.name || '').toLowerCase().includes('fx') || (partBase.includes('detail_s_main') && matName.toLowerCase().includes('lightcone'));
+                const isDetailFx = !isDecal && isDetailMain && hasFx;
+                const isDockDetailFx = isDetailFx && isDockOrDefense;
+                const isNonDockDetailFx = isDetailFx && !isDockOrDefense;
+                const isPartMainFx = !isDecal && (partBase.includes('part_main') || (child.name || '').toLowerCase().includes('part_main')) &&
+                                     (matName.toLowerCase().includes('fx') || (child.name || '').toLowerCase().includes('fx'));
+                const isGenericFx = !isDecal && (matName.toLowerCase().includes('generic_p1_fx') || matName.toLowerCase().includes('gen_p2_fx') || (matName.toLowerCase().includes('fx') && Boolean(texUrls.emissive))) && !isLightConeOrGlow;
+                const isAnimCross = partBase.includes('anim_cross') || childLower.includes('anim_cross');
+                const isBillboardDisplay = (urlLower.includes('habitat') || urlLower.includes('hab_') || urlLower.includes('cross') || urlLower.includes('pier') || urlLower.includes('dock') || urlLower.includes('welfare') || urlLower.includes('venture') || urlLower.includes('landmark')) &&
+                  (partBase.includes('anim_arrows') || matName.toLowerCase().includes('billboard')) && !isAnimCross;
+                const isHabitatBillboard = (urlLower.includes('habitat') || urlLower.includes('hab_')) &&
+                  (partBase.includes('anim_arrows') || matName.toLowerCase().includes('billboard')) && !isAnimCross;
+                const isAdTrim = (partBase.includes('anim_arrows') || isAnimCross || matName.toLowerCase().includes('billboardtrims') || matName.toLowerCase().includes('billboard')) && !isBillboardDisplay;
+                const isLiquidStorageTank = (urlLower.includes('storage') && urlLower.includes('liquid') && (matName.toLowerCase().includes('multimat') || (child.name || '').toLowerCase().includes('multimat')));
+                const isGlowingLight = isLightConeOrGlow || isEscalator || isGenericFx || isDetailFx || isPartMainFx || isAdTrim || isBillboardDisplay || (isDecal && texUrls.emissive) || partBase.includes('poslight') || (child.name || '').toLowerCase().includes('poslight') || matName.toLowerCase().includes('poslight') ||
+                                       (texUrls.emissive && partBase.includes('anim_arm'));
+
+                const glowColor = this.getRaceGlowColor(url + ' ' + matName);
+                const hullColor = this.getRaceHullColor(url + ' ' + matName);
+                const adTrimColor = new THREE.Color(0x00F5FF);
+                const adDisplayColor = new THREE.Color(0xFFFFFF);
+                const poslightGlowColor = new THREE.Color(0xFFB703);
+                const forcefieldColor = new THREE.Color(0x00F0FF);
+                const liquidTankColor = new THREE.Color(0x3B82C4);
+
+                const hasVertexColors = Boolean(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
+                const newMat = new THREE.MeshStandardMaterial({
+                  vertexColors: hasVertexColors,
+                  color: (isLightConeOrGlow || isPoslight || isHexShield || isSmoke || isLava || isFire || isVapor) ? 0x000000 : (isWater ? 0x2288aa : (isLiquidStorageTank ? liquidTankColor : (isForcefield ? forcefieldColor : (isDecal || isAdTrim || isBillboardDisplay ? 0xffffff : (diffuseTex ? hullColor : 0x8D99AE))))),
+                  map: (isLightCone && !isForcefield) ? null : diffuseTex,
+                  normalMap: (isLightConeOrGlow || isSmoke || isLava || isFire || isVapor) ? null : (normalTex || null),
+                  normalScale: new THREE.Vector2(1, -1),
+                  roughnessMap: roughnessTex || null,
+                  roughness: (isLightConeOrGlow || isSmoke || isLava || isFire || isVapor) ? 1.0 : (isWater ? 0.08 : (isLiquidStorageTank ? (roughnessTex ? 0.35 : 0.38) : (roughnessTex ? 0.55 : 0.6))),
+                  metalnessMap: metalnessTex || null,
+                  metalness: (isLightConeOrGlow || isSmoke || isLava || isFire || isVapor) ? 0.0 : (isWater ? 0.1 : (isLiquidStorageTank ? (metalnessTex ? 0.75 : 0.7) : (metalnessTex ? 0.35 : 0.2))),
+                  emissiveMap: emissiveTex || ((isLightConeOrGlow || isAdTrim || isBillboardDisplay || isSmoke || isLava || isFire) ? diffuseTex : null),
+                  emissive: (emissiveTex || (isLightConeOrGlow && diffuseTex) || (isAdTrim && diffuseTex) || (isBillboardDisplay && diffuseTex) || (isSmoke && diffuseTex) || (isLava && diffuseTex) || (isFire && diffuseTex))
+                    ? (isAnimCross ? adDisplayColor : (isBillboardDisplay ? adDisplayColor : (isLava ? new THREE.Color(0xff4500) : (isFire ? new THREE.Color(0xff6600) : (isHexShield ? new THREE.Color(0x33ccff) : (isSmoke ? new THREE.Color(0xcccccc) : (isPoslight ? poslightGlowColor : (isAdTrim ? adTrimColor : (isForcefield ? forcefieldColor : (isGlowingLight ? glowColor : new THREE.Color(0x000000)))))))))))
+                    : (isWater ? new THREE.Color(0x001122) : new THREE.Color(0x000000)),
+                  emissiveIntensity: (emissiveTex || (isLightConeOrGlow && diffuseTex) || (isAdTrim && diffuseTex) || (isBillboardDisplay && diffuseTex) || (isSmoke && diffuseTex) || (isLava && diffuseTex) || (isFire && diffuseTex))
+                    ? (isAnimCross ? 1.2 : (isBillboardDisplay ? 1.0 : (isLava ? 3.5 : (isFire ? 2.8 : (isHexShield ? 3.5 : (isAdTrim ? 2.5 : (isSmoke ? 0.6 : (isLightCone ? 0.35 : (isBubbles ? 1.5 : (isHaze ? (this.glowingEmissiveIntensity || 2.2) * 0.8 : (isForcefield ? 2.0 : (isLightConeOrGlow ? (this.glowingEmissiveIntensity || 2.2) * 1.5 : (isGlowingLight ? (this.glowingEmissiveIntensity || 2.2) : 0.0)))))))))))))
+                    : 0.0,
+                  blending: (isLightConeOrGlow || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor) ? THREE.AdditiveBlending : THREE.NormalBlending,
+                  toneMapped: (isLava || isFire) ? false : ((isLightCone || isBubbles || isSmoke || isVapor) ? true : (isHexShield ? false : (isGlowingLight ? false : true))),
+                  transparent: isAlpha || isFoliage || isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor || isAnimCross || isBillboardDisplay,
+                  opacity: isVapor ? 0.4 : (isFire ? 0.85 : (isSmoke ? 0.35 : (isLightCone ? 0.25 : (isHexShield ? 0.2 : (isBubbles ? 0.8 : (isHaze ? 0.35 : (isForcefield ? 0.65 : (isPoslight ? 0.9 : (isLightConeOrGlow ? 0.85 : (isWater ? 0.8 : (isAnimCross ? 0.95 : 1.0))))))))))),
+                  alphaTest: isAnimCross ? 0.2 : (isBillboardDisplay ? 0.05 : (isDecal ? 0.1 : ((isAlpha || isFoliage) && !isLightConeOrGlow && !isSmoke && !isLava && !isFire && !isVapor ? 0.35 : 0.0))),
+                  depthWrite: (isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor || isAnimCross || isBillboardDisplay) ? false : true,
+                  polygonOffset: isDecal || isAnimCross,
+                  polygonOffsetFactor: (isDecal || isAnimCross) ? -1 : 0,
+                  polygonOffsetUnits: (isDecal || isAnimCross) ? -1 : 0,
+                  visible: !isFxGlow && !isDamageArea,
+                  side: THREE.DoubleSide
+                });
+
+                if (isCrossAnimArrows && !child.userData.scanlineVOffset) {
+                  child.userData.scanlineVOffset = { value: 0.0 };
+                }
+
+                if (hasVertexColors) {
+                  newMat.onBeforeCompile = (shader) => {
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                      '#include <emissivemap_fragment>',
+                      `#include <emissivemap_fragment>
+                      #if defined( USE_COLOR_ALPHA )
+                        totalEmissiveRadiance *= vColor.rgb;
+                      #elif defined( USE_COLOR )
+                        totalEmissiveRadiance *= vColor.rgb;
+                      #endif`
+                    );
+                    if (isCrossAnimArrows && child.userData.scanlineVOffset) {
+                      if (shader.uniforms) {
+                        shader.uniforms.uCrossScanlineV = child.userData.scanlineVOffset;
+                      }
+                      shader.fragmentShader = 'uniform float uCrossScanlineV;\n' + shader.fragmentShader;
+                      shader.fragmentShader = shader.fragmentShader.replace(
+                        '#include <dithering_fragment>',
+                        `#include <dithering_fragment>
+                        #if defined( USE_UV )
+                          float scanlineWave = sin((vUv.y * 32.0 + uCrossScanlineV) * 3.14159265);
+                          float scanlineFactor = 0.92 + 0.08 * scanlineWave;
+                          gl_FragColor.rgb *= scanlineFactor;
+                        #endif`
+                      );
+                    }
+                  };
+                }
+                newMat.name = matName;
+
+                if (Array.isArray(child.material)) {
+                  child.material[i] = newMat;
+                } else {
+                  child.material = newMat;
+                }
+
+                if (isAlpha || isBubbles || isHexShield) {
+                  const repeatTextures = [diffuseTex, normalTex, roughnessTex, metalnessTex, emissiveTex].filter(Boolean);
+                  for (const tex of repeatTextures) {
+                    tex.wrapS = THREE.RepeatWrapping;
+                    tex.wrapT = THREE.RepeatWrapping;
+                    if (isAlpha || isBubbles) {
+                      tex.repeat.set(1, -1);
+                      tex.offset.set(0, 1);
+                    }
+                    tex.needsUpdate = true;
+                  }
+                }
+
+                if (isDecal) {
+                  child.castShadow = false;
+                  child.receiveShadow = true;
+                }
+
+                if (isDecal || isNonDockDetailFx || ((partBase.includes('detail_l_main') || (child.name || '').toLowerCase().includes('detail_l_main')) && matName.toLowerCase().includes('hulltexture'))) {
+                  // Static decals, windowfont, and station structural lights/detail_l/detail_s/detail_m meshes must have dedicated non-scrolling UVs
+                  ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
+                    if (newMat[prop]) {
+                      newMat[prop] = newMat[prop].clone();
+                      newMat[prop].offset.set(0, 0);
+                      newMat[prop].needsUpdate = true;
+                    }
+                  });
+                }
+
+                const registerAnimTex = (prop, speedX, speedY) => {
+                  if (!newMat[prop]) return;
+                  const origTex = newMat[prop];
+                  let animTex = origTex;
+                  if (isMud) {
+                    animTex = origTex.clone();
+                    newMat[prop] = animTex;
+                  }
+                  animTex.wrapS = THREE.RepeatWrapping;
+                  animTex.wrapT = THREE.RepeatWrapping;
+                  animTex.needsUpdate = true;
+                  this.animatedTextures.push({
+                    texture: animTex,
+                    speedX,
+                    speedY,
+                    moduleIndex
+                  });
+                };
+
+                if (isForcefield && !isLightCone && diffuseTex) {
+                  registerAnimTex('map', 0.04, 0.015);
+                }
+
+                if (isBubbles && (diffuseTex || emissiveTex)) {
+                  const texturesToAnimate = [diffuseTex, emissiveTex].filter(Boolean);
+                  for (const tex of texturesToAnimate) {
+                    if (!this.animatedTextures.some(a => a.texture === tex)) {
+                      this.animatedTextures.push({
+                        texture: tex,
+                        speedX: 0.15,
+                        speedY: 0.0,
+                        moduleIndex
+                      });
+                    }
+                  }
+                }
+
+                if (isSmoke && (diffuseTex || emissiveTex)) {
+                  registerAnimTex('map', 0.04, 0.12);
+                  registerAnimTex('emissiveMap', 0.04, 0.12);
+                }
+
+                if (isLava && (diffuseTex || emissiveTex)) {
+                  registerAnimTex('map', 0.08, 0.0);
+                  registerAnimTex('emissiveMap', 0.08, 0.0);
+                }
+
+                if (isFire && (diffuseTex || emissiveTex)) {
+                  registerAnimTex('map', 0.05, 0.15);
+                  registerAnimTex('emissiveMap', 0.05, 0.15);
+                }
+
+                if (isVapor && (diffuseTex || emissiveTex)) {
+                  registerAnimTex('map', 0.02, 0.10);
+                  registerAnimTex('emissiveMap', 0.02, 0.10);
+                }
+
+                if (isMud && diffuseTex) {
+                  registerAnimTex('map', 0.02, 0.02);
+                }
+
+                if (isEscalator) {
+                  registerAnimTex('map', 0.0, 0.8);
+                  registerAnimTex('normalMap', 0.0, 0.8);
+                  registerAnimTex('roughnessMap', 0.0, 0.8);
+                  registerAnimTex('metalnessMap', 0.0, 0.8);
+                  registerAnimTex('emissiveMap', 0.0, 0.8);
+                }
+
+                if (isDockDetailFx && diffuseTex) {
+                  registerAnimTex('map', -0.35, 0.0);
+                  registerAnimTex('emissiveMap', -0.35, 0.0);
+                }
+
+                const isPoslightMesh = !isDamageArea && (partBase.includes('poslight') || (child.name || '').toLowerCase().includes('poslight') || matName.toLowerCase().includes('poslight') || matName.toLowerCase().includes('gradient_colour') || matName.toLowerCase().includes('gradientcolour') || matName.toLowerCase().includes('gradient_color') || matName.toLowerCase().includes('gradientcolor'));
+                if (isDamageArea) {
+                  child.visible = false;
+                  child.castShadow = false;
+                  child.receiveShadow = false;
+                }
+                if (isPoslightMesh) {
+                  child.castShadow = false;
+                  child.receiveShadow = false;
+                  if (diffuseTex) {
+                    registerAnimTex('map', -0.3, 0.0);
+                    registerAnimTex('emissiveMap', -0.3, 0.0);
+                  }
+                }
+
+                const isAdTrimMesh = !isDamageArea && partBase.includes('anim_arrows') && !isBillboardDisplay;
+                if (isAdTrimMesh && (diffuseTex || emissiveTex)) {
+                  registerAnimTex('map', -0.25, 0.0);
+                  registerAnimTex('emissiveMap', -0.25, 0.0);
+                }
+
+                // Habitat Station Billboards: Static foreground advertisement poster with animated background matrix
+                if (isHabitatBillboard && child.geometry && child.geometry.attributes && child.geometry.attributes.position) {
+                  const vertCount = child.geometry.attributes.position.count;
+                  const quadCount = Math.floor(vertCount / 6);
+                  if (quadCount >= 24 && !child.userData._habitatBillboardPartitioned) {
+                    child.userData._habitatBillboardPartitioned = true;
+                    const pos = child.geometry.attributes.position.array;
+                    const norm = child.geometry.attributes.normal ? child.geometry.attributes.normal.array : null;
+                    const uv = child.geometry.attributes.uv ? child.geometry.attributes.uv.array : null;
+                    const col = child.geometry.attributes.color ? child.geometry.attributes.color.array : null;
+
+                    const frontIndices = [];
+                    const bgIndices = [];
+                    for (let q = 0; q < quadCount; q++) {
+                      // Multi-layered habitat billboard displays:
+                      // Even quads 0..22 are Front advert posters; odd 1..23 and 24..35 are Back/Mid matrix screens
+                      const isFront = (q < 24 && q % 2 === 0);
+                      const target = isFront ? frontIndices : bgIndices;
+                      for (let k = 0; k < 6; k++) {
+                        target.push(q * 6 + k);
+                      }
+                    }
+
+                    const createSubGeom = (indices) => {
+                      const sub = new THREE.BufferGeometry();
+                      const subPos = new Float32Array(indices.length * 3);
+                      const subNorm = norm ? new Float32Array(indices.length * 3) : null;
+                      const subUv = uv ? new Float32Array(indices.length * 2) : null;
+                      const subCol = col ? new Float32Array(indices.length * 4) : null;
+                      for (let j = 0; j < indices.length; j++) {
+                        const sIdx = indices[j];
+                        subPos[j * 3] = pos[sIdx * 3];
+                        subPos[j * 3 + 1] = pos[sIdx * 3 + 1];
+                        subPos[j * 3 + 2] = pos[sIdx * 3 + 2];
+                        if (subNorm) {
+                          subNorm[j * 3] = norm[sIdx * 3];
+                          subNorm[j * 3 + 1] = norm[sIdx * 3 + 1];
+                          subNorm[j * 3 + 2] = norm[sIdx * 3 + 2];
+                        }
+                        if (subUv) {
+                          subUv[j * 2] = uv[sIdx * 2];
+                          subUv[j * 2 + 1] = uv[sIdx * 2 + 1];
+                        }
+                        if (subCol) {
+                          subCol[j * 4] = col[sIdx * 4];
+                          subCol[j * 4 + 1] = col[sIdx * 4 + 1];
+                          subCol[j * 4 + 2] = col[sIdx * 4 + 2];
+                          subCol[j * 4 + 3] = col[sIdx * 4 + 3];
+                        }
+                      }
+                      sub.setAttribute('position', new THREE.BufferAttribute(subPos, 3));
+                      if (subNorm) sub.setAttribute('normal', new THREE.BufferAttribute(subNorm, 3));
+                      if (subUv) sub.setAttribute('uv', new THREE.BufferAttribute(subUv, 2));
+                      if (subCol) sub.setAttribute('color', new THREE.BufferAttribute(subCol, 4));
+                      return sub;
+                    };
+
+                    const frontGeom = createSubGeom(frontIndices);
+                    const bgGeom = createSubGeom(bgIndices);
+
+                    child.geometry.dispose();
+                    child.geometry = frontGeom;
+
+                    // Load animated background matrix texture (ads_bg_trims.dds)
+                    this.loadDdsTexture('/assets1/textures/ad_signs/ads_bg_trims.dds').then(bgTex => {
+                      if (!bgTex) return;
+                      bgTex.wrapS = THREE.RepeatWrapping;
+                      bgTex.wrapT = THREE.RepeatWrapping;
+                      bgTex.needsUpdate = true;
+
+                      const bgMat = new THREE.MeshStandardMaterial({
+                        color: 0xffffff,
+                        map: bgTex,
+                        emissiveMap: bgTex,
+                        emissive: new THREE.Color(0x33ccff),
+                        emissiveIntensity: 1.0,
+                        roughness: 0.5,
+                        metalness: 0.1,
+                        transparent: true,
+                        opacity: 0.85,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                      });
+                      bgMat.name = matName + '_bg';
+
+                      const bgMesh = new THREE.Mesh(bgGeom, bgMat);
+                      bgMesh.name = child.name + '_bg';
+                      if (child.parent) {
+                        child.parent.add(bgMesh);
+                      } else {
+                        child.add(bgMesh);
+                      }
+
+                      // Continuous vertical scrolling animation matching mapchannel 3
+                      this.animatedTextures.push({
+                        texture: bgTex,
+                        speedX: 0.0,
+                        speedY: -0.35,
+                        moduleIndex
+                      });
+                    });
+                  }
+                }
+
+                // Connection Cross Module Billboards & Background Matrix Screens: struct_arg_cross_01
+                const isCrossModule = urlLower.includes('cross') || urlLower.includes('connectionmodules');
+                if (isCrossModule && child.geometry && child.geometry.attributes && child.geometry.attributes.position) {
+                  const vertCount = child.geometry.attributes.position.count;
+                  const quadCount = Math.floor(vertCount / 6);
+                  const isCrossAnimArrows = (partBase.includes('anim_arrows') || childLower.includes('anim_arrows')) && quadCount >= 36;
+                  const isCrossAnimCross = (partBase.includes('anim_cross') || childLower.includes('anim_cross')) && quadCount >= 10;
+
+                  if (isCrossAnimArrows && (!child.userData._crossArrowsPartitioned || !child.userData.setBillboardState || !child.userData.isolatedBillboards || !child.userData.isolatedBillboards.billboard_cross?.isMesh)) {
+                    child.userData._crossArrowsPartitioned = true;
+                    // Isolate station billboards: Quads 36..43 (Medical Cross, Info, Food, Tools)
+                    const pos = child.geometry.attributes.position.array;
+                    const norm = child.geometry.attributes.normal ? child.geometry.attributes.normal.array : null;
+                    const uv = (child.userData.rawUvs && child.userData.rawUvs.tex0) || (child.geometry.attributes.uv ? child.geometry.attributes.uv.array : null);
+                    const rawTex2 = child.userData.rawUvs ? child.userData.rawUvs.tex2 : null;
+                    const col = child.geometry.attributes.color ? child.geometry.attributes.color.array : null;
+                    const colStride = child.geometry.attributes.color ? child.geometry.attributes.color.itemSize : 4;
+
+                    const createQuadGeom = (quadIndices, uvCell) => {
+                      const indices = [];
+                      for (const q of quadIndices) {
+                        for (let k = 0; k < 6; k++) indices.push(q * 6 + k);
+                      }
+                      const sub = new THREE.BufferGeometry();
+                      const subPos = new Float32Array(indices.length * 3);
+                      const subNorm = norm ? new Float32Array(indices.length * 3) : null;
+                      const subUv = new Float32Array(indices.length * 2);
+                      const subUv2 = rawTex2 ? new Float32Array(indices.length * 2) : null;
+                      const subCol = col ? new Float32Array(indices.length * colStride) : null;
+                      for (let j = 0; j < indices.length; j++) {
+                        const sIdx = indices[j];
+                        subPos[j * 3] = pos[sIdx * 3];
+                        subPos[j * 3 + 1] = pos[sIdx * 3 + 1];
+                        subPos[j * 3 + 2] = pos[sIdx * 3 + 2];
+                        if (subNorm) {
+                          subNorm[j * 3] = norm[sIdx * 3];
+                          subNorm[j * 3 + 1] = norm[sIdx * 3 + 1];
+                          subNorm[j * 3 + 2] = norm[sIdx * 3 + 2];
+                        }
+                        if (uvCell) {
+                          const [uMin, uMax, vMin, vMax] = uvCell;
+                          const kMod = j % 6;
+                          if (kMod === 0 || kMod === 5) { subUv[j * 2] = uMax; subUv[j * 2 + 1] = vMin; }
+                          else if (kMod === 1) { subUv[j * 2] = uMax; subUv[j * 2 + 1] = vMax; }
+                          else if (kMod === 2 || kMod === 3) { subUv[j * 2] = uMin; subUv[j * 2 + 1] = vMax; }
+                          else if (kMod === 4) { subUv[j * 2] = uMin; subUv[j * 2 + 1] = vMin; }
+                        } else if (uv) {
+                          subUv[j * 2] = uv[sIdx * 2];
+                          subUv[j * 2 + 1] = uv[sIdx * 2 + 1];
+                        }
+                        if (subUv2 && rawTex2) {
+                          subUv2[j * 2] = rawTex2[sIdx * 2];
+                          subUv2[j * 2 + 1] = rawTex2[sIdx * 2 + 1];
+                        }
+                        if (subCol) {
+                          for (let c = 0; c < colStride; c++) {
+                            subCol[j * colStride + c] = col[sIdx * colStride + c];
+                          }
+                        }
+                      }
+                      sub.setAttribute('position', new THREE.BufferAttribute(subPos, 3));
+                      if (subNorm) sub.setAttribute('normal', new THREE.BufferAttribute(subNorm, 3));
+                      sub.setAttribute('uv', new THREE.BufferAttribute(subUv, 2));
+                      if (subUv2) sub.setAttribute('uv2', new THREE.BufferAttribute(subUv2, 2));
+                      if (subCol) sub.setAttribute('color', new THREE.BufferAttribute(subCol, colStride));
+                      return sub;
+                    };
+
+                    // Define all 8 billboard sub-meshes on struct_arg_cross_01:
+                    // 1. Cross (Medical / Clinic) - Quad 36
+                    // 2. Capsule (Pharmacy / Pill) - Quad 37
+                    // 3. Info (Information) - Quad 38
+                    // 4. Shopping Cart (Retail / Store) - Quad 39
+                    // 5. Food (Burger & Drink) - Quad 40
+                    // 6. Bed (Hotel / Lodging) - Quad 41
+                    // 7. Tools (Repair / Maintenance) - Quad 42
+                    // 8. Law (Scales of Justice / Security) - Quad 43
+                    const billboardDefs = [
+                      { name: 'billboard_cross', quads: [36, 37], uvCell: [0.00, 0.25, 0.50, 0.75] },
+                      { name: 'billboard_capsule', quads: [36, 37], uvCell: [0.25, 0.50, 0.50, 0.75] },
+                      { name: 'billboard_info', quads: [38, 39], uvCell: [0.75, 1.00, 0.50, 0.75] },
+                      { name: 'billboard_shopping_cart', quads: [38, 39], uvCell: [0.00, 0.25, 0.75, 1.00] },
+                      { name: 'billboard_food', quads: [40, 41], uvCell: [0.50, 0.75, 0.50, 0.75] },
+                      { name: 'billboard_bed', quads: [40, 41], uvCell: [0.25, 0.50, 0.75, 1.00] },
+                      { name: 'billboard_tools', quads: [42, 43], uvCell: [0.75, 1.00, 0.75, 1.00] },
+                      { name: 'billboard_law', quads: [42, 43], uvCell: [0.50, 0.75, 0.75, 1.00] }
+                    ];
+
+                    child.userData.isolatedBillboards = {};
+                    for (const def of billboardDefs) {
+                      let bMesh = child.getObjectByName(def.name);
+                      if (!bMesh) {
+                        const bGeom = createQuadGeom(def.quads, def.uvCell);
+                        const bMat = child.material.clone();
+                        bMat.transparent = true;
+                        bMat.depthWrite = false;
+                        bMat.alphaTest = 0.05;
+                        bMat.side = THREE.DoubleSide;
+                        bMesh = new THREE.Mesh(bGeom, bMat);
+                        bMesh.name = def.name;
+                        bMesh.renderOrder = 2;
+                        child.add(bMesh);
+                      }
+                      child.userData.isolatedBillboards[def.name] = bMesh;
+                    }
+
+                    // Restrict base arrow mesh draw range so it only renders the 36 entrance chevron arrows
+                    // and does NOT render quads 36..43 as un-isolated duplicate billboards
+                    child.geometry.setDrawRange(0, 36 * 6);
+
+                    // Convenient aliases
+                    child.userData.isolatedBillboards.cross = child.userData.isolatedBillboards.billboard_cross;
+                    child.userData.isolatedBillboards.capsule = child.userData.isolatedBillboards.billboard_capsule;
+                    child.userData.isolatedBillboards.info = child.userData.isolatedBillboards.billboard_info;
+                    child.userData.isolatedBillboards.shopping_cart = child.userData.isolatedBillboards.billboard_shopping_cart;
+                    child.userData.isolatedBillboards.cart = child.userData.isolatedBillboards.billboard_shopping_cart;
+                    child.userData.isolatedBillboards.food = child.userData.isolatedBillboards.billboard_food;
+                    child.userData.isolatedBillboards.burger = child.userData.isolatedBillboards.billboard_food;
+                    child.userData.isolatedBillboards.bed = child.userData.isolatedBillboards.billboard_bed;
+                    child.userData.isolatedBillboards.tools = child.userData.isolatedBillboards.billboard_tools;
+                    child.userData.isolatedBillboards.law = child.userData.isolatedBillboards.billboard_law;
+
+                    // 4 physical double-sided billboard signs floating beside arg_cross_01
+                    child.userData.isolatedBillboards.sign1 = child.userData.isolatedBillboards.billboard_cross;
+                    child.userData.isolatedBillboards.sign2 = child.userData.isolatedBillboards.billboard_info;
+                    child.userData.isolatedBillboards.sign3 = child.userData.isolatedBillboards.billboard_food;
+                    child.userData.isolatedBillboards.sign4 = child.userData.isolatedBillboards.billboard_tools;
+                    child.userData.isolatedBillboards.physicalSigns = [
+                      {
+                        signIndex: 1,
+                        name: 'Sign 1 (Medical Cross / Capsule)',
+                        quads: [36, 37],
+                        mesh: child.userData.isolatedBillboards.billboard_cross,
+                        stateA: child.userData.isolatedBillboards.billboard_cross,
+                        stateB: child.userData.isolatedBillboards.billboard_capsule,
+                        backingName: 'bg_cross',
+                        backingQuads: [10, 11, 12],
+                        backingMesh: null
+                      },
+                      {
+                        signIndex: 2,
+                        name: 'Sign 2 (Info / Shopping Cart)',
+                        quads: [38, 39],
+                        mesh: child.userData.isolatedBillboards.billboard_info,
+                        stateA: child.userData.isolatedBillboards.billboard_info,
+                        stateB: child.userData.isolatedBillboards.billboard_shopping_cart,
+                        backingName: 'bg_info',
+                        backingQuads: [13, 14, 15],
+                        backingMesh: null
+                      },
+                      {
+                        signIndex: 3,
+                        name: 'Sign 3 (Food / Bed)',
+                        quads: [40, 41],
+                        mesh: child.userData.isolatedBillboards.billboard_food,
+                        stateA: child.userData.isolatedBillboards.billboard_food,
+                        stateB: child.userData.isolatedBillboards.billboard_bed,
+                        backingName: 'bg_food',
+                        backingQuads: [16, 17, 18],
+                        backingMesh: null
+                      },
+                      {
+                        signIndex: 4,
+                        name: 'Sign 4 (Tools / Law)',
+                        quads: [42, 43],
+                        mesh: child.userData.isolatedBillboards.billboard_tools,
+                        stateA: child.userData.isolatedBillboards.billboard_tools,
+                        stateB: child.userData.isolatedBillboards.billboard_law,
+                        backingName: 'bg_tools',
+                        backingQuads: [19, 20, 21],
+                        backingMesh: null
+                      }
+                    ];
+
+                    // Check if anim_cross backing matrix screens already exist in the same hierarchy
+                    let crossSearchRoot = child;
+                    while (crossSearchRoot.parent) crossSearchRoot = crossSearchRoot.parent;
+                    let crossBgObj = null;
+                    crossSearchRoot.traverse(n => {
+                      if (n.isMesh && n.userData?.isolatedBackgrounds) crossBgObj = n;
+                    });
+                    if (crossBgObj && crossBgObj.userData.isolatedBackgrounds) {
+                      for (const sign of child.userData.isolatedBillboards.physicalSigns) {
+                        const bg = crossBgObj.userData.isolatedBackgrounds[sign.backingName];
+                        if (bg) {
+                          sign.backingMesh = bg;
+                          if (!bg.userData) bg.userData = {};
+                          bg.userData.physicalSign = sign;
+                          bg.userData.foregroundMesh = sign.stateA;
+                        }
+                      }
+                      child.userData.isolatedBackgrounds = crossBgObj.userData.isolatedBackgrounds;
+                      crossBgObj.userData.physicalSigns = child.userData.isolatedBillboards.physicalSigns;
+                    }
+
+                    // Ensure Float32Array buffers for billboard UV states A and B
+                    if (!child.userData.billboardStateAUvs || !(child.userData.billboardStateAUvs instanceof Float32Array)) {
+                      let arrA = null;
+                      if (child.userData.billboardStateAUvs && typeof child.userData.billboardStateAUvs === 'object') {
+                        const rawA = child.userData.billboardStateAUvs;
+                        const lenA = Object.keys(rawA).length;
+                        if (lenA >= vertCount * 2) {
+                          arrA = new Float32Array(lenA);
+                          for (let i = 0; i < lenA; i++) arrA[i] = rawA[i];
+                        }
+                      }
+                      if (!arrA) {
+                        arrA = new Float32Array(vertCount * 2);
+                        const curUvs = child.geometry.attributes.uv ? child.geometry.attributes.uv.array : null;
+                        if (curUvs) arrA.set(curUvs);
+                      }
+                      child.userData.billboardStateAUvs = arrA;
+                    }
+
+                    if (!child.userData.billboardStateBUvs || !(child.userData.billboardStateBUvs instanceof Float32Array)) {
+                      let arrB = null;
+                      if (child.userData.billboardStateBUvs && typeof child.userData.billboardStateBUvs === 'object') {
+                        const rawB = child.userData.billboardStateBUvs;
+                        const lenB = Object.keys(rawB).length;
+                        if (lenB >= vertCount * 2) {
+                          arrB = new Float32Array(lenB);
+                          for (let i = 0; i < lenB; i++) arrB[i] = rawB[i];
+                        }
+                      }
+                      if (!arrB) {
+                        arrB = new Float32Array(vertCount * 2);
+                        const curUvs = child.geometry.attributes.uv ? child.geometry.attributes.uv.array : null;
+                        if (curUvs) arrB.set(curUvs);
+                      }
+                      child.userData.billboardStateBUvs = arrB;
+                    }
+
+                    // 4 pairs of double-sided quads for the 4 signs:
+                    // Sign 1 (Quads 36 & 37): Cross <-> Capsule
+                    // Sign 2 (Quads 38 & 39): Info <-> Shopping Cart
+                    // Sign 3 (Quads 40 & 41): Food <-> Bed
+                    // Sign 4 (Quads 42 & 43): Tools <-> Law
+                    const signPairs = [
+                      { quads: [36, 37], cellA: [0.00, 0.25, 0.50, 0.75], cellB: [0.25, 0.50, 0.50, 0.75] },
+                      { quads: [38, 39], cellA: [0.75, 1.00, 0.50, 0.75], cellB: [0.00, 0.25, 0.75, 1.00] },
+                      { quads: [40, 41], cellA: [0.50, 0.75, 0.50, 0.75], cellB: [0.25, 0.50, 0.75, 1.00] },
+                      { quads: [42, 43], cellA: [0.75, 1.00, 0.75, 1.00], cellB: [0.50, 0.75, 0.75, 1.00] },
+                    ];
+                    const assignCell = (targetArr, qNum, cell) => {
+                      const [uMin, uMax, vMin, vMax] = cell;
+                      for (let v = 0; v < 6; v++) {
+                        const k = qNum * 6 + v;
+                        const kMod = v % 6;
+                        if (kMod === 0 || kMod === 5) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMin; }
+                        else if (kMod === 1) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMax; }
+                        else if (kMod === 2 || kMod === 3) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMax; }
+                        else if (kMod === 4) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMin; }
+                      }
+                    };
+                    for (const sp of signPairs) {
+                      for (const q of sp.quads) {
+                        assignCell(child.userData.billboardStateAUvs, q, sp.cellA);
+                        assignCell(child.userData.billboardStateBUvs, q, sp.cellB);
+                      }
+                    }
+
+                    if (!child.userData.currentBillboardState) {
+                      child.userData.currentBillboardState = 'A';
+                    }
+
+                    child.userData.setBillboardState = (state, isManual = true) => {
+                      if (state === 'auto') {
+                        child.userData.manualBillboardState = null;
+                        return;
+                      }
+                      if (isManual) {
+                        child.userData.manualBillboardState = state;
+                      } else if (child.userData.manualBillboardState) {
+                        return;
+                      }
+                      const target = (state === 'B') ? child.userData.billboardStateBUvs : child.userData.billboardStateAUvs;
+                      if (target && child.geometry && child.geometry.attributes.uv) {
+                        child.geometry.attributes.uv.array.set(target);
+                        child.geometry.attributes.uv.needsUpdate = true;
+                      }
+                      const isA = (state === 'A');
+                      const isB = (state === 'B');
+                      const ib = child.userData.isolatedBillboards;
+                      if (ib) {
+                        if (ib.billboard_cross) ib.billboard_cross.visible = isA;
+                        if (ib.billboard_capsule) ib.billboard_capsule.visible = isB;
+                        if (ib.billboard_info) ib.billboard_info.visible = isA;
+                        if (ib.billboard_shopping_cart) ib.billboard_shopping_cart.visible = isB;
+                        if (ib.billboard_food) ib.billboard_food.visible = isA;
+                        if (ib.billboard_bed) ib.billboard_bed.visible = isB;
+                        if (ib.billboard_tools) ib.billboard_tools.visible = isA;
+                        if (ib.billboard_law) ib.billboard_law.visible = isB;
+                        if (ib.physicalSigns) {
+                          for (const sign of ib.physicalSigns) {
+                            sign.mesh = isA ? sign.stateA : sign.stateB;
+                          }
+                        }
+                      }
+                      child.userData.currentBillboardState = state;
+                      if (typeof this.renderScene === 'function') {
+                        this.renderScene();
+                      }
+                    };
+
+                    // Apply initial billboard state visibility to isolated billboard sub-meshes
+                    child.userData.setBillboardState(child.userData.currentBillboardState || 'A', false);
+
+                    if (group && group.userData) {
+                      group.userData.setBillboardState = (state) => {
+                        group.traverse(obj => {
+                          if (obj !== group && obj.userData && typeof obj.userData.setBillboardState === 'function') {
+                            obj.userData.setBillboardState(state);
+                          }
+                        });
+                      };
+                    }
+
+                    // Egosoft UV animation on mapchannel 1 (200-frame cycle @ 30 fps = 6.6667s):
+                    // Frames 0..95: State A (Cross, Info, Food, Tools)
+                    // Frames 95..100: Transition to State B
+                    // Frames 100..195: State B (Capsule, Shopping Cart, Bed, Law)
+                    // Frames 195..200: Transition back to State A
+                    // MapChannel 3 scanline scroll: v_offset sweeps +4 to -4 across the 200 frames
+                    if (!this.animatedParts) this.animatedParts = [];
+                    this.animatedParts.push({
+                      object: child,
+                      moduleIndex,
+                      update: (time) => {
+                        const cycleTime = time % 6.6667;
+                        const targetState = (cycleTime >= 3.25 && cycleTime < 6.583) ? 'B' : 'A';
+                        if (!child.userData.manualBillboardState && targetState !== child.userData.currentBillboardState) {
+                          if (typeof child.userData.setBillboardState === 'function') {
+                            child.userData.setBillboardState(targetState, false);
+                          }
+                        }
+                        if (child.userData.scanlineVOffset) {
+                          const scanlineProgress = cycleTime / 6.6667;
+                          child.userData.scanlineVOffset.value = 4.0 - scanlineProgress * 8.0;
+                        }
+                      }
+                    });
+                  }
+
+                  if (isCrossAnimCross && (!child.userData._crossBgPartitioned || !child.userData.isolatedBackgrounds || !child.userData.isolatedBackgrounds.bg_cross || !child.userData.isolatedBackgrounds.bg_cross.isMesh)) {
+                    child.userData._crossBgPartitioned = true;
+                    // Restrict base anim_cross draw range immediately to quads 0..9 (chevron backings) so it does
+                    // not render quads 10..21 with the parent trim texture (ads_billboardtrims_01_diff.dds)
+                    // which causes Z-fighting and degradation over the matrix screens
+                    child.geometry.setDrawRange(0, 10 * 6);
+
+                    // Quads 10..21 are the billboard background matrix screens directly behind the 4 billboards
+                    const pos = child.geometry.attributes.position.array;
+                    const norm = child.geometry.attributes.normal ? child.geometry.attributes.normal.array : null;
+                    const uv = (child.userData.rawUvs && child.userData.rawUvs.tex2) || (child.geometry.attributes.uv ? child.geometry.attributes.uv.array : null);
+                    const col = child.geometry.attributes.color ? child.geometry.attributes.color.array : null;
+                    const colStride = child.geometry.attributes.color ? child.geometry.attributes.color.itemSize : 4;
+
+                    const createQuadGeom = (quadIndices) => {
+                      const indices = [];
+                      for (const q of quadIndices) {
+                        for (let k = 0; k < 6; k++) indices.push(q * 6 + k);
+                      }
+                      const sub = new THREE.BufferGeometry();
+                      const subPos = new Float32Array(indices.length * 3);
+                      const subNorm = norm ? new Float32Array(indices.length * 3) : null;
+                      const subUv = new Float32Array(indices.length * 2);
+                      const subCol = col ? new Float32Array(indices.length * colStride) : null;
+                      for (let j = 0; j < indices.length; j++) {
+                        const sIdx = indices[j];
+                        subPos[j * 3] = pos[sIdx * 3];
+                        subPos[j * 3 + 1] = pos[sIdx * 3 + 1];
+                        subPos[j * 3 + 2] = pos[sIdx * 3 + 2];
+                        if (subNorm) {
+                          subNorm[j * 3] = norm[sIdx * 3];
+                          subNorm[j * 3 + 1] = norm[sIdx * 3 + 1];
+                          subNorm[j * 3 + 2] = norm[sIdx * 3 + 2];
+                        }
+                        if (uv) {
+                          subUv[j * 2] = uv[sIdx * 2];
+                          subUv[j * 2 + 1] = uv[sIdx * 2 + 1];
+                        }
+                        if (subCol) {
+                          for (let c = 0; c < colStride; c++) {
+                            subCol[j * colStride + c] = col[sIdx * colStride + c];
+                          }
+                        }
+                      }
+                      sub.setAttribute('position', new THREE.BufferAttribute(subPos, 3));
+                      if (subNorm) sub.setAttribute('normal', new THREE.BufferAttribute(subNorm, 3));
+                      sub.setAttribute('uv', new THREE.BufferAttribute(subUv, 2));
+                      if (subCol) sub.setAttribute('color', new THREE.BufferAttribute(subCol, colStride));
+                      return sub;
+                    };
+
+                    const createBackgrounds = (bgTex) => {
+                      if (bgTex) {
+                        bgTex.wrapS = THREE.RepeatWrapping;
+                        bgTex.wrapT = THREE.RepeatWrapping;
+                        bgTex.needsUpdate = true;
+                      }
+
+                      const bgMat = new THREE.MeshStandardMaterial({
+                        vertexColors: Boolean(col),
+                        color: 0xffffff,
+                        map: bgTex || null,
+                        emissiveMap: bgTex || null,
+                        emissive: new THREE.Color(0xffffff),
+                        emissiveIntensity: 1.0,
+                        roughness: 0.5,
+                        metalness: 0.1,
+                        transparent: true,
+                        opacity: 0.85,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                      });
+                      bgMat.name = matName + '_cross_bg';
+                      bgMat.onBeforeCompile = (shader) => {
+                        shader.fragmentShader = shader.fragmentShader.replace(
+                          '#include <emissivemap_fragment>',
+                          '#include <emissivemap_fragment>\n  totalEmissiveRadiance *= vColor.rgb;\n'
+                        );
+                      };
+
+                      const bgDefs = [
+                        { name: 'bg_cross', quads: [10, 11, 12] },
+                        { name: 'bg_info', quads: [13, 14, 15] },
+                        { name: 'bg_food', quads: [16, 17, 18] },
+                        { name: 'bg_tools', quads: [19, 20, 21] }
+                      ];
+
+                      child.userData.isolatedBackgrounds = {};
+                      for (const def of bgDefs) {
+                        let bMesh = child.getObjectByName(def.name);
+                        if (!bMesh || !bMesh.isMesh) {
+                          if (bMesh) child.remove(bMesh);
+                          const bGeom = createQuadGeom(def.quads);
+                          bMesh = new THREE.Mesh(bGeom, bgMat);
+                          bMesh.name = def.name;
+                          bMesh.renderOrder = 1;
+                          child.add(bMesh);
+                        }
+                        child.userData.isolatedBackgrounds[def.name] = bMesh;
+                      }
+
+                      // Check if anim_arrows physicalSigns already exist in the same hierarchy
+                      let arrowSearchRoot = child;
+                      while (arrowSearchRoot.parent) arrowSearchRoot = arrowSearchRoot.parent;
+                      let arrowMeshObj = null;
+                      arrowSearchRoot.traverse(n => {
+                        if (n.isMesh && n.userData?.isolatedBillboards?.physicalSigns) arrowMeshObj = n;
+                      });
+                      if (arrowMeshObj && arrowMeshObj.userData.isolatedBillboards.physicalSigns) {
+                        for (const sign of arrowMeshObj.userData.isolatedBillboards.physicalSigns) {
+                          const bg = child.userData.isolatedBackgrounds[sign.backingName];
+                          if (bg) {
+                            sign.backingMesh = bg;
+                            if (!bg.userData) bg.userData = {};
+                            bg.userData.physicalSign = sign;
+                            bg.userData.foregroundMesh = sign.stateA;
+                          }
+                        }
+                        arrowMeshObj.userData.isolatedBackgrounds = child.userData.isolatedBackgrounds;
+                        child.userData.physicalSigns = arrowMeshObj.userData.isolatedBillboards.physicalSigns;
+                      }
+
+                      // Continuous vertical scrolling animation matching mapchannel 3
+                      if (bgTex && !this.animatedTextures.some(a => a.texture === bgTex && a.moduleIndex === moduleIndex)) {
+                        this.animatedTextures.push({
+                          texture: bgTex,
+                          speedX: 0.0,
+                          speedY: -0.35,
+                          moduleIndex
+                        });
+                      }
+                    };
+
+                    promises.push(
+                      this.loadDdsTexture('/assets1/textures/ad_signs/ads_bg_trims.dds')
+                        .then(bgTex => {
+                          createBackgrounds(bgTex);
+                        })
+                        .catch(() => {
+                          createBackgrounds(null);
+                        })
+                    );
+                  }
+                }
+
+                if (isLightConeOrGlow) {
+                  child.castShadow = false;
+                  child.receiveShadow = false;
+                  if (isFxGlow) {
+                    child.visible = false;
+                  }
+                  if (!isBubbles && !isLightCone && !child.getObjectByName('fx_point_light') && !(child.parent && child.parent.getObjectByName('fx_point_light'))) {
+                    let lightDistance = 400;
+                    const lightPos = new THREE.Vector3(0, 0, 0);
+                    if (child.geometry) {
+                      if (!child.geometry.boundingSphere) {
+                        try { child.geometry.computeBoundingSphere(); } catch (_) {}
+                      }
+                      if (child.geometry.boundingSphere) {
+                        lightPos.copy(child.geometry.boundingSphere.center);
+                        lightDistance = Math.max(300, child.geometry.boundingSphere.radius * 2.5);
+                      }
+                    }
+                    const curIntensity = ((this.glowingEmissiveIntensity !== undefined ? this.glowingEmissiveIntensity : 2.2) / 2.2) * 1.8;
+                    const pointLight = new THREE.PointLight(glowColor, curIntensity, lightDistance, 2);
+                    pointLight.position.copy(lightPos);
+                    pointLight.name = 'fx_point_light';
+                    if (isFxGlow && child.parent) {
+                      pointLight.position.add(child.position);
+                      child.parent.add(pointLight);
+                    } else {
+                      child.add(pointLight);
+                    }
+                  }
+                }
+              }
+            }
+          })());
+        }
+      }
+    });
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  }
+
+  getRaceGlowColor(contextStr = '') {
+    const s = (contextStr || '').toLowerCase();
+    if (s.includes('_bor_') || s.includes('/boron/') || s.includes('boron')) {
+      return new THREE.Color(0x00FFCC); // Bioluminescent teal/cyan
+    }
+    if (s.includes('_par_') || s.includes('/paranid/') || s.includes('paranid')) {
+      return new THREE.Color(0xCC66FF); // Holy imperial magenta/purple
+    }
+    if (s.includes('_spl_') || s.includes('/split/') || s.includes('split')) {
+      return new THREE.Color(0xFF5522); // Aggressive split red/orange
+    }
+    if (s.includes('_tel_') || s.includes('/teladi/') || s.includes('teladi')) {
+      return new THREE.Color(0x88FF44); // Teladi profit lime green
+    }
+    if (s.includes('_ter_') || s.includes('/terran/') || s.includes('terran')) {
+      return new THREE.Color(0x66DDFF); // Terran arctic blue
+    }
+    if (s.includes('_arg_') || s.includes('/argon/') || s.includes('argon') || s.includes('_gen_') || s.includes('/generic/')) {
+      return new THREE.Color(0x33CCFF); // Argon federation cyan
+    }
+    if (s.includes('shield')) {
+      return new THREE.Color(0x00A6FF); // Electric cyan shield
+    }
+    return new THREE.Color(0x00A6FF); // Universal sci-fi electric cyan
+  }
+
+  getRaceHullColor(contextStr = '') {
+    const s = (contextStr || '').toLowerCase();
+    if (s.includes('_ter_') || s.includes('/terran/') || s.includes('terran')) {
+      return new THREE.Color(0xD8E2EC); // Clean Terran high-tech alloy
+    }
+    if (s.includes('_par_') || s.includes('/paranid/') || s.includes('paranid')) {
+      return new THREE.Color(0x8D7B96); // Paranid bronze/purple hull
+    }
+    if (s.includes('_spl_') || s.includes('/split/') || s.includes('split')) {
+      return new THREE.Color(0x736158); // Split rugged dark alloy
+    }
+    if (s.includes('_tel_') || s.includes('/teladi/') || s.includes('teladi')) {
+      return new THREE.Color(0x7A8872); // Teladi industrial greenish alloy
+    }
+    if (s.includes('_bor_') || s.includes('/boron/') || s.includes('boron')) {
+      return new THREE.Color(0x4A7B8E); // Boron oceanic deep blue
+    }
+    // Argon & Generic Stations: Argon navy steel / industrial slate alloy
+    return new THREE.Color(0x7B8B9E);
+  }
+
+  resolveTextureForModel(modelUrl, materialName = '') {
+    if (!modelUrl && !materialName) return { diffuse: null, normal: null, roughness: null, metalness: null, emissive: null };
+    const lower = (modelUrl || '').toLowerCase().replace(/\\/g, '/');
+    const matLower = (materialName || '').toLowerCase();
+
+    // 0. Volumetric Light Cones, Atmospheric Haze & FX Glow Proxies (Soft-blended light volumes)
+    if (matLower.includes('lightcone') || lower.includes('lightcone') ||
+        matLower.includes('fx_glow') || lower.includes('fx_glow') ||
+        matLower.includes('fx_lightcone') || lower.includes('fx_lightcone') ||
+        matLower.includes('flare') || lower.includes('flare') ||
+        matLower.includes('decoflares') || lower.includes('decoflares') ||
+        matLower.includes('haze') || lower.includes('haze')) {
+      const isP2OrAlien = lower.includes('_bor_') || lower.includes('/boron/') || lower.includes('_ter_') ||
+                          lower.includes('/terran/') || lower.includes('_spl_') || lower.includes('/split/') ||
+                          matLower.includes('p2fx') || matLower.includes('fx_p2');
+      const glowPath = isP2OrAlien
+        ? '/assets1/textures/fx/fx_p2_lightcones_01_diff.dds'
+        : '/assets1/textures/fx/lightcones_soft.dds';
+      return {
+        diffuse: glowPath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: glowPath
+      };
+    }
+
+    // 0a. Volumetric Bubbles & Biological Fluid Simulation (Advanced Electronics & Bio Labs)
+    if (matLower.includes('bubble') || lower.includes('bubble')) {
+      const bubblePath = '/assets1/textures/fx/fx_bubbles_01_diff.dds';
+      return {
+        diffuse: bubblePath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: bubblePath
+      };
+    }
+
+    // 0a2. Hexagonal Energy Shields & Containment Fields (Centrifuge / High Energy Fields)
+    if (matLower.includes('pattern_hex') || lower.includes('fx_shield')) {
+      const hexPath = '/assets1/textures/fx/pattern_hex_01.dds';
+      return {
+        diffuse: hexPath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: hexPath
+      };
+    }
+
+    // 0b. Volumetric Forcefields, Atmospheric Shields & Gate Haze (Docking bay energy barriers)
+    if (matLower.includes('forcefield') || lower.includes('forcefield') ||
+        matLower.includes('shield') || lower.includes('shieldfx') || lower.includes('shield')) {
+      return {
+        diffuse: '/assets1/textures/fx/p1_gate_haze_02_diff.dds',
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: '/assets1/textures/fx/p1_gate_haze_02_diff.dds'
+      };
+    }
+
+    // 0c. Station Escalators, Travelators & Conveyor Walkways (Moving walkways in dock interiors)
+    if (matLower.includes('conveyor') || lower.includes('conveyor') ||
+        matLower.includes('escalator') || lower.includes('escalator')) {
+      return {
+        diffuse: '/assets1/textures/interiors/int_conveyor_01_diff.dds',
+        normal: '/assets1/textures/interiors/int_conveyor_01_normal.dds',
+        roughness: '/assets1/textures/interiors/int_conveyor_01_smooth.dds',
+        metalness: '/assets1/textures/interiors/int_conveyor_01_metal.dds',
+        emissive: '/assets1/textures/interiors/int_conveyor_01_glow.dds'
+      };
+    }
+
+    // 0d. Animated Position Lights & Nav Beacons (dock perimeter blinking and strobing lights)
+    if (matLower.includes('gradient_colour') || matLower.includes('gradientcolour') || matLower.includes('gradient_color') || matLower.includes('gradientcolor') || matLower.includes('gradient_blue') ||
+        ((lower.includes('anim_poslight') || lower.includes('poslights') || lower.includes('glow')) && (lower.includes('dock') || lower.includes('pier') || matLower.includes('gradient')) && !lower.includes('_par_') && !lower.includes('_ter_') && !lower.includes('_spl_') && !lower.includes('_tel_'))) {
+      const gradPath = '/assets1/textures/fx/fx_p2_gradient_colour_01_diff.dds';
+      return {
+        diffuse: gradPath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: gradPath
+      };
+    }
+
+    // 0e. Volumetric Smoke, Exhaust, Fumes, Gas & Vapors (Crystal Smoke, Missile Gas, Weed Fumes, Boron Vapors)
+    if (matLower.includes('smoke') || lower.includes('smoke') ||
+        matLower.includes('fume') || lower.includes('fume') ||
+        matLower.includes('vapor') || lower.includes('vapor') ||
+        matLower.includes('fx_gas') || lower.includes('fx_gas')) {
+      const smokePath = '/assets1/textures/fx/highway_fx_smoke_01.dds';
+      return {
+        diffuse: smokePath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: smokePath
+      };
+    }
+
+    // 0f. Molten Lava Streams, Smelting Fires & Atmospheric Dust (Refined Metals lava river, vats & heating elements)
+    if (matLower.includes('lava') || lower.includes('lava')) {
+      const lavaPath = '/assets1/textures/fx/fx_gradient_lava_01_diff.dds';
+      return {
+        diffuse: lavaPath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: lavaPath
+      };
+    }
+    if (matLower.includes('fire') || lower.includes('fire') || lower.includes('hotarea') || lower.includes('anim_hot')) {
+      const firePath = '/assets1/textures/fx/fx_fire_01_diff.dds';
+      return {
+        diffuse: firePath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: firePath
+      };
+    }
+    if (matLower.includes('dust') || lower.includes('dust')) {
+      const dustPath = '/assets1/textures/fx/fx_p2_dustparticles_01_diff.dds';
+      return {
+        diffuse: dustPath,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: dustPath
+      };
+    }
+    if (matLower.includes('distortion') || lower.includes('distortion')) {
+      const distDiff = '/assets1/textures/fx/bullet_distortion_01_mask_diff.dds';
+      return {
+        diffuse: distDiff,
+        normal: '/assets1/textures/fx/bullet_distortion_01_normal.dds',
+        roughness: null,
+        metalness: null,
+        emissive: distDiff
+      };
+    }
+
+    // 1. Water, Ice & Environmental Fluids
+    if (lower.includes('part_water') || matLower.includes('water') || matLower.includes('ice')) {
+      return {
+        diffuse: '/assets1/textures/natural/natural_waterpattern_01_diff.dds',
+        normal: '/assets1/textures/natural/natural_waterpattern_01_normal.dds',
+        roughness: null,
+        metalness: null,
+        emissive: null
+      };
+    }
+
+    // 2. Agricultural & Natural Flora, Asteroid Ores & Soils
+    if (matLower.includes('sand') || lower.includes('sand') || lower.includes('anim_mud') || matLower.includes('mud') ||
+        matLower.includes('ast_') || matLower.includes('asteroid') || matLower.includes('stone') || lower.includes('anim_stones')) {
+      return {
+        diffuse: '/assets1/textures/natural/nat_p2_gravel_01_diff.dds',
+        normal: '/assets1/textures/natural/nat_p2_gravel_01_normal.dds',
+        roughness: '/assets1/textures/natural/nat_p2_gravel_01_smooth.dds',
+        metalness: null,
+        emissive: null
+      };
+    }
+    if (matLower.includes('underwood')) {
+      return {
+        diffuse: '/assets1/textures/natural/natural_underwood_01_diff.dds',
+        normal: '/assets1/textures/natural/natural_underwood_01_normal.dds',
+        roughness: null,
+        metalness: null,
+        emissive: null
+      };
+    }
+    if (matLower.includes('grass')) {
+      return {
+        diffuse: '/assets1/textures/natural/natural_grasspattern_01_diff.dds',
+        normal: '/assets1/textures/natural/natural_grasspattern_01_normal.dds',
+        roughness: '/assets1/textures/natural/natural_grasspattern_01_smooth.dds',
+        metalness: null,
+        emissive: null
+      };
+    }
+    if (((lower.includes('detail_s_main') && (lower.includes('wheat') || lower.includes('plant') || lower.includes('agri'))) || lower.includes('foliage') || matLower.includes('foliage') || lower.includes('foilage') || matLower.includes('foilage')) && !lower.includes('dock')) {
+      return {
+        diffuse: '/assets1/textures/natural/nat_p2_foliage_01_diff.dds',
+        normal: '/assets1/textures/natural/nat_p2_foliage_01_normal.dds',
+        roughness: '/assets1/textures/natural/nat_p2_foliage_01_smooth.dds',
+        metalness: null,
+        emissive: null
+      };
+    }
+
+    // 3. Solar Panels (Energy Cells & Station Solar Arrays)
+    if (matLower.includes('solar') || lower.includes('solar') || (lower.includes('energycells') && lower.includes('part_main'))) {
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_solarpanels_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_solarpanels_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_solarpanels_smooth.dds',
+        metalness: '/assets1/textures/generic/generic_p1_solarpanels_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 3b. Decals, Window Fonts, Billboards & Advertising Signage (evaluated before race-specific hull fallbacks)
+    if (matLower.includes('windowfont') || lower.includes('windowfont') ||
+        matLower.includes('font') || lower.includes('font') ||
+        matLower.includes('decal') || lower.includes('decal') || lower.includes('fx_decals')) {
+      if (matLower.includes('windowfont') || lower.includes('windowfont') || matLower.includes('font') || lower.includes('font')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_fx_normal.dds',
+          roughness: null,
+          metalness: null,
+          emissive: '/assets1/textures/generic/generic_p1_fx_glow.dds'
+        };
+      }
+      if (matLower.includes('gen_p2') || matLower.includes('p2generic')) {
+        return {
+          diffuse: '/assets1/textures/generic/gen_p2_decal_01_diff.dds',
+          normal: '/assets1/textures/paint/paint_p1_decal_01_normal.dds',
+          roughness: null,
+          metalness: '/assets1/textures/paint/paint_p1_decal_01_metal.dds',
+          emissive: '/assets1/textures/generic/gen_p2_decal_01_glow.dds'
+        };
+      }
+      if (matLower.includes('arg_p2') || matLower.includes('p2argon')) {
+        return {
+          diffuse: '/assets1/textures/argon/arg_p2_decal_01_diff.dds',
+          normal: '/assets1/textures/paint/paint_p1_decal_01_normal.dds',
+          roughness: null,
+          metalness: '/assets1/textures/paint/paint_p1_decal_01_metal.dds',
+          emissive: '/assets1/textures/paint/paint_p1_decal_01_glow.dds'
+        };
+      }
+      return {
+        diffuse: '/assets1/textures/paint/paint_p1_decal_01_diff.dds',
+        normal: '/assets1/textures/paint/paint_p1_decal_01_normal.dds',
+        roughness: null,
+        metalness: '/assets1/textures/paint/paint_p1_decal_01_metal.dds',
+        emissive: '/assets1/textures/paint/paint_p1_decal_01_glow.dds'
+      };
+    }
+    if (matLower.includes('billboard') || matLower.includes('ad_') || matLower.includes('ads_') || matLower.includes('casino') || matLower.includes('p1ads') || matLower.includes('p2ads') || matLower.includes('holograph') || lower.includes('holograph') || lower.includes('billboard') || lower.includes('ads_') || lower.includes('anim_arrows') || lower.includes('anim_cross')) {
+      let adDiff = '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds';
+      if (matLower.includes('casino') || lower.includes('casino')) {
+        adDiff = '/assets1/textures/ad_signs/ads_p1_casino_01.dds';
+      } else if (matLower.includes('holograph') || lower.includes('holograph')) {
+        adDiff = '/assets1/textures/ad_signs/p1_holograph_ads_01_diff.dds';
+      } else if (lower.includes('anim_cross') || matLower.includes('anim_cross')) {
+        // Emergency lockdown hazard cross overlay is authored on the trims atlas across all modules
+        adDiff = '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds';
+      } else {
+        const isDisplayModule = lower.includes('habitat') || lower.includes('hab_') || lower.includes('cross') || lower.includes('pier');
+        const isTrim = (matLower.includes('billboardtrims_01') || matLower.includes('trim')) && !isDisplayModule;
+        if (!isTrim) {
+          if (matLower.includes('billboard_03') || matLower.includes('billboard03') || (matLower.includes('billboardtrims_03') && isDisplayModule) || lower.includes('billboard_03') || (isDisplayModule && (lower.includes('_par_') || lower.includes('_tel_')))) {
+            adDiff = '/assets1/textures/ad_signs/ads_billboard_03_diff.dds';
+          } else if (matLower.includes('billboard_02') || matLower.includes('billboard02') || (matLower.includes('billboardtrims_02') && isDisplayModule) || lower.includes('billboard_02') || (isDisplayModule && (lower.includes('_arg_') || lower.includes('_pir_')))) {
+            adDiff = '/assets1/textures/ad_signs/ads_billboard_02_diff.dds';
+          } else if (matLower.includes('billboard_01') || matLower.includes('billboard01') || lower.includes('billboard_01') || lower.includes('_bor_') || lower.includes('scrap')) {
+            adDiff = '/assets1/textures/ad_signs/ads_billboard_01_diff.dds';
+          }
+        }
+      }
+      return {
+        diffuse: adDiff,
+        normal: null,
+        roughness: null,
+        metalness: null,
+        emissive: adDiff
+      };
+    }
+
+    // 4. Paranid Stations (Holy Order / Godrealm Modules & Habitats)
+    if (lower.includes('_par_') || lower.includes('/paranid/') || matLower.includes('paranid')) {
+      if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
+        return {
+          diffuse: '/assets1/textures/paranid/Paranid_p1_fx_diff.dds',
+          normal: '/assets1/textures/paranid/paranid_p1_fx_normal.dds',
+          roughness: null,
+          metalness: null,
+          emissive: '/assets1/textures/paranid/paranid_p1_fx_glow.dds'
+        };
+      }
+      return {
+        diffuse: '/assets1/textures/paranid/paranid_p1_hullpattern_01_diff.dds',
+        normal: '/assets1/textures/paranid/paranid_p1_hullpattern_01_normal.dds',
+        roughness: '/assets1/textures/paranid/paranid_p1_hullpattern_01_smooth.dds',
+        metalness: '/assets1/textures/paranid/paranid_p1_hullpattern_01_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 5. Terran Stations (Terran Protectorate / Segaris Pioneer Modules)
+    if (lower.includes('_ter_') || lower.includes('/terran/') || matLower.includes('terran')) {
+      if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
+        return {
+          diffuse: '/assets1/textures/terran/ter_p2_fx_01_diff.dds',
+          normal: '/assets1/textures/terran/ter_p2_fx_01_normal.dds',
+          roughness: null,
+          metalness: '/assets1/textures/terran/ter_p2_fx_01_metal.dds',
+          emissive: '/assets1/textures/terran/ter_p2_fx_01_glowhq.dds'
+        };
+      }
+      return {
+        diffuse: '/assets1/textures/terran/ter_p2_hullpattern_01_diff.dds',
+        normal: '/assets1/textures/terran/ter_p2_hullpattern_01_normal.dds',
+        roughness: '/assets1/textures/terran/ter_p2_hullpattern_01_smooth.dds',
+        metalness: '/assets1/textures/terran/ter_p2_hullpattern_01_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 6. Split Stations (Free Families / Zyarth Modules)
+    if (lower.includes('_spl_') || lower.includes('/split/') || matLower.includes('split')) {
+      if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',
+          normal: null,
+          roughness: null,
+          metalness: null,
+          emissive: '/assets1/textures/split/spl_p1_fx_01_glow.dds'
+        };
+      }
+      return {
+        diffuse: '/assets1/textures/split/spl_p2_hulltexture_01_diff.dds',
+        normal: '/assets1/textures/split/spl_p2_hulltexture_01_normal.dds',
+        roughness: '/assets1/textures/split/spl_p2_hulltexture_01_smooth.dds',
+        metalness: '/assets1/textures/split/spl_p2_hulltexture_01_metal.dds',
+        emissive: '/assets1/textures/split/spl_p2_hulltexture_01_glow.dds'
+      };
+    }
+
+    // 7. Teladi Stations (Teladi Company / Ministry of Finance Modules)
+    if (lower.includes('_tel_') || lower.includes('/teladi/') || matLower.includes('teladi')) {
+      if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',
+          normal: null,
+          roughness: null,
+          metalness: null,
+          emissive: '/assets1/textures/teladi/tel_p1_fx_glow.dds'
+        };
+      }
+    }
+
+    // 8b. Gen P2 Station Details & Pier Elements (gen_p2_hulltexture, gen_p2_fx, gen_p2_alphatexture, gen_p2_decal)
+    if (matLower.includes('p2generic') || matLower.includes('gen_p2')) {
+      if (matLower.includes('alphatexture')) {
+        return {
+          diffuse: '/assets1/textures/generic/gen_p2_alphatexture_02_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_alphatexture_normal.dds',
+          roughness: '/assets1/textures/generic/generic_p1_alphatexture_spec.dds',
+          metalness: '/assets1/textures/generic/generic_p1_alphatexture_metal.dds',
+          emissive: null
+        };
+      }
+      if (matLower.includes('fx')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_fx_normal.dds',
+          roughness: null,
+          metalness: null,
+          emissive: '/assets1/textures/generic/gen_p2_fx_01_glow.dds'
+        };
+      }
+      if (matLower.includes('decal')) {
+        return {
+          diffuse: '/assets1/textures/generic/gen_p2_decal_01_diff.dds',
+          normal: '/assets1/textures/paint/paint_p1_decal_01_normal.dds',
+          roughness: null,
+          metalness: '/assets1/textures/paint/paint_p1_decal_01_metal.dds',
+          emissive: '/assets1/textures/generic/gen_p2_decal_01_glow.dds'
+        };
+      }
+      if (matLower.includes('wreck') || lower.includes('wreck')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_wreck_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_wreck_normal.dds',
+          roughness: '/assets1/textures/generic/generic_p1_wreck_metal.dds',
+          metalness: '/assets1/textures/generic/generic_p1_wreck_metal.dds',
+          emissive: '/assets1/textures/generic/generic_p1_wreck_glow.dds'
+        };
+      }
+      // Hull texture (gen_p2_hulltexture_01 / 02) - Opaque hull plating has no emissive glow
+      return {
+        diffuse: '/assets1/textures/generic/gen_p2_hulltexture_02_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_hulltexture_01_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_hulltexture_01_spec.dds',
+        metalness: '/assets1/textures/generic/generic_p1_hulltexture_01_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 8c. Salvaged Debris, Scraps & Ship Wrecks (Scrap Recyclers & Countermeasures)
+    if (matLower.includes('wreck') || lower.includes('wreck')) {
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_wreck_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_wreck_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_wreck_metal.dds',
+        metalness: '/assets1/textures/generic/generic_p1_wreck_metal.dds',
+        emissive: '/assets1/textures/generic/generic_p1_wreck_glow.dds'
+      };
+    }
+
+    // 9. Transparent Elements, Windows & Alpha Details
+    if (lower.includes('detail_l_alpha') || matLower.includes('alphatexture') || lower.includes('alpha')) {
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_alphatexture_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_alphatexture_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_alphatexture_spec.dds',
+        metalness: '/assets1/textures/generic/generic_p1_alphatexture_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 10. Generic & Boron FX, Holograms, Gas & Nav Lights
+    if (matLower.includes('generic_p1_fx') || matLower.includes('bor_p2_fx') || matLower.includes('poslight') || lower.includes('fx_light')) {
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_fx_normal.dds',
+        roughness: null,
+        metalness: null,
+        emissive: '/assets1/textures/generic/generic_p1_fx_glow.dds'
+      };
+    }
+
+    // 10b. Detail M, L & S Main Elements (Runway Guidance Lights, Alpha Vents, Plating & Interior FX)
+    if (matLower.includes('detail_m_main') || lower.includes('detail_m_main') ||
+        matLower.includes('detail_s_main') || lower.includes('detail_s_main') ||
+        matLower.includes('detail_l_main') || lower.includes('detail_l_main')) {
+      if (matLower.includes('lightcone')) {
+        return {
+          diffuse: '/assets1/textures/fx/lightcones_soft.dds',
+          normal: null,
+          roughness: null,
+          metalness: null,
+          emissive: '/assets1/textures/fx/lightcones_soft.dds'
+        };
+      }
+      if (matLower.includes('alphatexture')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_alphatexture_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_alphatexture_normal.dds',
+          roughness: '/assets1/textures/generic/generic_p1_alphatexture_spec.dds',
+          metalness: '/assets1/textures/generic/generic_p1_alphatexture_metal.dds',
+          emissive: null
+        };
+      }
+      if (matLower.includes('hullpattern')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_hullpattern_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_hullpattern_normal.dds',
+          roughness: '/assets1/textures/generic/generic_p1_hullpattern_spec.dds',
+          metalness: '/assets1/textures/generic/generic_p1_hullpattern_metal.dds',
+          emissive: null
+        };
+      }
+      if (matLower.includes('hulltexture')) {
+        return {
+          diffuse: '/assets1/textures/generic/generic_p1_hulltexture_01_diff.dds',
+          normal: '/assets1/textures/generic/generic_p1_hulltexture_01_normal.dds',
+          roughness: '/assets1/textures/generic/generic_p1_hulltexture_01_spec.dds',
+          metalness: '/assets1/textures/generic/generic_p1_hulltexture_01_metal.dds',
+          emissive: null
+        };
+      }
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_fx_normal.dds',
+        roughness: null,
+        metalness: null,
+        emissive: '/assets1/textures/generic/generic_p1_fx_glow.dds'
+      };
+    }
+
+
+    // 11. Hull Pattern (Secondary Station Panels & Plating)
+    if (matLower.includes('hullpattern')) {
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_hullpattern_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_hullpattern_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_hullpattern_spec.dds',
+        metalness: '/assets1/textures/generic/generic_p1_hullpattern_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 11b. Station Liquid & Solid Storage Tanks (Pressurized industrial tanks - non-emissive metallic alloy)
+    if (matLower.includes('multimat') || (lower.includes('storage') && lower.includes('liquid') && matLower.includes('hulltexture'))) {
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_hulltexture_01_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_hulltexture_01_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_hulltexture_01_spec.dds',
+        metalness: '/assets1/textures/generic/generic_p1_hulltexture_01_metal.dds',
+        emissive: null
+      };
+    }
+
+    // 11c. Cockpit & Observation Window Glass
+    if (matLower.includes('glass')) {
+      return {
+        diffuse: '/assets1/textures/fx/ships_cockpit_glass_diff.dds',
+        normal: '/assets1/textures/fx/ships_cockpit_glass_inside_02_normal.dds',
+        roughness: '/assets1/textures/fx/ships_cockpit_glass_inside_02_spec.dds',
+        metalness: null,
+        emissive: null
+      };
+    }
+
+    // 12. Standard Station Hull Plating (Argon & Universal Industrial Base)
+    if (lower.includes('anim_') || lower.includes('detail_xs_main') || lower.includes('part_main') || lower.includes('simon') || matLower.includes('hulltexture')) {
+      const isGlowing = lower.includes('anim_arm') || lower.includes('poslight') || lower.includes('light') || lower.includes('fx');
+      return {
+        diffuse: '/assets1/textures/generic/generic_p1_hulltexture_01_diff.dds',
+        normal: '/assets1/textures/generic/generic_p1_hulltexture_01_normal.dds',
+        roughness: '/assets1/textures/generic/generic_p1_hulltexture_01_spec.dds',
+        metalness: '/assets1/textures/generic/generic_p1_hulltexture_01_metal.dds',
+        emissive: isGlowing ? '/assets1/textures/generic/generic_p1_fx_glow.dds' : null
+      };
+    }
+
+    return { diffuse: null, normal: null, roughness: null, metalness: null, emissive: null };
+  }
+
+  async loadDdsTexture(url) {
+    if (!url) return null;
+    if (this.textureCache.has(url)) {
+      return this.textureCache.get(url);
+    }
+    const loadPromise = new Promise((resolve) => {
+      this.ddsLoader.load(
+        url,
+        (texture) => {
+          if (!texture || !texture.format || !texture.image || texture.image.width <= 0 || !texture.mipmaps || texture.mipmaps.length === 0) {
+            this.textureCache.set(url, null);
+            resolve(null);
+            return;
+          }
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          if (url.toLowerCase().includes('alphatexture')) {
+            texture.repeat.set(1, -1);
+            texture.offset.set(0, 1);
+          }
+          texture.needsUpdate = true;
+          this.textureCache.set(url, texture);
+          resolve(texture);
+        },
+        undefined,
+        () => {
+          this.textureCache.set(url, null);
+          resolve(null);
+        }
+      );
+    });
+    this.textureCache.set(url, loadPromise);
+    return loadPromise;
   }
 
   loadBinaryModel(binUrl, jsonUrl) {
@@ -1315,19 +3574,212 @@ export class StationViewer {
         geometry.computeBoundingSphere();
       }
 
+      const partBase = (binUrl ? binUrl.split('/').pop().split('\\').pop().replace(/-lod\d+\.bin$/i, '').replace(/\.bin$/i, '') : '').toLowerCase();
+      const isWater = partBase.includes('part_water');
+      const isAlpha = partBase.includes('alpha');
+      const isFoliage = partBase.includes('foliage') || (binUrl.toLowerCase().includes('wheat') && partBase.includes('detail_s_main'));
+      const isFxGlow = partBase.includes('fx_glow');
+      const isForcefield = partBase.includes('forcefield') || partBase.startsWith('fx_shield') || partBase.includes('shieldfx') || partBase.includes('gate_haze');
+      const isHaze = partBase.includes('haze');
+      const isEscalator = partBase.includes('escalator') || partBase.includes('conveyor');
+      const isDecal = partBase.includes('decal') || partBase.includes('font') || partBase.includes('windowfont');
+      const isDetailM = !isDecal && partBase.includes('detail_m_main') && (binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
+      const isDetailS = !isDecal && partBase.includes('detail_s_main') && (binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
+      const isBubbles = partBase.includes('bubble');
+      const isHexShield = partBase.startsWith('fx_shield') || partBase.includes('pattern_hex');
+      const isPoslight = !isDecal && (partBase.includes('poslight') || partBase.includes('gradient_colour') || partBase.includes('gradientcolour') || partBase.includes('gradient_color') || partBase.includes('gradientcolor'));
+      const isAnimCross = partBase.includes('anim_cross');
+      const isBillboardDisplay = (binUrl.toLowerCase().includes('habitat') || binUrl.toLowerCase().includes('hab_') || binUrl.toLowerCase().includes('cross') || binUrl.toLowerCase().includes('pier') || binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('welfare') || binUrl.toLowerCase().includes('venture') || binUrl.toLowerCase().includes('landmark')) &&
+        (partBase.includes('anim_arrows') || binUrl.toLowerCase().includes('billboard')) && !isAnimCross;
+      const isHabitatBillboard = (binUrl.toLowerCase().includes('habitat') || binUrl.toLowerCase().includes('hab_')) &&
+        (partBase.includes('anim_arrows') || binUrl.toLowerCase().includes('billboard')) && !isAnimCross;
+      const isAdTrim = (partBase.includes('anim_arrows') || isAnimCross || binUrl.toLowerCase().includes('billboard')) && !isBillboardDisplay;
+      const isLiquidStorageTank = binUrl.toLowerCase().includes('storage') && binUrl.toLowerCase().includes('liquid') && partBase.includes('part_main');
+      const isLightCone = partBase.includes('lightcone') || partBase.includes('fx_lightcone');
+      const isLightConeOrGlow = isFxGlow || isForcefield || isHaze || isBubbles || isLightCone;
+      const isDamageArea = partBase.includes('damagearea') || partBase.includes('triggerpart');
+      const isBBox = partBase.includes('geometryinvisible') || partBase.includes('bbox') || partBase.includes('collision');
+      
+      const texUrls = this.resolveTextureForModel(binUrl);
+      const isGlowingLight = isLightConeOrGlow || isEscalator || isDetailM || isDetailS || isAdTrim || isBillboardDisplay || (isDecal && texUrls.emissive) || partBase.includes('poslight') || partBase.includes('light') ||
+                             partBase.includes('beacon') || partBase.includes('fx');
+
+      const glowColor = this.getRaceGlowColor(binUrl);
+      const hullColor = this.getRaceHullColor(binUrl);
+      const adTrimColor = new THREE.Color(0x00F5FF);
+      const poslightGlowColor = new THREE.Color(0xFFB703);
+      const forcefieldColor = new THREE.Color(0x00F0FF);
+      const liquidTankColor = new THREE.Color(0x3B82C4);
+
+      let texture = null;
+      let normalTexture = null;
+      let roughnessTexture = null;
+      let metalnessTexture = null;
+      let emissiveTexture = null;
+
+      if (texUrls.diffuse) {
+        try { texture = await this.loadDdsTexture(texUrls.diffuse); } catch (_) {}
+      }
+      if (texUrls.normal) {
+        try { normalTexture = await this.loadDdsTexture(texUrls.normal); } catch (_) {}
+      }
+      if (texUrls.roughness) {
+        try { roughnessTexture = await this.loadDdsTexture(texUrls.roughness); } catch (_) {}
+      }
+      if (texUrls.metalness) {
+        try { metalnessTexture = await this.loadDdsTexture(texUrls.metalness); } catch (_) {}
+      }
+      if (texUrls.emissive) {
+        try { emissiveTexture = await this.loadDdsTexture(texUrls.emissive); } catch (_) {}
+      }
+
+      const hasVertexColors = Boolean(geometry && geometry.attributes && geometry.attributes.color);
       const material = new THREE.MeshStandardMaterial({
-        color: 0x8D99AE,
-        roughness: 0.6,
-        metalness: 0.2,
+        vertexColors: hasVertexColors,
+        color: (isLightConeOrGlow || isPoslight || isHexShield) ? 0x000000 : (isWater ? 0x2288aa : (isLiquidStorageTank ? liquidTankColor : (isForcefield ? forcefieldColor : (isDecal || isAdTrim || isBillboardDisplay ? 0xffffff : (texture ? hullColor : 0x8D99AE))))),
+        map: (isLightCone && !isForcefield) ? null : texture,
+        normalMap: isLightConeOrGlow ? null : (normalTexture || null),
+        normalScale: new THREE.Vector2(1, -1), // Convert DirectX normal maps (Green Down) to OpenGL (Green Up)
+        roughnessMap: roughnessTexture || null,
+        roughness: isLightConeOrGlow ? 1.0 : (isWater ? 0.08 : (isLiquidStorageTank ? (roughnessTexture ? 0.35 : 0.38) : (roughnessTexture ? 0.55 : 0.6))),
+        metalnessMap: metalnessTexture || null,
+        metalness: isLightConeOrGlow ? 0.0 : (isWater ? 0.1 : (isLiquidStorageTank ? (metalnessTexture ? 0.75 : 0.7) : (metalnessTexture ? 0.35 : 0.2))),
+        emissiveMap: emissiveTexture || ((isLightConeOrGlow || isAdTrim || isBillboardDisplay) ? texture : null),
+        emissive: (emissiveTexture || (isLightConeOrGlow && texture) || (isAdTrim && texture) || (isBillboardDisplay && texture))
+          ? (isBillboardDisplay ? new THREE.Color(0xffffff) : (isHexShield ? new THREE.Color(0x33ccff) : (isPoslight ? poslightGlowColor : (isAdTrim ? adTrimColor : (isForcefield ? forcefieldColor : (isGlowingLight ? glowColor : new THREE.Color(0x000000)))))))
+          : (isWater ? new THREE.Color(0x001122) : new THREE.Color(0x000000)),
+        emissiveIntensity: (emissiveTexture || (isLightConeOrGlow && texture) || (isAdTrim && texture) || (isBillboardDisplay && texture))
+          ? (isBillboardDisplay ? 1.0 : (isHexShield ? 3.5 : (isAdTrim ? 2.5 : (isLightCone ? 0.35 : (isBubbles ? 1.5 : (isHaze ? (this.glowingEmissiveIntensity || 2.2) * 0.8 : (isForcefield ? 2.0 : (isLightConeOrGlow ? (this.glowingEmissiveIntensity || 2.2) * 1.5 : (isGlowingLight ? (this.glowingEmissiveIntensity || 2.2) : 0.0)))))))))
+          : 0.0,
+        blending: (isLightConeOrGlow || isHexShield || isPoslight || isForcefield) ? THREE.AdditiveBlending : THREE.NormalBlending,
+        toneMapped: (isLightCone || isBubbles) ? true : (isHexShield ? false : (isGlowingLight ? false : true)),
+        transparent: isAlpha || isFoliage || isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isAnimCross || isBillboardDisplay,
+        opacity: isLightCone ? 0.25 : (isHexShield ? 0.2 : (isBubbles ? 0.8 : (isHaze ? 0.35 : (isForcefield ? 0.65 : (isPoslight ? 0.9 : (isLightConeOrGlow ? 0.85 : (isWater ? 0.8 : (isAnimCross ? 0.95 : 1.0)))))))),
+        alphaTest: isAnimCross ? 0.2 : (isBillboardDisplay ? 0.05 : (isDecal ? 0.1 : ((isAlpha || isFoliage) && !isLightConeOrGlow ? 0.35 : 0.0))),
+        depthWrite: (isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isAnimCross || isBillboardDisplay) ? false : true,
+        polygonOffset: isDecal || isAnimCross,
+        polygonOffsetFactor: (isDecal || isAnimCross) ? -1 : 0,
+        polygonOffsetUnits: (isDecal || isAnimCross) ? -1 : 0,
+        visible: !isFxGlow && !isBBox && !isDamageArea,
         side: THREE.DoubleSide
       });
 
+      if (hasVertexColors) {
+        material.onBeforeCompile = (shader) => {
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <emissivemap_fragment>',
+            `#include <emissivemap_fragment>
+            #if defined( USE_COLOR_ALPHA )
+              totalEmissiveRadiance *= vColor.rgb;
+            #elif defined( USE_COLOR )
+              totalEmissiveRadiance *= vColor.rgb;
+            #endif`
+          );
+        };
+      }
+
+      if (isAlpha || isBubbles || isHexShield) {
+        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
+          if (material[prop]) {
+            material[prop] = material[prop].clone();
+            material[prop].wrapS = THREE.RepeatWrapping;
+            material[prop].wrapT = THREE.RepeatWrapping;
+            if (isAlpha || isBubbles) {
+              material[prop].repeat.set(1, -1);
+              material[prop].offset.set(0, 1);
+            }
+            material[prop].needsUpdate = true;
+          }
+        });
+      }
+
+      const registerAnimBinaryTex = (prop, speedX, speedY) => {
+        if (!material[prop]) return;
+        const origTex = material[prop];
+        const clonedTex = origTex.clone();
+        clonedTex.wrapS = THREE.RepeatWrapping;
+        clonedTex.wrapT = THREE.RepeatWrapping;
+        clonedTex.needsUpdate = true;
+        material[prop] = clonedTex;
+        this.animatedTextures.push({
+          texture: clonedTex,
+          speedX,
+          speedY
+        });
+      };
+
+      if (isWater && texture) {
+        registerAnimBinaryTex('map', -0.03, 0.0);
+      }
+
+      if (isForcefield && texture) {
+        registerAnimBinaryTex('map', 0.04, 0.015);
+      }
+
+      if (isBubbles && (texture || emissiveTexture)) {
+        registerAnimBinaryTex('map', 0.15, 0.0);
+        registerAnimBinaryTex('emissiveMap', 0.15, 0.0);
+      }
+
+      if (isEscalator) {
+        registerAnimBinaryTex('map', 0.0, 0.8);
+        registerAnimBinaryTex('normalMap', 0.0, 0.8);
+        registerAnimBinaryTex('roughnessMap', 0.0, 0.8);
+        registerAnimBinaryTex('metalnessMap', 0.0, 0.8);
+        registerAnimBinaryTex('emissiveMap', 0.0, 0.8);
+      }
+
+      if ((isDetailM || isDetailS) && (texture || emissiveTexture)) {
+        registerAnimBinaryTex('map', -0.35, 0.0);
+        registerAnimBinaryTex('emissiveMap', -0.35, 0.0);
+      }
+
+      if (isPoslight && (texture || emissiveTexture)) {
+        registerAnimBinaryTex('map', -0.3, 0.0);
+        registerAnimBinaryTex('emissiveMap', -0.3, 0.0);
+      }
+
+      const isDetailL = partBase.includes('detail_l_main');
+      const isDetailMNonAnim = partBase.includes('detail_m_main') && !(binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
+      const isDetailSNonAnim = partBase.includes('detail_s_main') && !(binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
+      if (isDecal || isDetailL || isDetailMNonAnim || isDetailSNonAnim) {
+        ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
+          if (material[prop]) {
+            material[prop] = material[prop].clone();
+            material[prop].offset.set(0, 0);
+            material[prop].needsUpdate = true;
+          }
+        });
+      }
+
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      mesh.castShadow = !isLightConeOrGlow && !isDecal;
+      mesh.receiveShadow = !isLightConeOrGlow;
+      if (isFxGlow) {
+        mesh.visible = false;
+      }
 
       const group = new THREE.Group();
       group.add(mesh);
+
+      if (isLightConeOrGlow && !isBubbles && !isLightCone) {
+        let lightDistance = 400;
+        const lightPos = new THREE.Vector3(0, 0, 0);
+        if (geometry.boundingSphere) {
+          lightPos.copy(geometry.boundingSphere.center);
+          lightDistance = Math.max(300, geometry.boundingSphere.radius * 2.5);
+        }
+        const curIntensity = ((this.glowingEmissiveIntensity !== undefined ? this.glowingEmissiveIntensity : 2.2) / 2.2) * 1.8;
+        const pointLight = new THREE.PointLight(glowColor, curIntensity, lightDistance, 2);
+        pointLight.position.copy(lightPos);
+        pointLight.name = 'fx_point_light';
+        if (isFxGlow) {
+          group.add(pointLight);
+        } else {
+          mesh.add(pointLight);
+        }
+      }
+
       return group;
     })();
 
@@ -1339,14 +3791,307 @@ export class StationViewer {
     if (this.colladaCache.has(url)) {
       return this.colladaCache.get(url);
     }
-    const loadPromise = new Promise((resolve, reject) => {
-      this.colladaLoader.load(
-        url,
-        (collada) => resolve(collada.scene),
-        undefined,
-        (err) => reject(err)
-      );
-    });
+    const loadPromise = (async () => {
+      try {
+        let text = null;
+        if (typeof fetch === 'function') {
+          try {
+            const response = await fetch(url);
+            if (response && response.ok) {
+              text = await response.text();
+            }
+          } catch (_) {}
+        }
+        if (!text && typeof process !== 'undefined' && process.versions && process.versions.node) {
+          try {
+            const fs = await import('fs');
+            const path = await import('path');
+            const cleanPath = url.replace(/^\/+/, '');
+            const diskPath = path.resolve(process.cwd(), cleanPath);
+            if (fs.existsSync(diskPath)) {
+              text = fs.readFileSync(diskPath, 'utf8');
+            }
+          } catch (_) {}
+        }
+        if (text) {
+          const urlLower = (url || '').toLowerCase();
+          const isBillboard =
+            urlLower.includes('billboard') ||
+            urlLower.includes('ad_') ||
+            urlLower.includes('ads_') ||
+            urlLower.includes('anim_arrows') ||
+            urlLower.includes('anim_cross') ||
+            urlLower.includes('anim_signs') ||
+            urlLower.includes('dockingpos') ||
+            urlLower.includes('adsign') ||
+            text.includes('p1ads') ||
+            text.includes('p2ads') ||
+            text.includes('ad_signs') ||
+            text.includes('billboardtrims');
+
+          // If <vertices> contains multiple TEXCOORD inputs without distinct sets,
+          // Three.js ColladaLoader's parseGeometryVertices overwrites data['TEXCOORD'] with the last input.
+          // For billboard displays, preserve the authored display screen channel (tex0).
+          // For billboard trim bands/chevrons, preserve the trim band channel (tex1).
+          // For standard hull meshes, preserve the primary diffuse channel (tex0).
+          const getSourceBounds = (srcId) => {
+            if (!srcId) return null;
+            const cleanId = srcId.replace(/^#/, '');
+            const re = new RegExp(`<source id="${cleanId}"[^>]*>[\\s\\S]*?<float_array[^>]*>([\\s\\S]*?)<\\/float_array>`);
+            const m = text.match(re);
+            if (!m) return null;
+            const arr = m[1].trim().split(/\s+/).map(Number);
+            let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+            for (let i = 0; i < arr.length; i += 2) {
+              minU = Math.min(minU, arr[i]); maxU = Math.max(maxU, arr[i]);
+              minV = Math.min(minV, arr[i+1]); maxV = Math.max(maxV, arr[i+1]);
+            }
+            return { minU, maxU, minV, maxV, spanU: maxU - minU, spanV: maxV - minV };
+          };
+
+          text = text.replace(/<vertices id="([^"]+)">([\s\S]*?)<\/vertices>/g, (match, vId, vBody) => {
+            // Deduplicate COLOR inputs: preserve authored vertex colors (color0) over secondary blank channel (color1)
+            const colInputs = vBody.match(/<input\s+semantic="COLOR"[^>]*\/?>/g) || [];
+            if (colInputs.length > 1) {
+              let keptColor0 = false;
+              vBody = vBody.replace(/<input\s+semantic="COLOR"[^>]*\/?>/g, (colInput) => {
+                if (colInput.includes('-color0') || (!keptColor0 && !colInput.includes('-color1'))) {
+                  keptColor0 = true;
+                  return colInput;
+                }
+                return colInput.replace('semantic="COLOR"', 'semantic="COLOR1"');
+              });
+            }
+
+            const texInputs = vBody.match(/<input\s+semantic="TEXCOORD"[^>]*\/?>/g) || [];
+            if (texInputs.length <= 1) return `<vertices id="${vId}">${vBody}</vertices>`;
+
+            let pickTex1 = false;
+            if (isBillboard && vBody.includes('-tex1')) {
+              let tex0Src = null;
+              let tex1Src = null;
+              for (const inp of texInputs) {
+                const src = inp.match(/source="#([^"]+)"/)?.[1];
+                if (src) {
+                  if (src.includes('-tex0')) tex0Src = src;
+                  else if (src.includes('-tex1')) tex1Src = src;
+                }
+              }
+
+              const r0 = getSourceBounds(tex0Src);
+              const r1 = getSourceBounds(tex1Src);
+
+              const isAnimCross = urlLower.includes('anim_cross');
+              const isHabitat = urlLower.includes('habitat') || urlLower.includes('hab_');
+
+              if (isAnimCross && r1 && r1.spanU >= 0.1 && r1.spanU <= 2.0 && Math.abs(r1.minU) <= 2.0 && Math.abs(r1.maxU) <= 2.0) {
+                // Emergency lockdown hazard cross overlay is authored on tex1 across all modules
+                pickTex1 = true;
+              } else if (isHabitat) {
+                // Habitat station billboards are authored on tex0 display quad
+                pickTex1 = false;
+              } else if (r1 && (Math.abs(r1.minU) > 2.0 || Math.abs(r1.maxU) > 2.0 || Math.abs(r1.minV) > 2.0 || Math.abs(r1.maxV) > 2.0 || r1.spanU > 2.0 || r1.spanV > 2.0)) {
+                pickTex1 = false;
+              } else if (r0 && r0.spanU >= 0.5 && r0.spanV >= 0.3 && r1 && r1.spanU < 0.05) {
+                // tex0 is a full display quad while tex1 is a point/zero-span artifact
+                pickTex1 = false;
+              } else if (r0 && (r0.spanU < 0.05 && r0.spanV < 0.05) && r1) {
+                // tex0 is a collapsed speck; pick authored tex1
+                pickTex1 = true;
+              } else if (text.includes('billboardtrim') || text.includes('billboardtrims') || urlLower.includes('billboardtrims')) {
+                // Authored billboard trim strip (full-width band or chevron slice)
+                pickTex1 = Boolean(r1 && r1.spanU >= 0.1);
+              } else if (r1 && r1.spanU <= 2.0 && r1.spanV <= 2.0 && (urlLower.includes('anim_arrows') || urlLower.includes('anim_cross') || urlLower.includes('anim_signs'))) {
+                // Authored chevron/directional trim with bounded coordinates
+                pickTex1 = (r1.spanU >= 0.1);
+              }
+            }
+
+            if (pickTex1) {
+              let cleaned = vBody.replace(/<input\s+semantic="TEXCOORD"[^>]*\/?>/g, (texInput) => {
+                if (texInput.includes('-tex1')) {
+                  return texInput;
+                }
+                if (texInput.includes('-tex0')) {
+                  return texInput.replace('semantic="TEXCOORD"', 'semantic="TEXCOORD1"');
+                }
+                return '';
+              });
+              return `<vertices id="${vId}">${cleaned}</vertices>`;
+            } else {
+              let keptPrimary = false;
+              let keptSecondary = false;
+              let cleaned = vBody.replace(/<input\s+semantic="TEXCOORD"[^>]*\/?>/g, (texInput) => {
+                if (!keptPrimary) {
+                  keptPrimary = true;
+                  return texInput;
+                }
+                if (!keptSecondary) {
+                  keptSecondary = true;
+                  return texInput.replace('semantic="TEXCOORD"', 'semantic="TEXCOORD1"');
+                }
+                return '';
+              });
+              return `<vertices id="${vId}">${cleaned}</vertices>`;
+            }
+          });
+
+          // Extract raw UV channels (tex0, tex1, tex2, tex3) and indices from Collada text
+          const rawUvs = {};
+          const pMatch = text.match(/<p>([\s\S]*?)<\/p>/);
+          if (pMatch) {
+            const pIndices = pMatch[1].trim().split(/\s+/).map(Number);
+            const sourceMap = {};
+            const srcRegex = /<source id="([^"]+)"[^>]*>[\s\S]*?<float_array[^>]*>([\s\S]*?)<\/float_array>/g;
+            let sm;
+            while ((sm = srcRegex.exec(text)) !== null) {
+              const sId = sm[1];
+              if (sId.includes('-tex0') || sId.includes('-tex1') || sId.includes('-tex2') || sId.includes('-tex3')) {
+                sourceMap[sId] = sm[2].trim().split(/\s+/).map(Number);
+              }
+            }
+            for (const sId in sourceMap) {
+              const floats = sourceMap[sId];
+              const key = sId.includes('-tex0') ? 'tex0' : (sId.includes('-tex1') ? 'tex1' : (sId.includes('-tex2') ? 'tex2' : 'tex3'));
+              const uvArr = new Float32Array(pIndices.length * 2);
+              for (let k = 0; k < pIndices.length; k++) {
+                const vIdx = pIndices[k];
+                uvArr[k * 2] = floats[vIdx * 2];
+                uvArr[k * 2 + 1] = floats[vIdx * 2 + 1];
+              }
+              rawUvs[key] = uvArr;
+            }
+          }
+
+          if (typeof DOMParser === 'undefined' && typeof process !== 'undefined' && process.versions && process.versions.node) {
+            try {
+              const { JSDOM } = await import('jsdom');
+              const dom = new JSDOM();
+              globalThis.DOMParser = dom.window.DOMParser;
+              globalThis.XMLSerializer = dom.window.XMLSerializer;
+            } catch (_) {}
+          }
+          const collada = this.colladaLoader.parse(text, url);
+          if (collada && collada.scene) {
+            collada.scene.traverse((child) => {
+              if (child.isMesh && child.geometry && child.geometry.attributes && child.geometry.attributes.position) {
+                if (Object.keys(rawUvs).length > 0) {
+                  child.userData.rawUvs = rawUvs;
+                }
+                const count = child.geometry.attributes.position.count;
+                const childLower = (child.name || '').toLowerCase();
+                // Connection Cross modules: struct_arg_cross_01 anim_arrows (44 quads = 264 verts)
+                // Quads 0..35 are entrance/exit chevrons on tex1
+                // Quads 36..43 are the 4 double-sided station billboard signs:
+                // State A: Sign 1 (Q36,37): Cross, Sign 2 (Q38,39): Info, Sign 3 (Q40,41): Food, Sign 4 (Q42,43): Tools
+                // State B: Sign 1 (Q36,37): Capsule, Sign 2 (Q38,39): Cart, Sign 3 (Q40,41): Bed, Sign 4 (Q42,43): Law
+                if (urlLower.includes('cross') && (urlLower.includes('anim_arrows') || childLower.includes('anim_arrows')) && count === 264 && rawUvs.tex0 && rawUvs.tex1) {
+                  const hybridA = new Float32Array(264 * 2);
+                  const hybridB = new Float32Array(264 * 2);
+                  for (let k = 0; k < 36 * 6; k++) {
+                    hybridA[k * 2] = rawUvs.tex1[k * 2];
+                    hybridA[k * 2 + 1] = rawUvs.tex1[k * 2 + 1];
+                    hybridB[k * 2] = rawUvs.tex1[k * 2];
+                    hybridB[k * 2 + 1] = rawUvs.tex1[k * 2 + 1];
+                  }
+                  // 4 pairs of double-sided quads for the 4 signs
+                  const signPairs = [
+                    { quads: [36, 37], cellA: [0.00, 0.25, 0.25, 0.50], cellB: [0.25, 0.50, 0.25, 0.50] }, // Cross <-> Capsule
+                    { quads: [38, 39], cellA: [0.75, 1.00, 0.25, 0.50], cellB: [0.00, 0.25, 0.00, 0.25] }, // Info <-> Shopping Cart
+                    { quads: [40, 41], cellA: [0.50, 0.75, 0.25, 0.50], cellB: [0.25, 0.50, 0.00, 0.25] }, // Food <-> Bed
+                    { quads: [42, 43], cellA: [0.75, 1.00, 0.00, 0.25], cellB: [0.50, 0.75, 0.00, 0.25] }, // Tools <-> Law
+                  ];
+                  const assignCell = (targetArr, qNum, cell) => {
+                    const [uMin, uMax, vMin, vMax] = cell;
+                    for (let v = 0; v < 6; v++) {
+                      const k = qNum * 6 + v;
+                      const kMod = v % 6;
+                      if (kMod === 0 || kMod === 5) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMin; }
+                      else if (kMod === 1) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMax; }
+                      else if (kMod === 2 || kMod === 3) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMax; }
+                      else if (kMod === 4) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMin; }
+                    }
+                  };
+                  for (const sp of signPairs) {
+                    for (const q of sp.quads) {
+                      assignCell(hybridA, q, sp.cellA);
+                      assignCell(hybridB, q, sp.cellB);
+                    }
+                  }
+                  child.geometry.setAttribute('uv', new THREE.BufferAttribute(hybridA, 2));
+                  child.userData.billboardStateAUvs = hybridA;
+                  child.userData.billboardStateBUvs = hybridB;
+                  child.userData.currentBillboardState = 'A';
+                  child.userData.setBillboardState = (state, isManual = true) => {
+                    if (state === 'auto') {
+                      child.userData.manualBillboardState = null;
+                      return;
+                    }
+                    if (isManual) {
+                      child.userData.manualBillboardState = state;
+                    }
+                    const target = (state === 'B') ? child.userData.billboardStateBUvs : child.userData.billboardStateAUvs;
+                    if (target && child.geometry && child.geometry.attributes.uv) {
+                      child.geometry.attributes.uv.array.set(target);
+                      child.geometry.attributes.uv.needsUpdate = true;
+                    }
+                    const isA = (state === 'A');
+                    const isB = (state === 'B');
+                    const ib = child.userData.isolatedBillboards;
+                    if (ib) {
+                      if (ib.billboard_cross) ib.billboard_cross.visible = isA;
+                      if (ib.billboard_capsule) ib.billboard_capsule.visible = isB;
+                      if (ib.billboard_info) ib.billboard_info.visible = isA;
+                      if (ib.billboard_shopping_cart) ib.billboard_shopping_cart.visible = isB;
+                      if (ib.billboard_food) ib.billboard_food.visible = isA;
+                      if (ib.billboard_bed) ib.billboard_bed.visible = isB;
+                      if (ib.billboard_tools) ib.billboard_tools.visible = isA;
+                      if (ib.billboard_law) ib.billboard_law.visible = isB;
+                    }
+                    child.userData.currentBillboardState = state;
+                    if (typeof this.renderScene === 'function') {
+                      this.renderScene();
+                    }
+                  };
+                }
+                // Connection Cross modules: struct_arg_cross_01 anim_cross (22 quads = 132 verts)
+                // Quads 0..9 are chevron backings on tex1; Quads 10..21 are billboard background matrix screens on tex2
+                if (urlLower.includes('cross') && (urlLower.includes('anim_cross') || childLower.includes('anim_cross')) && count === 132 && rawUvs.tex1 && rawUvs.tex2) {
+                  const hybrid = new Float32Array(132 * 2);
+                  for (let k = 0; k < 10 * 6; k++) {
+                    hybrid[k * 2] = rawUvs.tex1[k * 2];
+                    hybrid[k * 2 + 1] = rawUvs.tex1[k * 2 + 1];
+                  }
+                  for (let k = 10 * 6; k < 132; k++) {
+                    hybrid[k * 2] = rawUvs.tex2[k * 2];
+                    hybrid[k * 2 + 1] = rawUvs.tex2[k * 2 + 1];
+                  }
+                  child.geometry.setAttribute('uv', new THREE.BufferAttribute(hybrid, 2));
+                }
+              }
+            });
+            collada.scene.userData.setBillboardState = (state) => {
+              collada.scene.traverse(child => {
+                if (child !== collada.scene && child.userData && typeof child.userData.setBillboardState === 'function') {
+                  child.userData.setBillboardState(state);
+                }
+              });
+            };
+            return collada.scene;
+          }
+        }
+      } catch (_) {
+        // Fallback to standard loader
+      }
+      return new Promise((resolve, reject) => {
+        this.colladaLoader.load(
+          url,
+          (collada) => resolve(collada.scene),
+          undefined,
+          (err) => reject(err)
+        );
+      });
+    })();
     this.colladaCache.set(url, loadPromise);
     return loadPromise;
   }
@@ -1362,6 +4107,9 @@ export class StationViewer {
       this.modulesGroup.remove(child);
     }
     this.snapDots = [];
+    this.animatedTextures = [];
+    this.animatedParts = [];
+    this.haltedModuleAnimations = new Set();
   }
 
   clearFilterHighlights() {
@@ -1516,7 +4264,14 @@ export class StationViewer {
             if (!child.userData.originalMaterial) {
               child.userData.originalMaterial = child.material;
             }
-            child.material = coloredMat;
+            const origMat = child.userData.originalMaterial;
+            const isEffect = isTextureOrEffectMesh(child) ||
+              (origMat && (origMat.transparent || origMat.opacity < 0.95 || child.name?.toLowerCase().includes('water')));
+            if (isEffect) {
+              child.material = origMat;
+            } else {
+              child.material = coloredMat;
+            }
           } else {
             if (child.userData.originalMaterial) {
               child.material = child.userData.originalMaterial;
@@ -1771,20 +4526,7 @@ export class StationViewer {
   getModuleCalculatedRotation(index) {
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return null;
-
-    targetModule.rotation.order = 'YXZ';
-    let yawDeg = Math.round(THREE.MathUtils.radToDeg(targetModule.rotation.y)) % 360;
-    let pitchDeg = Math.round(THREE.MathUtils.radToDeg(targetModule.rotation.x) - 180) % 360;
-    let rollDeg = Math.round(THREE.MathUtils.radToDeg(targetModule.rotation.z) - 180) % 360;
-
-    if (yawDeg > 180) yawDeg -= 360;
-    if (yawDeg <= -180) yawDeg += 360;
-    if (pitchDeg > 180) pitchDeg -= 360;
-    if (pitchDeg <= -180) pitchDeg += 360;
-    if (rollDeg > 180) rollDeg -= 360;
-    if (rollDeg <= -180) rollDeg += 360;
-
-    return { yaw: yawDeg, pitch: pitchDeg, roll: rollDeg };
+    return computeX4RotationFromModuleGroup(targetModule);
   }
 
   setModulePosition(index, pos) {
@@ -1842,10 +4584,7 @@ export class StationViewer {
     if (rollDeg > 180) rollDeg -= 360;
     if (rollDeg <= -180) rollDeg += 360;
 
-    targetModule.rotation.order = 'YXZ';
-    targetModule.rotation.y = yawDeg * Math.PI / 180;
-    targetModule.rotation.x = (pitchDeg + 180) * Math.PI / 180;
-    targetModule.rotation.z = (rollDeg + 180) * Math.PI / 180;
+    targetModule.rotation.copy(computeModuleGroupRotation(yawDeg, pitchDeg, rollDeg));
     targetModule.updateMatrixWorld(true);
 
     if (this.currentPlan && this.currentPlan.modules) {
@@ -1925,6 +4664,13 @@ export class StationViewer {
 
   buildDimensionOverlay(targetModule) {
     this.clearDimensionOverlay();
+    if (!this.showSnapPoints && this.modulesGroup) {
+      this.modulesGroup.traverse(child => {
+        if (child.name === 'module_snaps_group') {
+          child.visible = false;
+        }
+      });
+    }
     if (!targetModule) return;
 
     const bounds = this.getModuleLocalBounds(targetModule);
@@ -2135,6 +4881,8 @@ export class StationViewer {
     if (this.showDimensions) {
       this.buildDimensionOverlay(targetModule);
     }
+
+    this.addSnapPointsToModule(targetModule);
 
     // Module selection does not present a gizmo; attach only if explicitly requested or right-clicked
     const shouldAttachGizmo = attachGizmo === true || (attachGizmo === null && priorGizmoTarget === index);
@@ -2889,6 +5637,13 @@ export class StationViewer {
       this.selectionHelper = null;
     }
     this.clearDimensionOverlay();
+    if (!this.showSnapPoints && this.modulesGroup) {
+      this.modulesGroup.traverse(child => {
+        if (child.name === 'module_snaps_group') {
+          child.visible = false;
+        }
+      });
+    }
     if (restoreGrid && this.isGridAtComponentScale) {
       this.restoreFullPlanGrid();
       this.isGridAtComponentScale = false;
@@ -3197,9 +5952,19 @@ export class StationViewer {
 
   buildModuleSnapPoints(moduleGroup, macroName) {
     if (!moduleGroup) return;
+    const existing = moduleGroup.getObjectByName('module_snaps_group');
+    if (existing) {
+      moduleGroup.remove(existing);
+      this.snapDots = this.snapDots.filter(d => d.userData?.moduleIndex !== moduleGroup.userData?.index);
+    }
+
     const localBounds = this.getModuleLocalBounds(moduleGroup);
     const snaps = getModuleSnapPoints(macroName, localBounds);
     if (!snaps || snaps.length === 0) return;
+
+    const isCustom = hasCustomSnapPointsForMacro(macroName);
+    moduleGroup.userData.hasCustomSnapPoints = isCustom;
+    moduleGroup.userData.snapPoints = snaps;
 
     const snapsGroup = new THREE.Group();
     snapsGroup.name = 'module_snaps_group';
@@ -3210,12 +5975,14 @@ export class StationViewer {
       dot.name = `snap_dot_${snap.name}`;
       dot.userData = {
         isSnapPoint: true,
+        isCustomSnapPoint: isCustom,
         snapName: snap.name,
         moduleIndex: moduleGroup.userData.index,
         localPos: [...snap.pos]
       };
-      // Invert X and Z to match visualizer module coordinate frame
-      dot.position.set(-snap.pos[0], snap.pos[1], -snap.pos[2]);
+      // Unified coordinate transformation:
+      // Maps standard X4 component coordinates (x, y, z) into visualizer local space (-x, y, z)
+      dot.position.set(-snap.pos[0], snap.pos[1], snap.pos[2]);
       dot.renderOrder = 50;
 
       snapsGroup.add(dot);
@@ -3223,6 +5990,24 @@ export class StationViewer {
     }
 
     moduleGroup.add(snapsGroup);
+  }
+
+  addSnapPointsToModule(targetModule) {
+    if (!targetModule) return;
+    const macroName = targetModule.userData?.macro;
+    let snapsGroup = targetModule.getObjectByName('module_snaps_group');
+    if (!snapsGroup) {
+      this.buildModuleSnapPoints(targetModule, macroName);
+      snapsGroup = targetModule.getObjectByName('module_snaps_group');
+    }
+    if (snapsGroup) {
+      snapsGroup.visible = true;
+      snapsGroup.traverse(child => {
+        if (child.isMesh && child.userData && child.userData.isSnapPoint) {
+          child.visible = true;
+        }
+      });
+    }
   }
 
   toggleAutoRotate(enabled) {
@@ -3275,6 +6060,12 @@ export class StationViewer {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(width, height);
+    if (this.composer) {
+      this.composer.setSize(width, height);
+      if (this.bloomPass && this.bloomPass.resolution) {
+        this.bloomPass.resolution.set(width, height);
+      }
+    }
   }
 
   raycastModuleAtPointer(event) {
@@ -3460,7 +6251,7 @@ export class StationViewer {
       this.renderer.domElement.focus();
     }
 
-    // Check if clicked on a BB corner (red dot gizmo) with left click
+    // Check if clicked on a BB corner with left click
     if (event.button === 0) {
       const hitCornerDot = this.findPlotCornerNearPointer(event);
       if (hitCornerDot) {
@@ -3725,7 +6516,6 @@ export class StationViewer {
       return;
     }
 
-    // Hover state over plot corner handles when not dragging
     if (this.plotCornerHandles && this.plotCornerHandles.length > 0 && !this.isGizmoDragging()) {
       const nearCorner = this.findPlotCornerNearPointer(event);
       if (nearCorner) {
@@ -4182,10 +6972,7 @@ export class StationViewer {
     }
 
     this.updatePlotBoxViolations();
-
-    if (this.renderer && this.scene && this.camera) {
-      this.renderer.render(this.scene, this.camera);
-    }
+    this.renderScene();
   }
 
   /**
@@ -4445,10 +7232,55 @@ export class StationViewer {
     }
   }
 
+  updateAnimatedParts(time, delta = 0.016) {
+    if (!this.animatedParts || this.animatedParts.length === 0) return;
+    for (const part of this.animatedParts) {
+      if (part.object && part.update) {
+        let modIdx = part.moduleIndex;
+        if (modIdx === undefined && part.object) {
+          let curr = part.object;
+          while (curr && modIdx === undefined) {
+            if (curr.userData && (curr.userData.moduleIndex !== undefined || curr.userData.index !== undefined)) {
+              modIdx = curr.userData.moduleIndex !== undefined ? curr.userData.moduleIndex : curr.userData.index;
+              break;
+            }
+            curr = curr.parent;
+          }
+        }
+        if (modIdx !== undefined && this.haltedModuleAnimations && this.haltedModuleAnimations.has(modIdx)) {
+          continue;
+        }
+        if (part.object && part.object.userData && part.object.userData.manualBillboardState) {
+          continue;
+        }
+        part.update(time, delta);
+      }
+    }
+  }
+
   animate() {
     this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
 
+    const delta = this.clock.getDelta();
     const time = this.clock.getElapsedTime();
+
+    // 1. Animate UV texture offsets (e.g. water flow in wheat module)
+    if (this.animatedTextures && this.animatedTextures.length > 0) {
+      for (const item of this.animatedTextures) {
+        if (item.texture) {
+          if (item.moduleIndex !== undefined && this.haltedModuleAnimations && this.haltedModuleAnimations.has(item.moduleIndex)) {
+            continue;
+          }
+          item.texture.offset.x = (item.texture.offset.x + (item.speedX || 0) * delta) % 1.0;
+          if (item.speedY) {
+            item.texture.offset.y = (item.texture.offset.y + item.speedY * delta) % 1.0;
+          }
+        }
+      }
+    }
+
+    // 2. Animate mechanical module parts (crane traversing over crop beds, vents, etc.)
+    this.updateAnimatedParts(time, delta);
 
     // 1. Run animations inside procedural meshes (rotating rings, solar panels, etc.) - Stopped as requested
     /*
@@ -4518,8 +7350,8 @@ export class StationViewer {
       this.ensureActiveGizmoVisible({ isZooming: true });
     }
 
-    // 6. Render Scene
-    this.renderer.render(this.scene, this.camera);
+    // 6. Render Scene (with smooth bloom blur on FX glowing lights)
+    this.renderScene();
   }
 
   setGhostMode(enabled) {
@@ -4616,9 +7448,11 @@ export class StationViewer {
           mod.position.copy(mod.userData.originalPosition);
         }
         if (mod.userData && mod.userData.originalRotation) {
-          mod.rotation.y = mod.userData.originalRotation.yaw * Math.PI / 180;
-          mod.rotation.x = (mod.userData.originalRotation.pitch + 180) * Math.PI / 180;
-          mod.rotation.z = (mod.userData.originalRotation.roll + 180) * Math.PI / 180;
+          mod.rotation.copy(computeModuleGroupRotation(
+            mod.userData.originalRotation.yaw,
+            mod.userData.originalRotation.pitch,
+            mod.userData.originalRotation.roll
+          ));
         }
       });
       // Perform NO placement logic when Blueprint is checked
@@ -5062,9 +7896,7 @@ export class StationViewer {
     }
 
     if (plotConfig.enabled === false) {
-      if (this.renderer && this.scene && this.camera) {
-        this.renderer.render(this.scene, this.camera);
-      }
+      this.renderScene();
       return;
     }
 
@@ -5194,9 +8026,7 @@ export class StationViewer {
 
     // In Blueprint mode, perform NO placement logic (no re-align, no re-layout, no clamping, no overlap shifts)
     if (isBlueprintModeActive()) {
-      if (this.renderer && this.scene && this.camera) {
-        this.renderer.render(this.scene, this.camera);
-      }
+      this.renderScene();
       return;
     }
 
@@ -5220,9 +8050,47 @@ export class StationViewer {
     }
 
     // Immediately redisplay the main display
-    if (this.renderer && this.scene && this.camera) {
-      this.renderer.render(this.scene, this.camera);
+    this.renderScene();
+  }
+
+  findSnapDotNearPointer(event) {
+    if (!this.snapDots || this.snapDots.length === 0) return null;
+    const visibleDots = this.snapDots.filter(d => d.visible && d.parent?.visible);
+    if (visibleDots.length === 0) return null;
+    const rect = this.renderer?.domElement?.getBoundingClientRect();
+    if (!rect) return null;
+
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    this.raycaster.setFromCamera(mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(visibleDots, false);
+    if (intersects.length > 0) {
+      return intersects[0].object;
     }
+
+    const pointerX = event.clientX;
+    const pointerY = event.clientY;
+    const tempWorld = new THREE.Vector3();
+    const tempScreen = new THREE.Vector3();
+    let closestDot = null;
+    let minDistanceSq = 16 * 16;
+
+    for (const dot of visibleDots) {
+      dot.getWorldPosition(tempWorld);
+      tempScreen.copy(tempWorld).project(this.camera);
+      if (tempScreen.z > -1 && tempScreen.z < 1) {
+        const sx = ((tempScreen.x + 1) / 2) * rect.width + rect.left;
+        const sy = ((-tempScreen.y + 1) / 2) * rect.height + rect.top;
+        const distSq = (pointerX - sx) * (pointerX - sx) + (pointerY - sy) * (pointerY - sy);
+        if (distSq < minDistanceSq) {
+          minDistanceSq = distSq;
+          closestDot = dot;
+        }
+      }
+    }
+    return closestDot;
   }
 
   destroy() {
@@ -5238,7 +8106,7 @@ export class StationViewer {
       window.removeEventListener('pointerup', this.boundOnPointerUp);
     }
     if (this.boundOnWheel && this.renderer?.domElement) {
-      this.renderer.domElement.removeEventListener('wheel', this.boundOnWheel);
+      this.renderer.domElement.removeEventListener('wheel', this.boundOnWheel, { capture: true });
     }
     if (this.boundOnTouchMove && this.renderer?.domElement) {
       this.renderer.domElement.removeEventListener('touchmove', this.boundOnTouchMove);
@@ -5272,6 +8140,9 @@ export class StationViewer {
     if (this.snapPointGeometry) this.snapPointGeometry.dispose();
     if (this.snapPointMaterial) this.snapPointMaterial.dispose();
     this.snapDots = [];
+    this.animatedTextures = [];
+    this.animatedParts = [];
+    this.haltedModuleAnimations = new Set();
     if (this.transformControls) {
       this.transformControls.dispose();
       this.scene.remove(this.transformControls);

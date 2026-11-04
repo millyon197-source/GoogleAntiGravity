@@ -40,6 +40,14 @@ assert(vScale.equals(new Vector3D(20, 40, 60)), 'Vector3D scaling');
 assert(v1.dot(v2) === 10 * 5 + 20 * 5 + 30 * 5, 'Vector3D dot product');
 assert(v1.distanceTo(vAdd) === v2.length(), 'Vector3D distance calculation');
 
+// Game (left-handed) to Three.js (right-handed): mirror Z
+const gamePos = new Vector3D(100, 200, 300);
+const threePos = gamePos.toThreePosition();
+assert(threePos.x === 100 && threePos.y === 200 && threePos.z === -300, 'Game (x, y, z) maps to Three.js (x, y, -z)');
+
+const backGamePos = Vector3D.fromThreePosition(threePos);
+assert(backGamePos.equals(gamePos), 'Three.js (x, y, -z) maps back to Game (x, y, z)');
+
 // 2. EulerRotation Value Object
 console.log('\n--- Test Group 2: EulerRotation Value Object ---');
 const rot1 = new EulerRotation(90, 45, 0);

@@ -243,26 +243,26 @@ import('../src/module-display-panel.js').then(mod => {
     }
   });
 
-  // Test 8: Alignment Anchor Multi-Selection & Layered Placement
-  console.log('\n--- Testing Alignment Anchor Multi-Selection & Layered Placement ---');
+  // Test 8: Alignment Anchor Single Selection (Mutually Exclusive) & Layered Placement
+  console.log('\n--- Testing Alignment Anchor Single Selection (Mutually Exclusive) & Layered Placement ---');
   const { calculateLayeredPlacement } = mod;
 
-  // 8a: Verify multi-selection in Alignment Anchor
+  // 8a: Verify single selection in Alignment Anchor (mutually exclusive)
   // Default is Checkbox 0 (Origin (0,0,0))
-  // Select Checkbox 1 (Ground Floor) without clearing Checkbox 0
+  // Select Checkbox 1 (Ground Floor) -> Origin (0,0,0) is automatically unchecked
   const examAlign1 = examineFiveCheckboxes('alignment-anchor', 1, true);
   console.log('Alignment Anchor after selecting Ground Floor:', examAlign1.behaviorValue);
   const alignEntries = examAlign1.checkedEntries;
-  if (alignEntries.length < 2) {
-    throw new Error(`Expected multiple selections in Alignment Anchor, got ${alignEntries.length}`);
+  if (alignEntries.length !== 1) {
+    throw new Error(`Expected strictly 1 selection in Alignment Anchor, got ${alignEntries.length}`);
   }
   const hasOriginChecked = alignEntries.some(e => e.id === 'align-origin' || e.name.includes('Origin'));
   const hasGroundChecked = alignEntries.some(e => e.id === 'align-ground' || e.name.includes('Ground'));
-  if (!hasOriginChecked || !hasGroundChecked) {
-    throw new Error('Expected both Origin and Ground Floor to be checked simultaneously');
+  if (hasOriginChecked || !hasGroundChecked) {
+    throw new Error('Expected Ground Floor to be the only checked selection, with Origin unchecked');
   }
 
-  // 8b: Test calculateLayeredPlacement with Ground Floor + Origin (0,0,0)
+  // 8b: Test calculateLayeredPlacement with Ground Floor
   // Create 12 test modules with known sizes
   const batchModules = [];
   for (let i = 0; i < 12; i++) {
@@ -272,11 +272,11 @@ import('../src/module-display-panel.js').then(mod => {
     });
   }
 
-  // Plot size: widthX = 2000m (-1000 to +1000), depthZ = 2000m (-1000 to +1000), heightY = 2000m (-1000 to +1000)
+  // Plot size: widthX = 1000m (-500 to +500), depthZ = 1000m (-500 to +500), heightY = 2000m (-1000 to +1000)
   const tightPlot = {
-    x: { plus: 1, minus: 1 }, // -1000 to +1000
-    z: { plus: 1, minus: 1 }, // -1000 to +1000
-    y: { plus: 1, minus: 1 }  // -1000 to +1000 (Ground floor = -1000)
+    x: { plus: 0.5, minus: 0.5 }, // -500 to +500
+    z: { plus: 0.5, minus: 0.5 }, // -500 to +500
+    y: { plus: 1, minus: 1 }      // -1000 to +1000 (Ground floor = -1000)
   };
 
   const layeredResults = calculateLayeredPlacement(
@@ -324,13 +324,13 @@ import('../src/module-display-panel.js').then(mod => {
     const halfX = r.initialSize.x / 2;
     const halfY = r.initialSize.y / 2;
     const halfZ = r.initialSize.z / 2;
-    if (r.position.x + halfX > 1001 || r.position.x - halfX < -1001) {
+    if (r.position.x + halfX > 501 || r.position.x - halfX < -501) {
       throw new Error(`Module protrudes outside X plot bounds: ${r.position.x}`);
     }
     if (r.position.y + halfY > 1001 || r.position.y - halfY < -1001) {
       throw new Error(`Module protrudes outside Y plot bounds: ${r.position.y}`);
     }
-    if (r.position.z + halfZ > 1001 || r.position.z - halfZ < -1001) {
+    if (r.position.z + halfZ > 501 || r.position.z - halfZ < -501) {
       throw new Error(`Module protrudes outside Z plot bounds: ${r.position.z}`);
     }
   });

@@ -2,6 +2,53 @@ import { StationPlan, StationModule, Vector3D, EulerRotation } from '@x4/domain'
 import { IBlueprintParserPort } from '@x4/application';
 
 /**
+ * Convert an X4 quaternion (qx, qy, qz, qw) to Euler angles (yaw, pitch, roll) in degrees.
+ * Uses X4's standard rotation sequence 'YXZ' (yaw around Y, pitch around X, roll around Z).
+ *
+ * @param {number} qx
+ * @param {number} qy
+ * @param {number} qz
+ * @param {number} qw
+ * @returns {{ yaw: number, pitch: number, roll: number }}
+ */
+export function quaternionToEulerYXZ(qx, qy, qz, qw) {
+  const len = Math.hypot(qx, qy, qz, qw) || 1;
+  const x = qx / len;
+  const y = qy / len;
+  const z = qz / len;
+  const w = qw / len;
+
+  const m11 = 1 - 2 * (y * y + z * z);
+  const m13 = 2 * (x * z + y * w);
+  const m21 = 2 * (x * y + z * w);
+  const m22 = 1 - 2 * (x * x + z * z);
+  const m23 = 2 * (y * z - x * w);
+  const m31 = 2 * (x * z - y * w);
+  const m33 = 1 - 2 * (x * x + y * y);
+
+  const clampVal = Math.max(-1, Math.min(1, -m23));
+  const pitchRad = Math.asin(clampVal);
+
+  let yawRad = 0;
+  let rollRad = 0;
+
+  if (Math.abs(m23) < 0.9999999) {
+    yawRad = Math.atan2(m13, m33);
+    rollRad = Math.atan2(m21, m22);
+  } else {
+    yawRad = Math.atan2(-m31, m11);
+    rollRad = 0;
+  }
+
+  const radToDeg = 180 / Math.PI;
+  return {
+    yaw: yawRad * radToDeg,
+    pitch: pitchRad * radToDeg,
+    roll: rollRad * radToDeg
+  };
+}
+
+/**
  * Adapter implementing IBlueprintParserPort for X4 Construction Plans in XML format.
  */
 export class XmlBlueprintParser extends IBlueprintParserPort {
@@ -69,6 +116,7 @@ function parseConstructionPlanRegex(xmlString) {
 
     const rotMatch = entryBody.match(/<rotation\b([^>]*)\/?>/i);
     let yaw = 0, pitch = 0, roll = 0;
+    let quat = null;
     if (rotMatch) {
       const ry = rotMatch[1].match(/\byaw="([^"]*)"/i);
       const rp = rotMatch[1].match(/\bpitch="([^"]*)"/i);
@@ -76,14 +124,44 @@ function parseConstructionPlanRegex(xmlString) {
       if (ry) yaw = parseFloat(ry[1]) || 0;
       if (rp) pitch = parseFloat(rp[1]) || 0;
       if (rr) roll = parseFloat(rr[1]) || 0;
+    } else {
+      const quatMatch = entryBody.match(/<quaternion\b([^>]*)\/?>/i);
+      if (quatMatch) {
+        const mx = quatMatch[1].match(/\bqx="([^"]*)"/i);
+        const my = quatMatch[1].match(/\bqy="([^"]*)"/i);
+        const mz = quatMatch[1].match(/\bqz="([^"]*)"/i);
+        const mw = quatMatch[1].match(/\bqw="([^"]*)"/i);
+        const qx = mx ? parseFloat(mx[1]) || 0 : 0;
+        const qy = my ? parseFloat(my[1]) || 0 : 0;
+        const qz = mz ? parseFloat(mz[1]) || 0 : 0;
+        const qw = mw ? parseFloat(mw[1]) || 0 : 1;
+        quat = { qx, qy, qz, qw };
+        const euler = quaternionToEulerYXZ(qx, qy, qz, qw);
+        yaw = euler.yaw;
+        pitch = euler.pitch;
+        roll = euler.roll;
+      }
+    }
+
+    const predMatch = entryBody.match(/<predecessor\b([^>]*)\/?>/i);
+    let predecessor = null;
+    if (predMatch) {
+      const pIdx = predMatch[1].match(/\bindex="([^"]*)"/i);
+      const pConn = predMatch[1].match(/\bconnection="([^"]*)"/i);
+      predecessor = {
+        index: pIdx ? parseInt(pIdx[1], 10) : undefined,
+        connection: pConn ? pConn[1] : ''
+      };
     }
 
     planData.modules.push({
       index: isNaN(index) ? fallbackIndex : index,
       macro,
       connection,
+      predecessor,
       position: { x, y, z },
-      rotation: { yaw, pitch, roll }
+      rotation: { yaw, pitch, roll },
+      ...(quat ? { quaternion: quat } : {})
     });
     fallbackIndex++;
   }
@@ -148,12 +226,14 @@ export function parseConstructionPlan(xmlString) {
 
       let posNode = entry.getElementsByTagName('position')[0];
       let rotNode = entry.getElementsByTagName('rotation')[0];
+      let quatNode = entry.getElementsByTagName('quaternion')[0];
 
-      if (!posNode || !rotNode) {
+      if (!posNode || (!rotNode && !quatNode)) {
         const offsetNode = entry.getElementsByTagName('offset')[0];
         if (offsetNode) {
           if (!posNode) posNode = offsetNode.getElementsByTagName('position')[0];
           if (!rotNode) rotNode = offsetNode.getElementsByTagName('rotation')[0];
+          if (!quatNode) quatNode = offsetNode.getElementsByTagName('quaternion')[0];
         }
       }
 
@@ -161,16 +241,41 @@ export function parseConstructionPlan(xmlString) {
       const y = posNode ? parseFloat(posNode.getAttribute('y') || '0') : 0;
       const z = posNode ? parseFloat(posNode.getAttribute('z') || '0') : 0;
 
-      const yaw = rotNode ? parseFloat(rotNode.getAttribute('yaw') || '0') : 0;
-      const pitch = rotNode ? parseFloat(rotNode.getAttribute('pitch') || '0') : 0;
-      const roll = rotNode ? parseFloat(rotNode.getAttribute('roll') || '0') : 0;
+      let yaw = 0, pitch = 0, roll = 0;
+      let quat = null;
+      if (rotNode) {
+        yaw = parseFloat(rotNode.getAttribute('yaw') || '0');
+        pitch = parseFloat(rotNode.getAttribute('pitch') || '0');
+        roll = parseFloat(rotNode.getAttribute('roll') || '0');
+      } else if (quatNode) {
+        const qx = parseFloat(quatNode.getAttribute('qx') || '0');
+        const qy = parseFloat(quatNode.getAttribute('qy') || '0');
+        const qz = parseFloat(quatNode.getAttribute('qz') || '0');
+        const qw = parseFloat(quatNode.getAttribute('qw') || '1');
+        quat = { qx, qy, qz, qw };
+        const euler = quaternionToEulerYXZ(qx, qy, qz, qw);
+        yaw = euler.yaw;
+        pitch = euler.pitch;
+        roll = euler.roll;
+      }
+
+      const predNode = entry.getElementsByTagName('predecessor')[0];
+      let predecessor = null;
+      if (predNode) {
+        predecessor = {
+          index: parseInt(predNode.getAttribute('index'), 10),
+          connection: predNode.getAttribute('connection') || ''
+        };
+      }
 
       planData.modules.push({
         index: isNaN(index) ? (i + 1) : index,
         macro: macro,
         connection: connection,
+        predecessor: predecessor,
         position: { x, y, z },
-        rotation: { yaw, pitch, roll }
+        rotation: { yaw, pitch, roll },
+        ...(quat ? { quaternion: quat } : {})
       });
     }
 

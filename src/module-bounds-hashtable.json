@@ -544,7 +544,19 @@
   },
   null,
   null,
-  null,
+  {
+    "key": "pier_arg_harbor_04_macro",
+    "name": "Argon Harbor Pier 04",
+    "index": 89,
+    "hash": 1049344172,
+    "boundingBox": {
+      "size": [
+        260,
+        100,
+        230
+      ]
+    }
+  },
   {
     "key": "storage_ter_s_liquid_01_macro",
     "name": "Terran S Liquid Storage",

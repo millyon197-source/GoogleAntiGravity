@@ -114,6 +114,26 @@ export class Vector3D {
   }
 
   /**
+   * Converts game coordinates (left-handed, Y-up) to Three.js world coordinates (right-handed, Y-up).
+   * Mirrors Z axis: (x, y, z) -> (x, y, -z).
+   * @returns {{x: number, y: number, z: number}}
+   */
+  toThreePosition() {
+    return { x: this.x, y: this.y, z: -this.z };
+  }
+
+  /**
+   * Converts Three.js world coordinates (right-handed, Y-up) to game coordinates (left-handed, Y-up).
+   * Mirrors Z axis: (x, y, z) -> (x, y, -z).
+   * @param {{x?: number, y?: number, z?: number}} threePos
+   * @returns {Vector3D}
+   */
+  static fromThreePosition(threePos) {
+    if (!threePos) return new Vector3D(0, 0, 0);
+    return new Vector3D(threePos.x || 0, threePos.y || 0, -(threePos.z || 0));
+  }
+
+  /**
    * @param {{x?: number, y?: number, z?: number}} [obj]
    * @returns {Vector3D}
    */

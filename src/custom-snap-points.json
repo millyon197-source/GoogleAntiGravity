@@ -1,0 +1,66 @@
+{
+  "prod_gen_refinedmetals_macro": [
+    {
+      "name": "ConnectionSnap001",
+      "pos": [
+        -267.24,
+        -257.68,
+        -630.93
+      ]
+    },
+    {
+      "name": "ConnectionSnap002",
+      "pos": [
+        133.42,
+        -259.3,
+        169.18
+      ]
+    }
+  ],
+  "prod_gen_missilecomponents_macro": [
+    {
+      "name": "ConnectionSnap001",
+      "pos": [
+        218.23,
+        -194.14,
+        -6.5
+      ]
+    },
+    {
+      "name": "ConnectionSnap002",
+      "pos": [
+        224.3,
+        -170.2,
+        392.49
+      ]
+    },
+    {
+      "name": "ConnectionSnap003",
+      "pos": [
+        200,
+        0,
+        -400
+      ]
+    }
+  ],
+  "prod_gen_microchips_macro": [
+    {
+      "name": "ConnectionSnap001",
+      "pos": [
+        -200,
+        0,
+        600
+      ]
+    }
+  ],
+  "prod_gen_hullparts_macro": [
+    {
+      "name": "ConnectionSnap001",
+      "pos": [
+        -90.49,
+        -204.99,
+        467.23
+      ]
+    }
+  ]
+}

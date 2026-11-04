@@ -5,6 +5,8 @@ import { PlotBounds, StationLayoutEngine } from './domain/index.js';
 const STORAGE_KEY = 'x4_module_display_panel_config';
 const PLOT_STORAGE_KEY = 'x4_layout_plot_config';
 const BLUEPRINT_PLOT_STORAGE_KEY = 'x4_blueprint_plot_configs';
+export const DECORATOR_PIPELINE_STORAGE_KEY = 'x4_layout_active_decorator_pipeline';
+export const ACTIONABLE_ELEMENTS_STORAGE_KEY = 'x4_actionable_decorator_elements';
 
 let activeBlueprintId = null;
 let activeBlueprintName = null;
@@ -21,6 +23,12 @@ export const DEFAULT_PLOT_CONFIG = {
   z: { plus: 10, minus: 10 },
   y: { plus: 10, minus: 10 }
 };
+
+/**
+ * Strictly only the five canonical layer categories.
+ * No duplicates, only the five.
+ */
+export const LAYER_CATEGORIES = ['Docks', 'Storage', 'Production', 'Habitats', 'Defense'];
 
 /**
  * Default values configuration.
@@ -102,6 +110,496 @@ let plotConfig = loadPlotConfig();
 let activeViewerInstance = null;
 let editingCheckboxState = null; // { valueId, checkboxIndex }
 let isPlotMinimized = true; // Start any load with the Plot pill minimized
+let activeActionableElements = loadActionableElements();
+let activeDecoratorIds = [...new Set(activeActionableElements.map(e => e.decoratorId))];
+
+/**
+ * Load active actionable elements from localStorage.
+ * Starts empty ([]) if no saved elements exist.
+ */
+export function loadActionableElements() {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(ACTIONABLE_ELEMENTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      const seenSingleDecorators = new Set();
+      const seenLayerCats = new Set();
+      const sanitized = [];
+      for (const item of parsed) {
+        if (!item || !item.decoratorId) continue;
+        if (item.decoratorId === 'layers') {
+          const catLower = (item.category || '').toLowerCase();
+          if (!catLower || seenLayerCats.has(catLower) || !LAYER_CATEGORIES.some(c => c.toLowerCase() === catLower)) {
+            continue;
+          }
+          seenLayerCats.add(catLower);
+        } else if (['order-of-layout', 'layout-mode', 'spacing-offset', 'alignment-anchor', 'module-scope'].includes(item.decoratorId)) {
+          if (seenSingleDecorators.has(item.decoratorId)) {
+            continue;
+          }
+          seenSingleDecorators.add(item.decoratorId);
+        }
+        sanitized.push(item);
+      }
+      return sanitized;
+    }
+  } catch (e) {
+    console.warn('[DisplayPanel] Error reading actionable elements:', e);
+  }
+  return [];
+}
+
+/**
+ * Persist active actionable elements to localStorage.
+ */
+export function saveActionableElements(elements) {
+  activeActionableElements = Array.isArray(elements) ? [...elements] : [];
+  activeDecoratorIds = [...new Set(activeActionableElements.map(e => e.decoratorId))];
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(ACTIONABLE_ELEMENTS_STORAGE_KEY, JSON.stringify(activeActionableElements));
+      localStorage.setItem(DECORATOR_PIPELINE_STORAGE_KEY, JSON.stringify(activeDecoratorIds));
+    } catch (e) {
+      console.warn('[DisplayPanel] Error saving actionable elements:', e);
+    }
+  }
+}
+
+/**
+ * Get a copy of active actionable elements in pipeline order.
+ */
+export function getActiveActionableElements() {
+  return [...activeActionableElements];
+}
+
+/**
+ * Load active decorator pipeline from localStorage (backward-compatible).
+ */
+export function loadActiveDecoratorPipeline() {
+  return [...new Set(activeActionableElements.map(e => e.decoratorId))];
+}
+
+/**
+ * Persist active decorator pipeline to localStorage.
+ */
+export function saveActiveDecoratorPipeline(ids) {
+  activeDecoratorIds = Array.isArray(ids) ? [...ids] : [];
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(DECORATOR_PIPELINE_STORAGE_KEY, JSON.stringify(activeDecoratorIds));
+    } catch (e) {
+      console.warn('[DisplayPanel] Error saving decorator pipeline:', e);
+    }
+  }
+}
+
+/**
+ * Get a copy of active decorator IDs in pipeline order.
+ */
+export function getActiveDecoratorIds() {
+  return [...new Set(activeActionableElements.map(e => e.decoratorId))];
+}
+
+/**
+ * Check if a decorator ID has active elements in the actionable list.
+ */
+export function isDecoratorInPipeline(decoratorId) {
+  return activeActionableElements.some(e => e.decoratorId === decoratorId);
+}
+
+/**
+ * Detect conflicts between a candidate element and existing members in the actionable list.
+ *
+ * Conflict rules:
+ * 1. Duplicate: The same element is already present.
+ * 2. Mutual Exclusivity: Order of Layout, Layout Mode, Spacing & Offset, and Module Scope
+ *    only permit one active element at a time; candidate conflicts with and replaces previous member.
+ * 3. Layer Slot Exclusivity: A layer element for the same slot number (e.g. Layer 1) conflicts
+ *    with an existing element in that slot.
+ * 4. Blueprint Exclusivity: Blueprint layout in Order of Layout conflicts with procedural Layout Modes.
+ */
+export function detectElementConflicts(candidate, existingElements = activeActionableElements) {
+  const conflicts = [];
+  let reason = '';
+
+  for (const existing of existingElements) {
+    // 1. Same exact element already present
+    if (existing.decoratorId === candidate.decoratorId && existing.elementId === candidate.elementId) {
+      conflicts.push(existing);
+      reason = `"${candidate.elementName}" is already present in the Actionable Panel.`;
+      break;
+    }
+
+    // 2. Mutual exclusivity within the same decorator:
+    if (['order-of-layout', 'layout-mode', 'spacing-offset', 'alignment-anchor', 'module-scope'].includes(candidate.decoratorId)) {
+      if (existing.decoratorId === candidate.decoratorId) {
+        conflicts.push(existing);
+        reason = `Conflicts with existing ${existing.decoratorName} selection "${existing.elementName}".`;
+      }
+    }
+
+    // 3. Layers conflict: same category already present in Layers Actionable panel
+    if (candidate.decoratorId === 'layers' && existing.decoratorId === 'layers') {
+      const candCat = (candidate.category || '').toLowerCase();
+      const existCat = (existing.category || '').toLowerCase();
+      if (candCat && existCat && candCat === existCat) {
+        conflicts.push(existing);
+        reason = `Category "${candidate.category}" is already assigned as Layer ${existing.layerNumber}.`;
+      }
+    }
+
+    // 4. Cross-decorator conflict: Blueprint in order-of-layout conflicts with procedural layout-mode
+    if (candidate.decoratorId === 'order-of-layout' && (candidate.elementId === 'layout-blueprint' || (candidate.elementName && candidate.elementName.toLowerCase().includes('blueprint')))) {
+      if (existing.decoratorId === 'layout-mode') {
+        conflicts.push(existing);
+        reason = `Blueprint layout mode conflicts with procedural Layout Mode "${existing.elementName}".`;
+      }
+    }
+    if (candidate.decoratorId === 'layout-mode') {
+      if (existing.decoratorId === 'order-of-layout' && (existing.elementId === 'layout-blueprint' || (existing.elementName && existing.elementName.toLowerCase().includes('blueprint')))) {
+        conflicts.push(existing);
+        reason = `Procedural Layout Mode "${candidate.elementName}" conflicts with Blueprint order.`;
+      }
+    }
+  }
+
+  return {
+    hasConflict: conflicts.length > 0,
+    conflicts,
+    reason
+  };
+}
+
+/**
+ * Refresh layer numbers across all active actionable layer elements
+ * so their numbers 1, 2, 3... match their sequential order in the actionable panel.
+ * The order of addition and placement establishes the order of evaluation.
+ */
+export function refreshLayerNumbers() {
+  let count = 0;
+  activeActionableElements.forEach(item => {
+    if (item.decoratorId === 'layers') {
+      count++;
+      item.layerNumber = count;
+      const catCap = item.category
+        ? (item.category.charAt(0).toUpperCase() + item.category.slice(1))
+        : `Layer ${count}`;
+      item.elementName = `${catCap}-${count}`;
+    }
+  });
+  syncLayersToDisplayValues();
+}
+
+/**
+ * Synchronize the underlying displayValues for Layers with the active actionable layer order.
+ * Ensures strictly only the five canonical categories (Docks, Storage, Production, Habitats, Defense)
+ * are present in layersRow.checkboxes, numbered sequentially 1 to 5, with zero duplicate names.
+ */
+export function syncLayersToDisplayValues() {
+  if (typeof displayValues === 'undefined' || !Array.isArray(displayValues)) return;
+  const layersRow = displayValues.find(v => v.id === 'layers');
+  if (!layersRow) return;
+
+  const activeLayers = (typeof activeActionableElements !== 'undefined' && Array.isArray(activeActionableElements))
+    ? activeActionableElements.filter(e => e.decoratorId === 'layers')
+    : [];
+
+  // 1. Gather active categories in their exact evaluation order (no duplicates)
+  const activeCats = [];
+  const seenActive = new Set();
+  for (const item of activeLayers) {
+    const raw = item.category || '';
+    const canonical = LAYER_CATEGORIES.find(c => c.toLowerCase() === raw.toLowerCase());
+    const cat = canonical || (raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'Docks');
+    const catLower = cat.toLowerCase();
+    if (!seenActive.has(catLower) && LAYER_CATEGORIES.some(c => c.toLowerCase() === catLower)) {
+      seenActive.add(catLower);
+      activeCats.push(cat);
+    }
+  }
+
+  // 2. Gather remaining categories from canonical LAYER_CATEGORIES not yet active
+  const remainingCats = LAYER_CATEGORIES.filter(c => !seenActive.has(c.toLowerCase()));
+
+  // 3. Exactly the five categories in order: active evaluation order first, then remaining canonical defaults
+  const orderedCategories = [...activeCats, ...remainingCats].slice(0, 5);
+
+  // 4. Construct the 5 unique checkboxes with zero duplicate names
+  layersRow.checkboxes = orderedCategories.map((cat, idx) => {
+    const num = idx + 1;
+    const catLower = cat.toLowerCase();
+    const isActive = idx < activeCats.length;
+    return {
+      id: `layer-${num}`,
+      name: `${cat}-${num}`,
+      isDefault: idx === 0,
+      checked: activeCats.length === 0 ? (idx === 0) : isActive,
+      behaviorKey: `layer-${catLower}`
+    };
+  });
+
+  saveDisplayPanelConfig();
+}
+
+/**
+ * Add only the selected drop-down element into the Actionable Panel,
+ * deciding and resolving any conflicts with existing members.
+ * For Layers additions, the order of addition establishes the order of evaluation.
+ */
+export function addActionableElement(decoratorId, elementIndex = 0, targetPosition = -1) {
+  const decoratorObj = displayValues.find(v => v.id === decoratorId);
+  if (!decoratorObj || !decoratorObj.checkboxes || !decoratorObj.checkboxes[elementIndex]) return null;
+
+  const cb = decoratorObj.checkboxes[elementIndex];
+  let layerInfo = {};
+  if (decoratorId === 'layers') {
+    const parsed = parseLayerCheckbox(cb, elementIndex);
+    const existingLayers = activeActionableElements.filter(e => e.decoratorId === 'layers');
+    const cat = parsed.category || LAYER_CATEGORIES[elementIndex % LAYER_CATEGORIES.length];
+    const catLower = (cat || '').toLowerCase();
+    const layerNumber = existingLayers.length + 1;
+    layerInfo = {
+      layerNumber,
+      category: catLower,
+      elementName: `${cat}-${layerNumber}`
+    };
+  }
+
+  const candidate = {
+    id: decoratorId === 'layers' ? `layers:${layerInfo.category}` : `${decoratorId}:${cb.id}`,
+    decoratorId,
+    decoratorName: decoratorObj.name,
+    elementId: cb.id,
+    elementName: layerInfo.elementName || cb.name,
+    behaviorKey: cb.behaviorKey || cb.id,
+    elementIndex,
+    ...layerInfo
+  };
+
+  // Decide if there is any conflict with other members in the actionable list
+  const conflictCheck = detectElementConflicts(candidate, activeActionableElements);
+  if (conflictCheck.hasConflict) {
+    console.log(`[DisplayPanel] Conflict detected: ${conflictCheck.reason}`);
+    // Auto-resolve: remove conflicting members from the actionable list
+    conflictCheck.conflicts.forEach(conf => {
+      const idx = activeActionableElements.findIndex(e => e.id === conf.id);
+      if (idx !== -1) {
+        activeActionableElements.splice(idx, 1);
+        console.log(`[DisplayPanel] Resolved conflict by replacing "${conf.elementName}" with "${candidate.elementName}".`);
+      }
+    });
+  }
+
+  // Add only this element to the Actionable Panel in the order clicked
+  if (targetPosition >= 0 && targetPosition <= activeActionableElements.length) {
+    activeActionableElements.splice(targetPosition, 0, candidate);
+  } else {
+    activeActionableElements.push(candidate);
+  }
+  refreshLayerNumbers();
+  saveActionableElements(activeActionableElements);
+
+  // Sync checkbox state so internal examination reflects the selection
+  examineFiveCheckboxes(decoratorId, elementIndex, true);
+
+  // When Order of Layout is Blueprint, reload the blueprint name and skip procedural decorators
+  if (isOrderOfLayoutBlueprint()) {
+    reloadBlueprintName();
+  }
+
+  // Apply behavior to viewer
+  if (activeViewerInstance) {
+    applyModuleDisplayBehavior(decoratorId, cb.name, candidate.behaviorKey, activeViewerInstance, true);
+  }
+
+  activeDropdownDecoratorId = null;
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
+
+  return candidate;
+}
+
+/**
+ * Remove an element from the Actionable Panel.
+ */
+export function removeActionableElement(idOrElementId) {
+  const idx = activeActionableElements.findIndex(e => e.id === idOrElementId || e.elementId === idOrElementId);
+  if (idx !== -1) {
+    const removed = activeActionableElements.splice(idx, 1)[0];
+    refreshLayerNumbers();
+    saveActionableElements(activeActionableElements);
+
+    if (activeViewerInstance) {
+      const layerOrder = getLayerPlacementCategoryOrder();
+      applyModuleDisplayBehavior('layers', layerOrder.join(' > '), 'layer-reorder', activeViewerInstance, true);
+    }
+
+    if (typeof document !== 'undefined') {
+      renderDisplayPanel();
+    }
+    return removed;
+  }
+  return null;
+}
+
+/**
+ * Move an actionable element up or down in progression.
+ */
+export function moveActionableElement(id, direction) {
+  const idx = activeActionableElements.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= activeActionableElements.length) return;
+  const item = activeActionableElements.splice(idx, 1)[0];
+  activeActionableElements.splice(newIdx, 0, item);
+  refreshLayerNumbers();
+  saveActionableElements(activeActionableElements);
+
+  if (activeViewerInstance) {
+    const layerOrder = getLayerPlacementCategoryOrder();
+    applyModuleDisplayBehavior('layers', layerOrder.join(' > '), 'layer-reorder', activeViewerInstance, true);
+  }
+
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
+}
+
+/**
+ * Reorder an actionable element to a specific target index via hand placement.
+ */
+export function reorderActionableElement(draggedId, targetIndex) {
+  const idx = activeActionableElements.findIndex(e => e.id === draggedId);
+  if (idx === -1) return;
+  const item = activeActionableElements.splice(idx, 1)[0];
+  if (targetIndex >= 0 && targetIndex <= activeActionableElements.length) {
+    activeActionableElements.splice(targetIndex, 0, item);
+  } else {
+    activeActionableElements.push(item);
+  }
+  refreshLayerNumbers();
+  saveActionableElements(activeActionableElements);
+
+  if (activeViewerInstance) {
+    const layerOrder = getLayerPlacementCategoryOrder();
+    applyModuleDisplayBehavior('layers', layerOrder.join(' > '), 'layer-reorder', activeViewerInstance, true);
+  }
+
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
+}
+
+/**
+ * Reorder a layer item position within the unified Layers card upon dragging and releasing.
+ * Re-indexes all layer numbers and dynamically updates the category evaluation order.
+ */
+export function reorderLayerPosition(draggedId, targetLayerIndex) {
+  const layerItems = activeActionableElements.filter(e => e.decoratorId === 'layers');
+  const draggedItem = layerItems.find(e => e.id === draggedId);
+  if (!draggedItem) return;
+
+  const currentIdxInLayers = layerItems.findIndex(e => e.id === draggedId);
+  if (currentIdxInLayers === -1) return;
+
+  // Remove from activeActionableElements
+  const originalIdx = activeActionableElements.findIndex(e => e.id === draggedId);
+  activeActionableElements.splice(originalIdx, 1);
+
+  // Find insertion point among remaining layers in activeActionableElements
+  const remainingLayers = activeActionableElements.filter(e => e.decoratorId === 'layers');
+  if (targetLayerIndex >= 0 && targetLayerIndex < remainingLayers.length) {
+    const targetRef = remainingLayers[targetLayerIndex];
+    const insertIdx = activeActionableElements.indexOf(targetRef);
+    activeActionableElements.splice(insertIdx, 0, draggedItem);
+  } else if (remainingLayers.length > 0) {
+    const lastLayer = remainingLayers[remainingLayers.length - 1];
+    const insertIdx = activeActionableElements.indexOf(lastLayer) + 1;
+    activeActionableElements.splice(insertIdx, 0, draggedItem);
+  } else {
+    activeActionableElements.push(draggedItem);
+  }
+
+  refreshLayerNumbers();
+  saveActionableElements(activeActionableElements);
+
+  if (activeViewerInstance) {
+    const layerOrder = getLayerPlacementCategoryOrder();
+    applyModuleDisplayBehavior('layers', layerOrder.join(' > '), 'layer-reorder', activeViewerInstance, true);
+  }
+
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
+}
+
+/**
+ * Clear the actionable panel back to empty state.
+ */
+export function clearActionableElements() {
+  activeActionableElements = [];
+  refreshLayerNumbers();
+  saveActionableElements(activeActionableElements);
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
+}
+
+/**
+ * Add a decorator by ID (adds its default element via addActionableElement).
+ */
+export function addDecoratorToPipeline(decoratorId, targetIndex = -1) {
+  return addActionableElement(decoratorId, 0, targetIndex);
+}
+
+/**
+ * Remove all elements associated with a decorator from the Actionable Panel.
+ */
+export function removeDecoratorFromPipeline(decoratorId) {
+  activeActionableElements = activeActionableElements.filter(e => e.decoratorId !== decoratorId);
+  refreshLayerNumbers();
+  saveActionableElements(activeActionableElements);
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
+}
+
+/**
+ * Move a decorator element in pipeline progression order.
+ */
+export function moveDecoratorInPipeline(decoratorId, direction) {
+  const item = activeActionableElements.find(e => e.decoratorId === decoratorId);
+  if (item) {
+    moveActionableElement(item.id, direction);
+  }
+}
+
+/**
+ * Clear the decorator pipeline back to its empty state.
+ */
+export function clearDecoratorPipeline() {
+  clearActionableElements();
+}
+
+let activeDropdownDecoratorId = null;
+
+export function getActiveDropdownDecoratorId() {
+  return activeDropdownDecoratorId;
+}
+
+export function setActiveDropdownDecoratorId(id) {
+  activeDropdownDecoratorId = id;
+}
+
+/**
+ * Add a decorator element via selected drop-down element.
+ */
+export function addDecoratorWithSelectedElement(decoratorId, elementIndex) {
+  return addActionableElement(decoratorId, elementIndex);
+}
 
 /**
  * Returns whether the Plot pill is currently minimized.
@@ -272,6 +770,41 @@ export function getActiveBlueprint() {
   return { id: activeBlueprintId, name: activeBlueprintName };
 }
 
+/**
+ * When Order of Layout is Blueprint, reload the blueprint name and update related UI elements.
+ */
+export function reloadBlueprintName() {
+  const bp = getActiveBlueprint();
+  const bpName = bp?.name || null;
+
+  if (typeof document !== 'undefined' && bpName) {
+    const planNameEl = document.getElementById('plan-name');
+    if (planNameEl) {
+      planNameEl.textContent = bpName;
+    }
+    const sampleDropdownLabel = document.getElementById('sample-dropdown-current-label');
+    if (sampleDropdownLabel) {
+      sampleDropdownLabel.textContent = bpName;
+    }
+  }
+
+  // Update any active blueprint actionable elements with the reloaded blueprint name
+  if (typeof activeActionableElements !== 'undefined' && Array.isArray(activeActionableElements)) {
+    activeActionableElements.forEach(item => {
+      if (item.decoratorId === 'order-of-layout' && (item.elementId === 'layout-blueprint' || (item.elementName && item.elementName.toLowerCase().includes('blueprint')))) {
+        item.blueprintName = bpName;
+      }
+    });
+  }
+
+  // Reload blueprint model original positions in active viewer instance if available
+  if (activeViewerInstance && typeof activeViewerInstance.applyLayoutBehavior === 'function') {
+    activeViewerInstance.applyLayoutBehavior('blueprint', 'Blueprint');
+  }
+
+  return bpName;
+}
+
 export function getCurrentPlotConfig() {
   return JSON.parse(JSON.stringify(plotConfig));
 }
@@ -328,7 +861,7 @@ export function loadDisplayPanelConfig() {
         );
       }
 
-      // Ensure Ground Floor in alignment-anchor has clean name and key
+      // Ensure Ground Floor in alignment-anchor has clean name and key, and enforce single selection (mutually exclusive)
       const alignVal = parsed.find(v => v.id === 'alignment-anchor');
       if (alignVal && Array.isArray(alignVal.checkboxes)) {
         alignVal.checkboxes.forEach(cb => {
@@ -337,6 +870,13 @@ export function loadDisplayPanelConfig() {
             cb.behaviorKey = 'align-ground';
           }
         });
+        const checkedList = alignVal.checkboxes.filter(cb => cb.checked);
+        if (checkedList.length > 1) {
+          const toKeep = alignVal.checkboxes.find(cb => cb.checked && !cb.isDefault) || checkedList[0];
+          alignVal.checkboxes.forEach(cb => {
+            cb.checked = (cb === toKeep);
+          });
+        }
       }
 
       // Ensure Layers row exists in parsed configuration
@@ -373,6 +913,50 @@ export function loadDisplayPanelConfig() {
         }
         return true;
       });
+
+      // Strictly ensure the single Layers row contains only the five canonical categories without duplicate names
+      const singleLayersRow = parsed.find(v => v.id === 'layers' || (v.name && v.name.trim().toLowerCase() === 'layers'));
+      if (singleLayersRow) {
+        singleLayersRow.id = 'layers';
+        singleLayersRow.name = 'Layers';
+        const existingCbs = Array.isArray(singleLayersRow.checkboxes) ? singleLayersRow.checkboxes : [];
+        const seenCats = new Set();
+        const cleanCbs = [];
+
+        for (let i = 0; i < existingCbs.length; i++) {
+          const cb = existingCbs[i];
+          const parsedCb = parseLayerCheckbox(cb, i);
+          const cat = parsedCb.category;
+          const catLower = (cat || '').toLowerCase();
+          if (!seenCats.has(catLower) && LAYER_CATEGORIES.some(c => c.toLowerCase() === catLower)) {
+            seenCats.add(catLower);
+            cleanCbs.push({
+              id: `layer-${cleanCbs.length + 1}`,
+              name: `${cat}-${cleanCbs.length + 1}`,
+              isDefault: cleanCbs.length === 0,
+              checked: !!cb.checked,
+              behaviorKey: `layer-${catLower}`
+            });
+          }
+        }
+
+        // Fill in any missing categories from the canonical five
+        for (const cat of LAYER_CATEGORIES) {
+          const catLower = cat.toLowerCase();
+          if (!seenCats.has(catLower) && cleanCbs.length < 5) {
+            seenCats.add(catLower);
+            cleanCbs.push({
+              id: `layer-${cleanCbs.length + 1}`,
+              name: `${cat}-${cleanCbs.length + 1}`,
+              isDefault: cleanCbs.length === 0,
+              checked: false,
+              behaviorKey: `layer-${catLower}`
+            });
+          }
+        }
+
+        singleLayersRow.checkboxes = cleanCbs.slice(0, 5);
+      }
 
       // 2. If multiple checkboxes (pills) with name "Layers" exist, remove the second one!
       let seenLayersPill = false;
@@ -469,6 +1053,24 @@ export function isBlueprintModeActive() {
 }
 
 /**
+ * Returns true if the Order of Layout is currently Blueprint (either via active actionable element or checked mode).
+ */
+export function isOrderOfLayoutBlueprint() {
+  const orderElement = (typeof activeActionableElements !== 'undefined' && Array.isArray(activeActionableElements))
+    ? activeActionableElements.find(e => e.decoratorId === 'order-of-layout')
+    : null;
+
+  if (orderElement) {
+    return orderElement.elementId === 'layout-blueprint' ||
+           orderElement.elementId === 'order-blueprint' ||
+           (orderElement.behaviorKey && orderElement.behaviorKey.toLowerCase().includes('blueprint')) ||
+           (orderElement.elementName && orderElement.elementName.toLowerCase().includes('blueprint'));
+  }
+
+  return isBlueprintModeActive();
+}
+
+/**
  * Examine the five checkboxes for a non-default entry and use that value as a behavior
  * for module placement and display.
  * 
@@ -504,6 +1106,7 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
           if (idx !== triggeredIndex) cb.checked = false;
         });
         setAllPillsToDefault(displayValues);
+        reloadBlueprintName();
       } else if (!isBlueprint && clickedCb.checked) {
         // If a non-blueprint order checkbox is checked, uncheck Blueprint
         const bp = checkboxes.find(cb =>
@@ -532,6 +1135,7 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
         if (def) {
           def.checked = true;
           setAllPillsToDefault(displayValues);
+          reloadBlueprintName();
         }
       }
     } else if (valueId === 'layout-mode') {
@@ -568,17 +1172,9 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
           setAllPillsToDefault(displayValues);
         }
       }
-    } else if (valueId === 'alignment-anchor') {
-      // Allow multiple checkbox selections for Alignment Anchor!
-      // If user unchecked this checkbox and none remain checked, fallback to default
-      const anyChecked = checkboxes.some(cb => cb.checked);
-      if (!anyChecked) {
-        const def = checkboxes.find(cb => cb.isDefault) || checkboxes[0];
-        if (def) def.checked = true;
-      }
     } else {
       if (clickedCb.checked) {
-        // Single-choice active behavior within the 5 checkboxes for other rows
+        // Single-choice active behavior within the 5 checkboxes (mutually exclusive)
         checkboxes.forEach((cb, idx) => {
           if (idx !== triggeredIndex) cb.checked = false;
         });
@@ -638,6 +1234,28 @@ export function renameCheckbox(valueId, checkboxIndex, newName) {
   const valueObj = displayValues.find(v => v.id === valueId);
   if (!valueObj || !valueObj.checkboxes[checkboxIndex]) return false;
 
+  if (valueId === 'layers') {
+    // Layers can only be one of the five canonical categories without duplicates
+    const match = LAYER_CATEGORIES.find(c =>
+      newName.trim().toLowerCase().startsWith(c.toLowerCase()) ||
+      c.toLowerCase() === newName.trim().toLowerCase()
+    );
+    if (!match) {
+      console.warn(`[DisplayPanel] Invalid layer category "${newName}". Only the five are allowed: ${LAYER_CATEGORIES.join(', ')}`);
+      return false;
+    }
+    const matchLower = match.toLowerCase();
+    const alreadyUsed = valueObj.checkboxes.some((cb, idx) => {
+      if (idx === checkboxIndex) return false;
+      const parsed = parseLayerCheckbox(cb, idx);
+      return (parsed.category || '').toLowerCase() === matchLower;
+    });
+    if (alreadyUsed) {
+      console.warn(`[DisplayPanel] Category "${match}" is already assigned. Layers elements cannot have duplicate names.`);
+      return false;
+    }
+  }
+
   const cb = valueObj.checkboxes[checkboxIndex];
   const oldName = cb.name;
   cb.name = newName.trim();
@@ -661,6 +1279,10 @@ export function renameCheckbox(valueId, checkboxIndex, newName) {
  * Add a new checkbox to a value (up to 5 maximum).
  */
 export function addCheckboxToValue(valueId, name = null) {
+  if (valueId === 'layers') {
+    console.warn('[DisplayPanel] Layers strictly has only the five canonical categories. Additional elements cannot be added.');
+    return false;
+  }
   const valueObj = displayValues.find(v => v.id === valueId);
   if (!valueObj) return false;
   if (valueObj.checkboxes.length >= 5) {
@@ -685,8 +1307,6 @@ export function addCheckboxToValue(valueId, name = null) {
   renderDisplayPanel();
   return true;
 }
-
-export const LAYER_CATEGORIES = ['Docks', 'Storage', 'Production', 'Habitats', 'Defense'];
 
 /**
  * Parse category name and layer number from a layer checkbox name (e.g. "Docks-1" or "Habitats-4").
@@ -723,6 +1343,39 @@ export function parseLayerCheckbox(cb, defaultIndex = 0) {
  * e.g. ['docks', 'storage', 'production', 'habitation', 'defense', 'structure']
  */
 export function getLayerPlacementCategoryOrder() {
+  const categoryMap = {
+    'docks': 'docks',
+    'dock': 'docks',
+    'storage': 'storage',
+    'production': 'production',
+    'habitats': 'habitation',
+    'habitat': 'habitation',
+    'defense': 'defense',
+    'defence': 'defense',
+    'structure': 'structure'
+  };
+
+  // If actionable layer elements exist, their order of addition / placement establishes the order of evaluation!
+  if (typeof activeActionableElements !== 'undefined' && Array.isArray(activeActionableElements)) {
+    const activeLayers = activeActionableElements.filter(e => e.decoratorId === 'layers');
+    if (activeLayers.length > 0) {
+      const order = [];
+      activeLayers.forEach(l => {
+        const catLower = (l.category || '').toLowerCase();
+        const catKey = categoryMap[catLower] || catLower || 'structure';
+        if (!order.includes(catKey)) {
+          order.push(catKey);
+        }
+      });
+      // Append standard defaults for categories not yet specified
+      const defaults = ['docks', 'storage', 'production', 'habitation', 'defense', 'structure'];
+      defaults.forEach(d => {
+        if (!order.includes(d)) order.push(d);
+      });
+      return order;
+    }
+  }
+
   let layersRow = null;
   if (typeof displayValues !== 'undefined' && Array.isArray(displayValues)) {
     layersRow = displayValues.find(v => v.id === 'layers');
@@ -735,17 +1388,6 @@ export function getLayerPlacementCategoryOrder() {
   if (!layersRow || !Array.isArray(layersRow.checkboxes) || layersRow.checkboxes.length === 0) {
     return ['docks', 'storage', 'production', 'habitation', 'defense', 'structure'];
   }
-
-  const categoryMap = {
-    'docks': 'docks',
-    'dock': 'docks',
-    'storage': 'storage',
-    'production': 'production',
-    'habitats': 'habitation',
-    'habitat': 'habitation',
-    'defense': 'defense',
-    'defence': 'defense'
-  };
 
   const parsedItems = layersRow.checkboxes.map((cb, idx) => {
     const parsed = parseLayerCheckbox(cb, idx);
@@ -965,7 +1607,7 @@ export function calculateLayeredPlacement(modules, alignmentAnchor = null, plotC
   const bb = getPlotBoundingBox(pConfig);
   const { minX, maxX, minY, maxY, minZ, maxZ, centerX, centerY, centerZ } = bb;
 
-  // 3. Parse active alignment anchor selections (allow multiple selections to define start of placement)
+  // 3. Parse active alignment anchor selection (mutually exclusive single selection defining start of placement)
   let activeKeys = [];
   if (Array.isArray(alignmentAnchor)) {
     activeKeys = alignmentAnchor.map(e => (e.behaviorKey || e.id || e.name || '').toLowerCase());
@@ -1270,8 +1912,8 @@ export function addCustomDisplayValue(valueName = null) {
   };
 
   displayValues.push(newValue);
+  addDecoratorToPipeline(id);
   saveDisplayPanelConfig();
-  renderDisplayPanel();
   return newValue;
 }
 
@@ -1308,6 +1950,12 @@ export function applyModuleDisplayBehavior(valueId, behaviorValue, behaviorKey, 
   }
 
   console.log(`[DisplayPanel] Using examined value "${behaviorValue}" (${behaviorKey}) as behavior for ${valueId}`);
+
+  // When Order of Layout is Blueprint, reload blueprint and skip all other actionable decorators
+  if (isOrderOfLayoutBlueprint() && valueId !== 'order-of-layout') {
+    console.log(`[DisplayPanel] Order of Layout is Blueprint: skipping actionable decorator "${valueId}"`);
+    return;
+  }
 
   // Dispatch to viewer placement and display pipeline
   if (typeof targetViewer.applyDisplayPlacementBehavior === 'function') {
@@ -1373,10 +2021,11 @@ export function calculateLayoutPlacement(modules, options = {}) {
   const curPlotCfg = getCurrentPlotConfig();
   const bb = getPlotBoundingBox(curPlotCfg);
 
-  if (mode.includes('blueprint')) {
+  if (mode.includes('blueprint') || isOrderOfLayoutBlueprint()) {
     sortedModuleData.forEach(m => {
       m.position = { ...m.origPos };
     });
+    return sortedModuleData;
   } else if (mode.includes('height') || dimension === 'y') {
     // Dimension considered: Y (height)
     let currentY = 0;
@@ -1820,7 +2469,547 @@ export function createPlotEntryElement() {
 }
 
 /**
- * Render the entire panel DOM.
+ * Create an Actionable Element Card DOM element carrying its parent Decorator heading,
+ * displaying only the selected element, and providing drag-reorder & delete controls.
+ */
+export function createActionableElementCard(item, activeIndex, totalActive) {
+  const cardEl = document.createElement('div');
+
+  const bpIsOrder = isOrderOfLayoutBlueprint();
+  const isThisItemBlueprint = item.decoratorId === 'order-of-layout' && (
+    item.elementId === 'layout-blueprint' ||
+    item.elementId === 'order-blueprint' ||
+    (item.behaviorKey && item.behaviorKey.toLowerCase().includes('blueprint')) ||
+    (item.elementName && item.elementName.toLowerCase().includes('blueprint'))
+  );
+
+  let extraClasses = '';
+  if (item.decoratorId === 'layers') extraClasses += ' is-actionable-layer';
+  if (bpIsOrder) {
+    if (isThisItemBlueprint) {
+      extraClasses += ' is-blueprint-active';
+    } else {
+      extraClasses += ' is-skipped-by-blueprint';
+    }
+  }
+
+  cardEl.className = 'display-value-row is-decorator is-actionable-element' + extraClasses;
+  cardEl.id = `actionable-element-${item.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  cardEl.draggable = true;
+  cardEl.title = 'Drag with hand to reorder placement (establishes evaluation order)';
+
+  // Drag and drop reordering inside the actionable pipeline via hand placement
+  cardEl.addEventListener('dragstart', (e) => {
+    e.stopPropagation();
+    e.dataTransfer.setData('text/plain', item.id);
+    e.dataTransfer.setData('source-index', String(activeIndex));
+    e.dataTransfer.effectAllowed = 'move';
+    cardEl.classList.add('is-dragging');
+  });
+
+  cardEl.addEventListener('dragend', () => {
+    cardEl.classList.remove('is-dragging');
+  });
+
+  // Calculate precise top or bottom placement indicator on dragover
+  cardEl.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = cardEl.getBoundingClientRect();
+    const isTop = (e.clientY - rect.top) < (rect.height / 2);
+    if (isTop) {
+      cardEl.classList.add('drag-placement-top');
+      cardEl.classList.remove('drag-placement-bottom');
+    } else {
+      cardEl.classList.add('drag-placement-bottom');
+      cardEl.classList.remove('drag-placement-top');
+    }
+  });
+
+  cardEl.addEventListener('dragleave', (e) => {
+    if (!cardEl.contains(e.relatedTarget)) {
+      cardEl.classList.remove('drag-placement-top', 'drag-placement-bottom');
+    }
+  });
+
+  cardEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isTop = cardEl.classList.contains('drag-placement-top');
+    cardEl.classList.remove('drag-placement-top', 'drag-placement-bottom');
+    const droppedId = e.dataTransfer.getData('text/plain');
+    if (droppedId) {
+      const sourceIdx = parseInt(e.dataTransfer.getData('source-index'), 10);
+      let targetIdx = isTop ? activeIndex : activeIndex + 1;
+      if (!isNaN(sourceIdx) && sourceIdx < targetIdx) {
+        targetIdx -= 1;
+      }
+      reorderActionableElement(droppedId, targetIdx);
+    }
+  });
+
+  // Header carrying its heading, drag handle, and action controls
+  const headerEl = document.createElement('div');
+  headerEl.className = 'display-value-header';
+
+  const titleGroup = document.createElement('div');
+  titleGroup.className = 'display-value-title-group';
+
+  // Drag handle with hand appearance
+  const dragHandle = document.createElement('span');
+  dragHandle.className = 'decorator-drag-handle hand-cursor';
+  dragHandle.title = 'Hand drag to reorder layer placement (determines evaluation order)';
+  dragHandle.textContent = '⠿';
+  titleGroup.appendChild(dragHandle);
+
+  const dot = document.createElement('span');
+  dot.className = 'header-dot glow-dot';
+  titleGroup.appendChild(dot);
+
+  // Carried Decorator Heading
+  const headingSpan = document.createElement('span');
+  headingSpan.className = 'display-value-name carried-decorator-heading';
+  headingSpan.textContent = item.decoratorName;
+  titleGroup.appendChild(headingSpan);
+
+  // Selected Element Name Badge
+  const elementBadge = document.createElement('span');
+  elementBadge.className = 'active-behavior-badge actionable-element-badge';
+  elementBadge.textContent = item.elementName;
+  titleGroup.appendChild(elementBadge);
+
+  // If item is Layers with layerNumber, show Evaluation Order badge
+  if (item.decoratorId === 'layers' && item.layerNumber) {
+    const evalBadge = document.createElement('span');
+    evalBadge.className = 'layer-eval-order-badge';
+    evalBadge.title = `Evaluation Order: Tier #${item.layerNumber}`;
+    evalBadge.textContent = `Eval #${item.layerNumber}`;
+    titleGroup.appendChild(evalBadge);
+  }
+
+  // When Order of Layout is Blueprint, show reloaded name for Blueprint, or yellow Skipped badge for other decorators
+  if (bpIsOrder) {
+    if (isThisItemBlueprint) {
+      const bpName = reloadBlueprintName() || item.blueprintName || getActiveBlueprint()?.name;
+      if (bpName) {
+        const bpNameBadge = document.createElement('span');
+        bpNameBadge.className = 'blueprint-reloaded-name';
+        bpNameBadge.title = `Active Blueprint: ${bpName}`;
+        bpNameBadge.textContent = bpName;
+        titleGroup.appendChild(bpNameBadge);
+      }
+    } else {
+      const skipBadge = document.createElement('span');
+      skipBadge.className = 'badge-skipped-yellow';
+      skipBadge.title = 'Skipped because Order of Layout is set to Blueprint';
+      skipBadge.textContent = 'Skipped by Blueprint';
+      titleGroup.appendChild(skipBadge);
+    }
+  }
+
+  headerEl.appendChild(titleGroup);
+
+  // Actions group on right: Move Up, Move Down, Remove
+  const actionsGroup = document.createElement('div');
+  actionsGroup.className = 'decorator-row-actions';
+
+  if (activeIndex > 0) {
+    const btnUp = document.createElement('button');
+    btnUp.className = 'btn-decorator-ctrl';
+    btnUp.title = 'Move up in layout progression';
+    btnUp.textContent = '▲';
+    btnUp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moveActionableElement(item.id, -1);
+    });
+    actionsGroup.appendChild(btnUp);
+  }
+
+  if (activeIndex < totalActive - 1) {
+    const btnDown = document.createElement('button');
+    btnDown.className = 'btn-decorator-ctrl';
+    btnDown.title = 'Move down in layout progression';
+    btnDown.textContent = '▼';
+    btnDown.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moveActionableElement(item.id, 1);
+    });
+    actionsGroup.appendChild(btnDown);
+  }
+
+  const btnRemove = document.createElement('button');
+  btnRemove.className = 'btn-decorator-ctrl btn-remove-decorator';
+  btnRemove.title = `Remove "${item.elementName}" from actionable panel`;
+  btnRemove.textContent = '✕';
+  btnRemove.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeActionableElement(item.id);
+  });
+  actionsGroup.appendChild(btnRemove);
+
+  headerEl.appendChild(actionsGroup);
+  cardEl.appendChild(headerEl);
+
+  // If item is Layers with layerNumber, show category dropdown
+  if (item.decoratorId === 'layers' && item.layerNumber) {
+    const extraRow = document.createElement('div');
+    extraRow.className = 'actionable-element-extra';
+
+    const selectEl = document.createElement('select');
+    selectEl.className = 'cyber-select-layer';
+    selectEl.title = `Select category for Layer ${item.layerNumber}`;
+
+    LAYER_CATEGORIES.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      if (item.category && cat.toLowerCase() === item.category.toLowerCase()) {
+        opt.selected = true;
+      }
+      selectEl.appendChild(opt);
+    });
+
+    selectEl.addEventListener('click', (e) => e.stopPropagation());
+    selectEl.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const val = selectEl.value;
+      item.category = val.toLowerCase();
+      const catCap = val.charAt(0).toUpperCase() + val.slice(1);
+      item.elementName = `${catCap}-${item.layerNumber}`;
+      refreshLayerNumbers();
+      saveActionableElements(activeActionableElements);
+      if (activeViewerInstance) {
+        const layerOrder = getLayerPlacementCategoryOrder();
+        applyModuleDisplayBehavior('layers', layerOrder.join(' > '), 'layer-reorder', activeViewerInstance, true);
+      }
+      renderDisplayPanel();
+    });
+
+    extraRow.appendChild(selectEl);
+    cardEl.appendChild(extraRow);
+  }
+
+  return cardEl;
+}
+
+/**
+ * Create a single unified Actionable Card for Layers.
+ * Any Layers added exist within that one heading.
+ * The order is - appended to the order name (e.g. "LAYERS - Docks-1 - Storage-2").
+ * Dragging and releasing any layer position will reorder the Layers.
+ */
+export function createUnifiedLayersCard(allLayers, activeIndex) {
+  const cardEl = document.createElement('div');
+  const bpIsOrder = isOrderOfLayoutBlueprint();
+  const skippedClass = bpIsOrder ? ' is-skipped-by-blueprint' : '';
+  cardEl.className = 'display-value-row is-decorator is-actionable-element is-unified-layers-card' + skippedClass;
+  cardEl.id = 'actionable-element-layers-unified';
+  cardEl.draggable = true;
+  cardEl.title = 'Layers Decorator (Drag header to reorder pipeline, or drag layer items to reorder layers)';
+
+  // Drag-and-drop reordering for the overall Layers card in the pipeline
+  cardEl.addEventListener('dragstart', (e) => {
+    if (e.target.closest('.unified-layer-item')) return;
+    e.stopPropagation();
+    e.dataTransfer.setData('text/plain', 'layers');
+    e.dataTransfer.setData('source-index', String(activeIndex));
+    e.dataTransfer.effectAllowed = 'move';
+    cardEl.classList.add('is-dragging');
+  });
+
+  cardEl.addEventListener('dragend', () => {
+    cardEl.classList.remove('is-dragging');
+  });
+
+  cardEl.addEventListener('dragover', (e) => {
+    if (e.dataTransfer.types.includes('layer-id')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = cardEl.getBoundingClientRect();
+    const isTop = (e.clientY - rect.top) < (rect.height / 2);
+    if (isTop) {
+      cardEl.classList.add('drag-placement-top');
+      cardEl.classList.remove('drag-placement-bottom');
+    } else {
+      cardEl.classList.add('drag-placement-bottom');
+      cardEl.classList.remove('drag-placement-top');
+    }
+  });
+
+  cardEl.addEventListener('dragleave', (e) => {
+    if (!cardEl.contains(e.relatedTarget)) {
+      cardEl.classList.remove('drag-placement-top', 'drag-placement-bottom');
+    }
+  });
+
+  cardEl.addEventListener('drop', (e) => {
+    if (e.dataTransfer.types.includes('layer-id')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const isTop = cardEl.classList.contains('drag-placement-top');
+    cardEl.classList.remove('drag-placement-top', 'drag-placement-bottom');
+    const droppedId = e.dataTransfer.getData('text/plain');
+    if (droppedId && droppedId !== 'layers') {
+      const sourceIdx = parseInt(e.dataTransfer.getData('source-index'), 10);
+      let targetIdx = isTop ? activeIndex : activeIndex + 1;
+      if (!isNaN(sourceIdx) && sourceIdx < targetIdx) {
+        targetIdx -= 1;
+      }
+      reorderActionableElement(droppedId, targetIdx);
+    }
+  });
+
+  // Header carrying the ONE single heading for LAYERS with the order appended to the order name
+  const headerEl = document.createElement('div');
+  headerEl.className = 'display-value-header unified-layers-header';
+
+  const titleGroup = document.createElement('div');
+  titleGroup.className = 'display-value-title-group';
+
+  // Overall drag handle
+  const dragHandle = document.createElement('span');
+  dragHandle.className = 'decorator-drag-handle hand-cursor';
+  dragHandle.title = 'Hand drag to reorder Layers within pipeline';
+  dragHandle.textContent = '⠿';
+  titleGroup.appendChild(dragHandle);
+
+  const dot = document.createElement('span');
+  dot.className = 'header-dot glow-dot';
+  titleGroup.appendChild(dot);
+
+  // One heading: "LAYERS" with "- <order>" appended to the order name
+  const headingSpan = document.createElement('span');
+  headingSpan.className = 'display-value-name carried-decorator-heading unified-layers-heading';
+  
+  const headingText = document.createElement('span');
+  headingText.className = 'heading-main-title';
+  headingText.textContent = 'LAYERS';
+  headingSpan.appendChild(headingText);
+
+  // Append order name: e.g. " - Docks-1 - Storage-2 - Production-3"
+  if (allLayers.length > 0) {
+    const orderText = allLayers.map(l => l.elementName).join(' - ');
+    const orderSpan = document.createElement('span');
+    orderSpan.className = 'layers-order-appended';
+    orderSpan.textContent = ` - ${orderText}`;
+    headingSpan.appendChild(orderSpan);
+  }
+
+  titleGroup.appendChild(headingSpan);
+
+  // Count badge
+  const countBadge = document.createElement('span');
+  countBadge.className = 'active-behavior-badge actionable-element-badge';
+  countBadge.textContent = `${allLayers.length} Tiers`;
+  titleGroup.appendChild(countBadge);
+
+  if (bpIsOrder) {
+    const skipBadge = document.createElement('span');
+    skipBadge.className = 'badge-skipped-yellow';
+    skipBadge.title = 'Skipped because Order of Layout is set to Blueprint';
+    skipBadge.textContent = 'Skipped by Blueprint';
+    titleGroup.appendChild(skipBadge);
+  }
+
+  headerEl.appendChild(titleGroup);
+
+  // Actions group on right: Move Up, Move Down, Clear all layers
+  const actionsGroup = document.createElement('div');
+  actionsGroup.className = 'decorator-row-actions';
+
+  if (activeIndex > 0) {
+    const btnUp = document.createElement('button');
+    btnUp.className = 'btn-decorator-ctrl';
+    btnUp.title = 'Move Layers up in layout progression';
+    btnUp.textContent = '▲';
+    btnUp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moveActionableElement(allLayers[0].id, -1);
+    });
+    actionsGroup.appendChild(btnUp);
+  }
+
+  if (activeIndex < activeActionableElements.length - allLayers.length) {
+    const btnDown = document.createElement('button');
+    btnDown.className = 'btn-decorator-ctrl';
+    btnDown.title = 'Move Layers down in layout progression';
+    btnDown.textContent = '▼';
+    btnDown.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moveActionableElement(allLayers[allLayers.length - 1].id, 1);
+    });
+    actionsGroup.appendChild(btnDown);
+  }
+
+  const btnRemoveAll = document.createElement('button');
+  btnRemoveAll.className = 'btn-decorator-ctrl btn-remove-decorator';
+  btnRemoveAll.title = 'Remove all Layers from actionable panel';
+  btnRemoveAll.textContent = '✕';
+  btnRemoveAll.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeDecoratorFromPipeline('layers');
+  });
+  actionsGroup.appendChild(btnRemoveAll);
+
+  headerEl.appendChild(actionsGroup);
+  cardEl.appendChild(headerEl);
+
+  // Container for all layers within that one heading
+  const itemsContainer = document.createElement('div');
+  itemsContainer.className = 'unified-layers-items-container';
+
+  allLayers.forEach((layer, layerIdx) => {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'unified-layer-item';
+    itemEl.id = `layer-item-${layer.id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    itemEl.draggable = true;
+    itemEl.title = 'Drag and release to reorder layer position (establishes evaluation order)';
+
+    // Drag-and-drop reordering inside the unified Layers card
+    itemEl.addEventListener('dragstart', (e) => {
+      e.stopPropagation();
+      e.dataTransfer.setData('layer-id', layer.id);
+      e.dataTransfer.setData('layer-index', String(layerIdx));
+      e.dataTransfer.effectAllowed = 'move';
+      itemEl.classList.add('is-dragging-layer');
+    });
+
+    itemEl.addEventListener('dragend', () => {
+      itemEl.classList.remove('is-dragging-layer');
+      itemsContainer.querySelectorAll('.drag-placement-top, .drag-placement-bottom').forEach(el => {
+        el.classList.remove('drag-placement-top', 'drag-placement-bottom');
+      });
+    });
+
+    itemEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = itemEl.getBoundingClientRect();
+      const isTop = (e.clientY - rect.top) < (rect.height / 2);
+      if (isTop) {
+        itemEl.classList.add('drag-placement-top');
+        itemEl.classList.remove('drag-placement-bottom');
+      } else {
+        itemEl.classList.add('drag-placement-bottom');
+        itemEl.classList.remove('drag-placement-top');
+      }
+    });
+
+    itemEl.addEventListener('dragleave', (e) => {
+      if (!itemEl.contains(e.relatedTarget)) {
+        itemEl.classList.remove('drag-placement-top', 'drag-placement-bottom');
+      }
+    });
+
+    itemEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isTop = itemEl.classList.contains('drag-placement-top');
+      itemEl.classList.remove('drag-placement-top', 'drag-placement-bottom');
+      const draggedLayerId = e.dataTransfer.getData('layer-id');
+      if (draggedLayerId) {
+        const sourceIdx = parseInt(e.dataTransfer.getData('layer-index'), 10);
+        let targetIdx = isTop ? layerIdx : layerIdx + 1;
+        if (!isNaN(sourceIdx) && sourceIdx < targetIdx) {
+          targetIdx -= 1;
+        }
+        reorderLayerPosition(draggedLayerId, targetIdx);
+      }
+    });
+
+    // Left group: Drag Handle + Order badge (#1, #2) + Layer Name
+    const leftGroup = document.createElement('div');
+    leftGroup.className = 'unified-layer-left';
+
+    const itemDragHandle = document.createElement('span');
+    itemDragHandle.className = 'decorator-drag-handle hand-cursor';
+    itemDragHandle.title = 'Hand drag to reorder layer position';
+    itemDragHandle.textContent = '⠿';
+    leftGroup.appendChild(itemDragHandle);
+
+    const orderBadge = document.createElement('span');
+    orderBadge.className = 'layer-eval-order-badge';
+    orderBadge.textContent = `#${layer.layerNumber}`;
+    orderBadge.title = `Tier #${layer.layerNumber} in Evaluation Order`;
+    leftGroup.appendChild(orderBadge);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'unified-layer-name';
+    nameSpan.textContent = layer.elementName;
+    leftGroup.appendChild(nameSpan);
+
+    itemEl.appendChild(leftGroup);
+
+    // Right group: Category switch dropdown + Remove button
+    const rightGroup = document.createElement('div');
+    rightGroup.className = 'unified-layer-right';
+
+    const selectEl = document.createElement('select');
+    selectEl.className = 'cyber-select-layer cyber-select-layer-mini';
+    selectEl.title = `Switch category for Layer ${layer.layerNumber}`;
+
+    LAYER_CATEGORIES.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      if (layer.category && cat.toLowerCase() === layer.category.toLowerCase()) {
+        opt.selected = true;
+      }
+      selectEl.appendChild(opt);
+    });
+
+    selectEl.addEventListener('click', (e) => e.stopPropagation());
+    selectEl.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const val = selectEl.value;
+      const oldCat = (layer.category || '').toLowerCase();
+      const newCat = val.toLowerCase();
+      if (oldCat === newCat) return;
+
+      // If another active layer already has this category, swap with it to prevent duplicate names
+      const duplicateLayer = allLayers.find(l => l !== layer && (l.category || '').toLowerCase() === newCat);
+      if (duplicateLayer) {
+        duplicateLayer.category = oldCat;
+        const dupCatCap = oldCat.charAt(0).toUpperCase() + oldCat.slice(1);
+        duplicateLayer.elementName = `${dupCatCap}-${duplicateLayer.layerNumber}`;
+      }
+
+      layer.category = newCat;
+      const catCap = val.charAt(0).toUpperCase() + val.slice(1);
+      layer.elementName = `${catCap}-${layer.layerNumber}`;
+      refreshLayerNumbers();
+      saveActionableElements(activeActionableElements);
+      if (activeViewerInstance) {
+        const layerOrder = getLayerPlacementCategoryOrder();
+        applyModuleDisplayBehavior('layers', layerOrder.join(' > '), 'layer-reorder', activeViewerInstance, true);
+      }
+      renderDisplayPanel();
+    });
+    rightGroup.appendChild(selectEl);
+
+    const btnRemoveLayer = document.createElement('button');
+    btnRemoveLayer.className = 'btn-decorator-ctrl btn-remove-decorator';
+    btnRemoveLayer.title = `Remove "${layer.elementName}" from Layers`;
+    btnRemoveLayer.textContent = '✕';
+    btnRemoveLayer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeActionableElement(layer.id);
+    });
+    rightGroup.appendChild(btnRemoveLayer);
+
+    itemEl.appendChild(rightGroup);
+    itemsContainer.appendChild(itemEl);
+  });
+
+  cardEl.appendChild(itemsContainer);
+  return cardEl;
+}
+
+/**
+ * Render the entire panel DOM: Decorator Palette + Actionable Decorator Pipeline.
  */
 export function renderDisplayPanel() {
   if (typeof document === 'undefined') return;
@@ -1833,272 +3022,262 @@ export function renderDisplayPanel() {
 
   container.innerHTML = '';
 
-  // 2. Render Layout Values & Checkboxes (Lower pills below)
+  // 2. Render Decorator Palette / Tray
+  const trayEl = document.createElement('div');
+  trayEl.className = 'decorator-tray';
+
+  const trayHeader = document.createElement('div');
+  trayHeader.className = 'decorator-tray-header';
+
+  const trayTitle = document.createElement('span');
+  trayTitle.className = 'decorator-tray-title';
+  trayTitle.innerHTML = '<span class="header-dot glow-dot"></span>Decorator Palette';
+  trayHeader.appendChild(trayTitle);
+
+  const trayTip = document.createElement('span');
+  trayTip.className = 'decorator-tray-tip';
+  trayTip.textContent = 'Drag or click to populate layout pipeline';
+  trayHeader.appendChild(trayTip);
+
+  trayEl.appendChild(trayHeader);
+
+  const chipsContainer = document.createElement('div');
+  chipsContainer.className = 'decorator-chips-container';
+
   displayValues.forEach(val => {
-    const rowEl = document.createElement('div');
-    rowEl.className = 'display-value-row';
-    rowEl.id = `display-value-row-${val.id}`;
+    const isActive = activeActionableElements.some(e => e.decoratorId === val.id);
+    const isDropdownOpen = activeDropdownDecoratorId === val.id;
+    const chip = document.createElement('div');
+    chip.className = `decorator-chip ${isActive ? 'is-active' : ''} ${isDropdownOpen ? 'dropdown-open' : ''}`;
+    chip.draggable = true;
+    chip.title = isActive
+      ? `${val.name} (Active in pipeline • Drag to reorder, or click + to select element)`
+      : `${val.name} • Drag into Actionable Panel, or click + to select element`;
 
-    // Get active behavior by examining the 5 checkboxes
-    const examination = examineFiveCheckboxes(val.id);
-    const activeName = examination ? examination.behaviorValue : 'Default';
+    // Dedicated '+' button for opening dropdown of selectable elements
+    const btnPlus = document.createElement('button');
+    btnPlus.className = 'decorator-chip-plus';
+    btnPlus.title = `Click to view ${val.name} elements for selection into Actionable Panel`;
+    btnPlus.textContent = isDropdownOpen ? '✕' : '＋';
+    btnPlus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activeDropdownDecoratorId = (activeDropdownDecoratorId === val.id) ? null : val.id;
+      renderDisplayPanel();
+    });
+    chip.appendChild(btnPlus);
 
-    // 1. Row Header
-    const headerEl = document.createElement('div');
-    headerEl.className = 'display-value-header';
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'decorator-chip-label';
+    labelSpan.textContent = val.name;
+    chip.appendChild(labelSpan);
 
-    const titleGroup = document.createElement('div');
-    titleGroup.className = 'display-value-title-group';
-
-    const dot = document.createElement('span');
-    dot.className = 'header-dot';
-    titleGroup.appendChild(dot);
-
-    const titleText = document.createElement('span');
-    titleText.className = 'display-value-name';
-    titleText.textContent = val.name;
-    titleGroup.appendChild(titleText);
-
-    headerEl.appendChild(titleGroup);
-
-    // If fewer than 5 checkboxes, provide button to add up to 5
-    if (val.checkboxes.length < 5) {
-      const btnAddCb = document.createElement('button');
-      btnAddCb.className = 'btn-xs-cyber';
-      btnAddCb.title = 'Add an additional checkbox (up to 5 max)';
-      btnAddCb.textContent = '+ Checkbox';
-      btnAddCb.style.marginLeft = 'auto';
-      btnAddCb.addEventListener('click', () => {
-        addCheckboxToValue(val.id);
-      });
-      headerEl.appendChild(btnAddCb);
+    if (isActive) {
+      const badge = document.createElement('span');
+      badge.className = 'decorator-chip-badge';
+      badge.textContent = 'Active';
+      chip.appendChild(badge);
     }
 
-    rowEl.appendChild(headerEl);
+    // Dropdown menu showing the selectable elements of this decorator palette
+    if (isDropdownOpen) {
+      const menuEl = document.createElement('div');
+      menuEl.className = 'decorator-dropdown-menu';
 
-    // 2. Checkboxes Group (up to 5 checkboxes)
-    const cbGroupEl = document.createElement('div');
-    cbGroupEl.className = 'display-checkboxes-group';
+      const menuHeader = document.createElement('div');
+      menuHeader.className = 'decorator-dropdown-header';
+      menuHeader.textContent = `${val.name} Elements`;
+      menuEl.appendChild(menuHeader);
 
-    val.checkboxes.forEach((cb, idx) => {
-      const itemEl = document.createElement('div');
-      itemEl.className = `display-checkbox-item ${cb.checked ? 'is-checked' : ''} ${cb.isDefault ? 'is-default' : ''}`;
-
-      const isEditingThis = editingCheckboxState &&
-        editingCheckboxState.valueId === val.id &&
-        editingCheckboxState.checkboxIndex === idx;
-
-      if (val.id === 'layers') {
-        const parsed = parseLayerCheckbox(cb, idx);
-        const isHighlighted = !!cb.checked;
-
-        const labelEl = document.createElement('label');
-        labelEl.className = `display-cb-label layer-cb-label ${isHighlighted ? 'layer-highlighted' : ''}`;
-        labelEl.title = `Layer ${parsed.number}: ${parsed.category} • Click to select / highlight`;
-
-        const inputEl = document.createElement('input');
-        inputEl.type = 'checkbox';
-        inputEl.checked = isHighlighted;
-        inputEl.className = 'cyber-checkbox-input';
-
-        inputEl.addEventListener('change', () => {
-          const result = examineFiveCheckboxes(val.id, idx, inputEl.checked);
-          if (result && activeViewerInstance) {
-            applyModuleDisplayBehavior(result.valueId, result.behaviorValue, result.behaviorKey, activeViewerInstance, true, result.checkedEntries);
+      val.checkboxes.forEach((cb, idx) => {
+        let isSelected = false;
+        let activeLayerNumber = null;
+        if (val.id === 'layers') {
+          const parsed = parseLayerCheckbox(cb, idx);
+          const found = activeActionableElements.find(e =>
+            e.decoratorId === 'layers' &&
+            (e.category === (parsed.category || '').toLowerCase() || e.elementId === cb.id)
+          );
+          if (found) {
+            isSelected = true;
+            activeLayerNumber = found.layerNumber;
           }
-          renderDisplayPanel();
-        });
-
-        const customCheck = document.createElement('span');
-        customCheck.className = 'cyber-checkbox-box';
-
-        labelEl.appendChild(inputEl);
-        labelEl.appendChild(customCheck);
-
-        if (isHighlighted) {
-          // Highlighted checkbox: allow drop-down selection of Docks, Storage, Production, Habitats or Defense
-          const selectEl = document.createElement('select');
-          selectEl.className = 'cyber-select-layer';
-          selectEl.title = `Select category for Layer ${parsed.number}`;
-
-          LAYER_CATEGORIES.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            if (cat.toLowerCase() === parsed.category.toLowerCase()) {
-              opt.selected = true;
-            }
-            selectEl.appendChild(opt);
-          });
-          selectEl.value = parsed.category;
-
-          selectEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-          });
-
-          selectEl.addEventListener('change', (e) => {
-            e.stopPropagation();
-            swapLayerCheckboxCategory(idx, selectEl.value);
-          });
-
-          labelEl.appendChild(selectEl);
-
-          const numBadge = document.createElement('span');
-          numBadge.className = 'layer-number-badge';
-          numBadge.textContent = `-${parsed.number}`;
-          labelEl.appendChild(numBadge);
         } else {
-          // Non-highlighted checkbox: show name (e.g. Storage-2) with quick dropdown arrow
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'checkbox-name-text layer-name-text';
-          nameSpan.textContent = cb.name;
-          labelEl.appendChild(nameSpan);
-
-          const quickSelect = document.createElement('select');
-          quickSelect.className = 'cyber-select-layer-quick';
-          quickSelect.title = `Select category and swap`;
-
-          const defOpt = document.createElement('option');
-          defOpt.value = '';
-          defOpt.textContent = '▼';
-          defOpt.disabled = true;
-          defOpt.selected = true;
-          quickSelect.appendChild(defOpt);
-
-          LAYER_CATEGORIES.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            quickSelect.appendChild(opt);
-          });
-
-          quickSelect.addEventListener('click', (e) => {
-            e.stopPropagation();
-          });
-
-          quickSelect.addEventListener('change', (e) => {
-            e.stopPropagation();
-            if (quickSelect.value) {
-              swapLayerCheckboxCategory(idx, quickSelect.value);
-            }
-          });
-
-          labelEl.appendChild(quickSelect);
+          isSelected = activeActionableElements.some(e => e.decoratorId === val.id && e.elementId === cb.id);
         }
 
-        if (cb.isDefault) {
-          const defBadge = document.createElement('span');
-          defBadge.className = 'checkbox-default-tag';
-          defBadge.textContent = 'DEF';
-          labelEl.appendChild(defBadge);
-        }
-
-        itemEl.appendChild(labelEl);
-      } else if (isEditingThis) {
-        // Edit mode input
-        const editWrap = document.createElement('div');
-        editWrap.className = 'checkbox-edit-wrapper';
-
-        const textInput = document.createElement('input');
-        textInput.type = 'text';
-        textInput.className = 'cyber-input-edit';
-        textInput.value = cb.name;
-        textInput.placeholder = 'Name checkbox...';
-        editWrap.appendChild(textInput);
-
-        const btnSave = document.createElement('button');
-        btnSave.className = 'btn-icon-save';
-        btnSave.title = 'Save checkbox name';
-        btnSave.textContent = '✓';
-        btnSave.addEventListener('click', (e) => {
-          e.stopPropagation();
-          renameCheckbox(val.id, idx, textInput.value);
-          editingCheckboxState = null;
-        });
-        editWrap.appendChild(btnSave);
-
-        const btnCancel = document.createElement('button');
-        btnCancel.className = 'btn-icon-cancel';
-        btnCancel.title = 'Cancel editing';
-        btnCancel.textContent = '✕';
-        btnCancel.addEventListener('click', (e) => {
-          e.stopPropagation();
-          editingCheckboxState = null;
-          renderDisplayPanel();
-        });
-        editWrap.appendChild(btnCancel);
-
-        textInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            renameCheckbox(val.id, idx, textInput.value);
-            editingCheckboxState = null;
-          } else if (e.key === 'Escape') {
-            editingCheckboxState = null;
-            renderDisplayPanel();
-          }
-        });
-
-        itemEl.appendChild(editWrap);
-        setTimeout(() => textInput.focus(), 0);
-      } else {
-        // Standard view: Checkbox, Name, and Edit Icon ("can be named by an edit later")
-        const labelEl = document.createElement('label');
-        labelEl.className = 'display-cb-label';
-        labelEl.title = `${cb.name}${cb.isDefault ? ' (Default)' : ''} • Click to toggle`;
-
-        const inputEl = document.createElement('input');
-        inputEl.type = 'checkbox';
-        inputEl.checked = !!cb.checked;
-        inputEl.className = 'cyber-checkbox-input';
-
-        // When any checkbox is clicked: examine the 5 checkboxes and use that value as a behavior
-        inputEl.addEventListener('change', () => {
-          const result = examineFiveCheckboxes(val.id, idx, inputEl.checked);
-          if (result && activeViewerInstance) {
-            applyModuleDisplayBehavior(result.valueId, result.behaviorValue, result.behaviorKey, activeViewerInstance, true, result.checkedEntries);
-          }
-          renderDisplayPanel();
-        });
-
-        const customCheck = document.createElement('span');
-        customCheck.className = 'cyber-checkbox-box';
+        const itemEl = document.createElement('div');
+        itemEl.className = `decorator-dropdown-item ${isSelected ? 'is-selected' : ''}`;
+        itemEl.title = isSelected
+          ? `"${cb.name}" is active in Actionable Panel${activeLayerNumber ? ` (Evaluation Order #${activeLayerNumber})` : ''}`
+          : `Add "${cb.name}" into Actionable Panel (establishes evaluation order)`;
 
         const nameSpan = document.createElement('span');
-        nameSpan.className = 'checkbox-name-text';
         nameSpan.textContent = cb.name;
+        itemEl.appendChild(nameSpan);
 
-        labelEl.appendChild(inputEl);
-        labelEl.appendChild(customCheck);
-        labelEl.appendChild(nameSpan);
-
-        if (cb.isDefault) {
-          const defBadge = document.createElement('span');
-          defBadge.className = 'checkbox-default-tag';
-          defBadge.textContent = 'DEF';
-          labelEl.appendChild(defBadge);
+        if (isSelected) {
+          const checkIcon = document.createElement('span');
+          checkIcon.className = 'decorator-dropdown-check';
+          checkIcon.textContent = activeLayerNumber ? `✓ (#${activeLayerNumber})` : '✓';
+          itemEl.appendChild(checkIcon);
         }
 
-        itemEl.appendChild(labelEl);
-
-        // Edit button to name the checkbox later
-        const btnEdit = document.createElement('button');
-        btnEdit.className = 'btn-edit-checkbox';
-        btnEdit.title = `Rename "${cb.name}"`;
-        btnEdit.textContent = '✏️';
-        btnEdit.addEventListener('click', (e) => {
+        itemEl.addEventListener('click', (e) => {
           e.stopPropagation();
-          editingCheckboxState = { valueId: val.id, checkboxIndex: idx };
-          renderDisplayPanel();
+          addActionableElement(val.id, idx);
         });
-        itemEl.appendChild(btnEdit);
-      }
 
-      cbGroupEl.appendChild(itemEl);
+        menuEl.appendChild(itemEl);
+      });
+
+      chip.appendChild(menuEl);
+    }
+
+    chip.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', val.id);
+      e.dataTransfer.effectAllowed = 'copyMove';
+      chip.classList.add('is-dragging');
     });
 
-    rowEl.appendChild(cbGroupEl);
-    container.appendChild(rowEl);
+    chip.addEventListener('dragend', () => {
+      chip.classList.remove('is-dragging');
+    });
+
+    chip.addEventListener('click', (e) => {
+      if (e.target.closest('.decorator-chip-plus') || e.target.closest('.decorator-dropdown-menu')) {
+        return;
+      }
+      addActionableElement(val.id, 0);
+    });
+
+    chipsContainer.appendChild(chip);
   });
+
+  trayEl.appendChild(chipsContainer);
+  container.appendChild(trayEl);
+
+  // 3. Render Actionable Decorator Pipeline Section
+  const pipelineSection = document.createElement('div');
+  pipelineSection.className = 'decorator-pipeline-section';
+
+  const pipelineHeader = document.createElement('div');
+  pipelineHeader.className = 'decorator-pipeline-header';
+
+  const titleGroup = document.createElement('div');
+  titleGroup.className = 'decorator-pipeline-title-group';
+
+  const titleText = document.createElement('span');
+  titleText.className = 'decorator-pipeline-title';
+  titleText.textContent = 'Actionable Decorators';
+  titleGroup.appendChild(titleText);
+
+  const countBadge = document.createElement('span');
+  countBadge.className = 'decorator-pipeline-badge';
+  countBadge.textContent = `${activeActionableElements.length} Elements Active`;
+  titleGroup.appendChild(countBadge);
+
+  pipelineHeader.appendChild(titleGroup);
+
+  const pipelineActions = document.createElement('div');
+  pipelineActions.className = 'decorator-pipeline-actions';
+
+  if (activeActionableElements.length > 0) {
+    const btnClear = document.createElement('button');
+    btnClear.className = 'btn-xs-cyber';
+    btnClear.title = 'Clear all elements from actionable panel';
+    btnClear.textContent = 'Clear';
+    btnClear.addEventListener('click', () => clearActionableElements());
+    pipelineActions.appendChild(btnClear);
+  }
+
+  pipelineHeader.appendChild(pipelineActions);
+  pipelineSection.appendChild(pipelineHeader);
+
+  // Dropzone Container
+  const dropzoneEl = document.createElement('div');
+  dropzoneEl.id = 'actionable-decorator-pipeline';
+  dropzoneEl.className = 'decorator-pipeline-dropzone';
+
+  dropzoneEl.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    dropzoneEl.classList.add('drag-over');
+  });
+
+  dropzoneEl.addEventListener('dragleave', (e) => {
+    if (!dropzoneEl.contains(e.relatedTarget)) {
+      dropzoneEl.classList.remove('drag-over');
+    }
+  });
+
+  dropzoneEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzoneEl.classList.remove('drag-over');
+    const droppedId = e.dataTransfer.getData('text/plain');
+    if (droppedId) {
+      if (droppedId.includes(':') || droppedId === 'layers') {
+        reorderActionableElement(droppedId, activeActionableElements.length);
+      } else {
+        addActionableElement(droppedId, 0);
+      }
+    }
+  });
+
+  // Actionable panel starts empty at first!
+  if (activeActionableElements.length === 0) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'decorator-empty-state';
+    emptyState.innerHTML = `
+      <div class="empty-state-ring">
+        <span class="empty-state-icon">＋</span>
+      </div>
+      <div class="empty-state-title">Actionable Decorator Panel is empty</div>
+      <div class="empty-state-desc">Click the ＋ on any decorator above to choose an element into this panel, or drag decorators to define your layout progression.</div>
+    `;
+
+    const quickActions = document.createElement('div');
+    quickActions.className = 'empty-state-actions';
+
+    const btnOrder = document.createElement('button');
+    btnOrder.className = 'btn-xs-cyber';
+    btnOrder.textContent = '+ Order of Layout';
+    btnOrder.addEventListener('click', () => addActionableElement('order-of-layout', 0));
+    quickActions.appendChild(btnOrder);
+
+    const btnLayers = document.createElement('button');
+    btnLayers.className = 'btn-xs-cyber';
+    btnLayers.textContent = '+ Layers';
+    btnLayers.addEventListener('click', () => addActionableElement('layers', 0));
+    quickActions.appendChild(btnLayers);
+
+    const btnMode = document.createElement('button');
+    btnMode.className = 'btn-xs-cyber';
+    btnMode.textContent = '+ Layout Mode';
+    btnMode.addEventListener('click', () => addActionableElement('layout-mode', 1));
+    quickActions.appendChild(btnMode);
+
+    emptyState.appendChild(quickActions);
+    dropzoneEl.appendChild(emptyState);
+  } else {
+    // Populate active actionable elements:
+    // Any Layers added exist within that one heading.
+    // Non-layer elements are rendered as their regular element cards.
+    let renderedLayersCard = false;
+    activeActionableElements.forEach((item, idx) => {
+      if (item.decoratorId === 'layers') {
+        if (!renderedLayersCard) {
+          const allLayers = activeActionableElements.filter(e => e.decoratorId === 'layers');
+          dropzoneEl.appendChild(createUnifiedLayersCard(allLayers, idx));
+          renderedLayersCard = true;
+        }
+      } else {
+        dropzoneEl.appendChild(createActionableElementCard(item, idx, activeActionableElements.length));
+      }
+    });
+  }
+
+  pipelineSection.appendChild(dropzoneEl);
+  container.appendChild(pipelineSection);
 }
 
 /**

@@ -12,6 +12,7 @@ import { generatePlanXML, downloadXMLFile, showCreateBlueprintModal, setFefbModu
 import { initModuleDisplayPanel, setActiveBlueprint, setPlotConfig } from './module-display-panel.js';
 import { getInitialModuleDimensions } from './module-bounds-hashtable.js';
 import { compositionRoot } from './composition-root.js';
+import { SNAP_POINTS_DB, syncCustomSnapPoints, hasCustomSnapPointsForMacro } from './snap-points-db.js';
 
 const RESOURCE_METADATA = {
   hullParts: { name: 'Hull Parts', desc: 'Primary structural material', colorClass: 'text-cyan' },
@@ -77,6 +78,7 @@ function initApp() {
     }
   });
   compositionRoot.setViewer(viewer);
+  window.viewer = viewer;
 
   // Handle real-time continuous movement from 3D axis translation arrows
   viewer.onModuleMoved = (index, pos, isFinal) => {
@@ -154,6 +156,7 @@ function initApp() {
 
   // 2. Initialize sample plans storage & selector
   initSamplesStorage();
+  syncCustomSnapPoints();
 
   // 3. Initialize Module Display & Placement Behaviors Panel (5-checkbox examination system)
   initModuleDisplayPanel(viewer);
@@ -389,6 +392,20 @@ function calculateAndRenderStats(plan) {
         item.addEventListener('click', (e) => {
           e.stopPropagation(); // Avoid triggering parent stat box click
           
+          // Clear any previous Component Visibility highlight
+          clearComponentVisibilityHighlights();
+          clearPersistentHighlights();
+
+          // Colorized checkbox should be unchecked for analysis
+          const colorizedCb = document.getElementById('colorized-checkbox');
+          if (colorizedCb && colorizedCb.checked) {
+            colorizedCb.checked = false;
+            saveCheckboxState('colorized-checkbox', false);
+            if (viewer && typeof viewer.setColorized === 'function') {
+              viewer.setColorized(false);
+            }
+          }
+          
           if (activeMacroFilter === macro) {
             activeMacroFilter = null;
           } else {
@@ -440,6 +457,10 @@ function calculateAndRenderStats(plan) {
       
       item.addEventListener('click', (e) => {
         e.stopPropagation();
+        
+        // Clear any previous Component Visibility highlight
+        clearComponentVisibilityHighlights();
+        clearPersistentHighlights();
         
         if (activeMacroFilter === macro) {
           activeMacroFilter = null;
@@ -902,10 +923,15 @@ function selectClosestCategoryModuleToCenter(category) {
   }
 }
 
+function clearComponentVisibilityHighlights() {
+  const container = document.getElementById('visibility-controls-container') || document;
+  container.querySelectorAll('.selected-persistent, .reveal-highlight-cv, .highlighted-cat, .reveal-highlight')
+    .forEach(el => el.classList.remove('selected-persistent', 'reveal-highlight-cv', 'highlighted-cat', 'reveal-highlight'));
+}
+
 function clearPersistentHighlights() {
   // Clear persistent highlights in Component Visibility
-  document.querySelectorAll('.visibility-row.selected-persistent, .visibility-cat-header.selected-persistent')
-    .forEach(el => el.classList.remove('selected-persistent'));
+  clearComponentVisibilityHighlights();
 
   // Clear persistent highlights in Structure Analysis
   document.querySelectorAll('.stat-box.selected-persistent, .stat-macro-item.selected-persistent')
@@ -959,6 +985,9 @@ function scrollAndHighlightVisibilityComponent(category, macro = null) {
   const container = document.getElementById('visibility-controls-container');
   if (!container) return;
 
+  // Clear previous Component Visibility highlights first
+  clearComponentVisibilityHighlights();
+
   const target = macro 
     ? container.querySelector(`.visibility-row[data-macro="${macro}"]`)
     : container.querySelector(`.visibility-cat-header[data-category="${category}"]`);
@@ -1003,6 +1032,231 @@ function progressToNextComponent() {
   }
 }
 
+/**
+ * Escape CSS attribute selectors safely
+ */
+function escapeCssAttr(str) {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(str);
+  }
+  return String(str).replace(/["\\]/g, '\\$&');
+}
+
+/**
+ * Renders the "Module Components" dropdown for the selected module: one checkbox per
+ * component (.dae) file in the module's asset folder. Toggling a checkbox re-renders
+ * that module with the chosen components.
+ * If Module Components is expanded, reveals the expansion as a floating pill overlaying Module Navigator.
+ * @param {number} index
+ */
+let componentsRenderToken = 0;
+async function renderModuleComponentsDropdown(index) {
+  const section = document.getElementById('det-components-section');
+  const list = document.getElementById('det-components-list');
+  const countEl = document.getElementById('det-components-count');
+  const folderEl = document.getElementById('det-components-folder');
+  const dropdown = document.getElementById('det-components-dropdown');
+
+  const floatingPill = document.getElementById('module-components-floating-pill');
+  const floatingList = document.getElementById('floating-components-list');
+  const floatingCountEl = document.getElementById('floating-components-count');
+  const floatingFolderEl = document.getElementById('floating-components-folder');
+  const navPillBtn = document.getElementById('btn-nav-components-pill');
+  const navCountEl = document.getElementById('nav-components-count');
+
+  if (!floatingPill || !floatingList || !viewer || typeof viewer.getModuleComponentOptions !== 'function') return;
+
+  const token = ++componentsRenderToken;
+  const { folderPath, components } = await viewer.getModuleComponentOptions(index);
+  // Ignore stale results if the selection changed while fetching
+  if (token !== componentsRenderToken || selectedIndex !== index) return;
+
+  if (list) list.innerHTML = '';
+  if (floatingList) floatingList.innerHTML = '';
+
+  if (!folderPath || components.length === 0) {
+    if (section) section.classList.add('hidden');
+    if (floatingPill) floatingPill.classList.add('hidden');
+    if (navPillBtn) navPillBtn.classList.add('hidden');
+    if (dropdown) dropdown.open = false;
+    return;
+  }
+  if (section) section.classList.remove('hidden');
+  if (navPillBtn) navPillBtn.classList.remove('hidden');
+
+  const folderName = folderPath.substring(folderPath.lastIndexOf('/') + 1);
+  if (folderEl) folderEl.textContent = folderName;
+  if (floatingFolderEl) floatingFolderEl.textContent = folderName;
+
+  // Animation halt and defaults subdue controls
+  const chkStopAnim = document.getElementById('chk-stop-anim');
+  const chkDetStopAnim = document.getElementById('chk-det-stop-anim');
+  const chkSubdueDefaults = document.getElementById('chk-subdue-defaults');
+  const chkDetSubdueDefaults = document.getElementById('chk-det-subdue-defaults');
+
+  const isHalted = typeof viewer.isModuleAnimationHalted === 'function' ? viewer.isModuleAnimationHalted(index) : false;
+  if (chkStopAnim) chkStopAnim.checked = isHalted;
+  if (chkDetStopAnim) chkDetStopAnim.checked = isHalted;
+
+  const handleStopAnimChange = (checked) => {
+    if (typeof viewer.setModuleAnimationHalted === 'function') {
+      viewer.setModuleAnimationHalted(index, checked);
+    }
+    if (chkStopAnim) chkStopAnim.checked = checked;
+    if (chkDetStopAnim) chkDetStopAnim.checked = checked;
+  };
+
+  if (chkStopAnim) chkStopAnim.onchange = (e) => handleStopAnimChange(e.target.checked);
+  if (chkDetStopAnim) chkDetStopAnim.onchange = (e) => handleStopAnimChange(e.target.checked);
+
+  const updateSubdueDefaultsState = () => {
+    const targetList = floatingList || list;
+    if (!targetList) return;
+    const defaultBoxes = targetList.querySelectorAll('input[type="checkbox"][data-is-default="true"]');
+    const allDefaultsUnchecked = defaultBoxes.length > 0 && Array.from(defaultBoxes).every(cb => !cb.checked);
+    if (chkSubdueDefaults) chkSubdueDefaults.checked = allDefaultsUnchecked;
+    if (chkDetSubdueDefaults) chkDetSubdueDefaults.checked = allDefaultsUnchecked;
+  };
+
+  const handleSubdueDefaultsChange = async (subdue) => {
+    if (floatingList) {
+      const defaultBoxesFloating = floatingList.querySelectorAll('input[type="checkbox"][data-is-default="true"]');
+      defaultBoxesFloating.forEach(cb => { cb.checked = !subdue; });
+    }
+    if (list) {
+      const defaultBoxesList = list.querySelectorAll('input[type="checkbox"][data-is-default="true"]');
+      defaultBoxesList.forEach(cb => { cb.checked = !subdue; });
+    }
+    updateCount();
+    if (chkSubdueDefaults) chkSubdueDefaults.checked = subdue;
+    if (chkDetSubdueDefaults) chkDetSubdueDefaults.checked = subdue;
+
+    const targetList = floatingList || list;
+    const files = targetList ? Array.from(targetList.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.dataset.file) : [];
+    const allBoxes = document.querySelectorAll('#det-components-list input[type="checkbox"], #floating-components-list input[type="checkbox"]');
+    allBoxes.forEach(el => { el.disabled = true; });
+    try {
+      await viewer.setModuleComponentFiles(index, files);
+    } finally {
+      allBoxes.forEach(el => { el.disabled = false; });
+    }
+  };
+
+  if (chkSubdueDefaults) chkSubdueDefaults.onchange = (e) => handleSubdueDefaultsChange(e.target.checked);
+  if (chkDetSubdueDefaults) chkDetSubdueDefaults.onchange = (e) => handleSubdueDefaultsChange(e.target.checked);
+
+  // Billboard State controls
+  const billboardGroup = document.getElementById('toolbar-billboard-group');
+  const detBillboardGroup = document.getElementById('toolbar-det-billboard-group');
+  const selBillboardState = document.getElementById('sel-billboard-state');
+  const selDetBillboardState = document.getElementById('sel-det-billboard-state');
+
+  const hasBillboards = typeof viewer.hasModuleBillboards === 'function' ? viewer.hasModuleBillboards(index) : false;
+  if (hasBillboards) {
+    if (billboardGroup) billboardGroup.classList.remove('hidden');
+    if (detBillboardGroup) detBillboardGroup.classList.remove('hidden');
+    const curState = typeof viewer.getBillboardState === 'function' ? viewer.getBillboardState(index) : 'auto';
+    if (selBillboardState) selBillboardState.value = curState;
+    if (selDetBillboardState) selDetBillboardState.value = curState;
+  } else {
+    if (billboardGroup) billboardGroup.classList.add('hidden');
+    if (detBillboardGroup) detBillboardGroup.classList.add('hidden');
+  }
+
+  const handleBillboardStateChange = (state) => {
+    if (typeof viewer.setBillboardState === 'function') {
+      viewer.setBillboardState(state, index);
+    }
+    if (selBillboardState) selBillboardState.value = state;
+    if (selDetBillboardState) selDetBillboardState.value = state;
+  };
+
+  if (selBillboardState) selBillboardState.onchange = (e) => handleBillboardStateChange(e.target.value);
+  if (selDetBillboardState) selDetBillboardState.onchange = (e) => handleBillboardStateChange(e.target.value);
+
+  const updateCount = () => {
+    const targetList = floatingList || list;
+    const checked = targetList ? targetList.querySelectorAll('input[type="checkbox"]:checked').length : 0;
+    const str = `${checked}/${components.length}`;
+    if (countEl) countEl.textContent = str;
+    if (floatingCountEl) floatingCountEl.textContent = str;
+    if (navCountEl) navCountEl.textContent = str;
+  };
+
+  const createComponentRow = (comp, isFloating) => {
+    const row = document.createElement('label');
+    row.className = 'det-component-row';
+    row.title = comp.file;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = comp.checked;
+    cb.dataset.file = comp.file;
+    if (comp.isDefault) {
+      cb.dataset.isDefault = 'true';
+    }
+
+    const name = document.createElement('span');
+    name.className = 'det-component-name';
+    name.textContent = comp.file.replace(/\.dae$/i, '');
+
+    row.appendChild(cb);
+    row.appendChild(name);
+    if (comp.isDefault) {
+      const tag = document.createElement('span');
+      tag.className = 'det-component-default';
+      tag.textContent = 'default';
+      row.appendChild(tag);
+    }
+
+    cb.addEventListener('change', async () => {
+      // Synchronize checkbox state to the twin list
+      const targetContainer = isFloating ? list : floatingList;
+      if (targetContainer) {
+        const twinCb = targetContainer.querySelector(`input[data-file="${escapeCssAttr(comp.file)}"]`);
+        if (twinCb) twinCb.checked = cb.checked;
+      }
+
+      const targetList = floatingList || list;
+      const files = targetList ? Array.from(targetList.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.dataset.file) : [];
+      updateCount();
+      updateSubdueDefaultsState();
+      const allBoxes = document.querySelectorAll('#det-components-list input[type="checkbox"], #floating-components-list input[type="checkbox"]');
+      allBoxes.forEach(el => { el.disabled = true; });
+      try {
+        await viewer.setModuleComponentFiles(index, files);
+      } finally {
+        allBoxes.forEach(el => { el.disabled = false; });
+      }
+    });
+
+    return row;
+  };
+
+  for (const comp of components) {
+    if (list) list.appendChild(createComponentRow(comp, false));
+    if (floatingList) {
+      floatingList.appendChild(createComponentRow(comp, true));
+    }
+  }
+  updateCount();
+  updateSubdueDefaultsState();
+
+  // If Module Components is expanded, reveal expansion as a floating pill hiding all other pills in right hand column
+  const searchCard = document.querySelector('.search-card');
+  const rightSidebar = document.getElementById('right-sidebar');
+  const isExpanded = (dropdown && dropdown.open) || (floatingPill && !floatingPill.classList.contains('hidden'));
+  if (isExpanded) {
+    if (floatingPill) floatingPill.classList.remove('hidden');
+    if (searchCard) searchCard.classList.add('has-floating-pill');
+    if (rightSidebar) rightSidebar.classList.add('components-expanded');
+  } else {
+    if (floatingPill) floatingPill.classList.add('hidden');
+    if (searchCard) searchCard.classList.remove('has-floating-pill');
+    if (rightSidebar) rightSidebar.classList.remove('components-expanded');
+  }
+}
+
 function selectModule(index, focusCamera = false) {
   // Deselect previous
   if (selectedIndex !== null) {
@@ -1029,6 +1283,16 @@ function selectModule(index, focusCamera = false) {
   if (moduleData) {
     placeholder.classList.add('hidden');
     card.classList.remove('hidden');
+
+    // Colorized checkbox should be unchecked for analysis
+    const colorizedCb = document.getElementById('colorized-checkbox');
+    if (colorizedCb && colorizedCb.checked) {
+      colorizedCb.checked = false;
+      saveCheckboxState('colorized-checkbox', false);
+      if (viewer && typeof viewer.setColorized === 'function') {
+        viewer.setColorized(false);
+      }
+    }
 
     const cat = getModuleCategory(moduleData.macro);
     const friendlyName = getFriendlyName(moduleData.macro);
@@ -1075,6 +1339,25 @@ function selectModule(index, focusCamera = false) {
       }
     }
 
+    // Sync Effects Pill Sliders (Bloom Strength & HDR Emissive Intensity)
+    const slBloom = document.getElementById('slider-bloom-strength');
+    const valBloom = document.getElementById('val-bloom-strength');
+    if (slBloom && valBloom && viewer.getBloomStrength) {
+      const bVal = viewer.getBloomStrength();
+      slBloom.value = bVal;
+      valBloom.textContent = Number(bVal).toFixed(2);
+    }
+    const slEmissive = document.getElementById('slider-emissive-intensity');
+    const valEmissive = document.getElementById('val-emissive-intensity');
+    if (slEmissive && valEmissive && viewer.getEmissiveIntensity) {
+      const eVal = viewer.getEmissiveIntensity();
+      slEmissive.value = eVal;
+      valEmissive.textContent = Number(eVal).toFixed(2);
+    }
+
+    // Populate the module's asset component dropdown (checkbox per .dae in its asset folder)
+    renderModuleComponentsDropdown(index);
+
     // Dynamically render individual module resources
     const detContainer = document.getElementById('det-resources-container');
     if (detContainer) {
@@ -1116,6 +1399,28 @@ function selectModule(index, focusCamera = false) {
   } else {
     placeholder.classList.remove('hidden');
     card.classList.add('hidden');
+    const compPill = document.getElementById('module-components-floating-pill');
+    if (compPill) compPill.classList.add('hidden');
+    const navPillBtn = document.getElementById('btn-nav-components-pill');
+    if (navPillBtn) navPillBtn.classList.add('hidden');
+    const compDropdown = document.getElementById('det-components-dropdown');
+    if (compDropdown) compDropdown.open = false;
+    const chkStopAnim = document.getElementById('chk-stop-anim');
+    if (chkStopAnim) chkStopAnim.checked = false;
+    const chkDetStopAnim = document.getElementById('chk-det-stop-anim');
+    if (chkDetStopAnim) chkDetStopAnim.checked = false;
+    const chkSubdueDefaults = document.getElementById('chk-subdue-defaults');
+    if (chkSubdueDefaults) chkSubdueDefaults.checked = false;
+    const chkDetSubdueDefaults = document.getElementById('chk-det-subdue-defaults');
+    if (chkDetSubdueDefaults) chkDetSubdueDefaults.checked = false;
+    const billboardGroup = document.getElementById('toolbar-billboard-group');
+    if (billboardGroup) billboardGroup.classList.add('hidden');
+    const detBillboardGroup = document.getElementById('toolbar-det-billboard-group');
+    if (detBillboardGroup) detBillboardGroup.classList.add('hidden');
+    const searchCard = document.querySelector('.search-card');
+    if (searchCard) searchCard.classList.remove('has-floating-pill');
+    const rightSidebar = document.getElementById('right-sidebar');
+    if (rightSidebar) rightSidebar.classList.remove('components-expanded');
     clearPersistentHighlights();
     viewer.deselect();
   }
@@ -1224,17 +1529,41 @@ export function exportCurrentPlanAsBlueprint() {
     activeModules = viewer.modulesGroup.children.map((child, idx) => {
       const origMod = (currentPlan.modules && currentPlan.modules.find(m => m.index === child.userData.index)) || {};
       const pos = child.position;
-      const rotEuler = child.rotation;
       
-      const yaw = Math.round(rotEuler.y * 180 / Math.PI);
-      const pitch = Math.round(rotEuler.x * 180 / Math.PI);
-      const roll = Math.round(rotEuler.z * 180 / Math.PI);
+      const calcRot = viewer.getModuleCalculatedRotation ? viewer.getModuleCalculatedRotation(child.userData.index) : null;
+      let yaw = 0, pitch = 0, roll = 0;
+      if (calcRot) {
+        yaw = calcRot.yaw;
+        pitch = calcRot.pitch;
+        roll = calcRot.roll;
+      } else {
+        child.rotation.order = 'YXZ';
+        yaw = Math.round(THREE.MathUtils.radToDeg(child.rotation.y)) % 360;
+        pitch = Math.round(THREE.MathUtils.radToDeg(child.rotation.x) - 180) % 360;
+        roll = Math.round(THREE.MathUtils.radToDeg(child.rotation.z) - 180) % 360;
+      }
+
+      if (yaw > 180) yaw -= 360;
+      if (yaw <= -180) yaw += 360;
+      if (pitch > 180) pitch -= 360;
+      if (pitch <= -180) pitch += 360;
+      if (roll > 180) roll -= 360;
+      if (roll <= -180) roll += 360;
+
+      yaw = Object.is(yaw, -0) ? 0 : yaw;
+      pitch = Object.is(pitch, -0) ? 0 : pitch;
+      roll = Object.is(roll, -0) ? 0 : roll;
 
       return {
         index: child.userData.index !== undefined ? child.userData.index : (idx + 1),
         macro: child.userData.macro || origMod.macro || '',
         connection: child.userData.connection || origMod.connection || '',
-        position: { x: Math.round(pos.x), y: Math.round(pos.y), z: Math.round(pos.z) },
+        predecessor: child.userData.predecessor || origMod.predecessor || null,
+        position: {
+          x: Math.round(pos.x * 1000) / 1000,
+          y: Math.round(pos.y * 1000) / 1000,
+          z: -Math.round(pos.z * 1000) / 1000
+        },
         rotation: { yaw, pitch, roll }
       };
     });
@@ -1263,6 +1592,8 @@ export function exportCurrentPlanAsBlueprint() {
 }
 if (typeof window !== 'undefined') {
   window.exportCurrentPlanAsBlueprint = exportCurrentPlanAsBlueprint;
+  window.loadPlanFromXml = loadPlanFromXml;
+  window.selectModule = selectModule;
 }
 
 /**
@@ -1481,6 +1812,59 @@ function setupEventListeners() {
     });
   }
 
+  const bloomToggle = document.getElementById('toggle-bloom');
+  if (bloomToggle) {
+    const savedBloom = getSavedCheckboxState('toggle-bloom', true);
+    bloomToggle.checked = savedBloom;
+    viewer.setBloomEnabled(savedBloom);
+    bloomToggle.addEventListener('change', (e) => {
+      saveCheckboxState('toggle-bloom', e.target.checked);
+      viewer.setBloomEnabled(e.target.checked);
+      viewer.renderScene();
+    });
+  }
+
+  // Selected Module Details: Effects Pill Sliders (Bloom Strength & HDR Emissive Intensity)
+  const sliderBloomStrength = document.getElementById('slider-bloom-strength');
+  const valBloomStrength = document.getElementById('val-bloom-strength');
+  const sliderEmissiveIntensity = document.getElementById('slider-emissive-intensity');
+  const valEmissiveIntensity = document.getElementById('val-emissive-intensity');
+
+  // Load saved preferences if available
+  let savedBloomStrength = parseFloat(localStorage.getItem('x4_bloom_strength'));
+  if (isNaN(savedBloomStrength) || savedBloomStrength === 1.25) {
+    savedBloomStrength = 0.35;
+  }
+  const savedEmissiveIntensity = parseFloat(localStorage.getItem('x4_emissive_intensity')) || 2.2;
+
+  if (sliderBloomStrength && valBloomStrength) {
+    sliderBloomStrength.value = savedBloomStrength;
+    valBloomStrength.textContent = Number(savedBloomStrength).toFixed(2);
+    viewer.setBloomParams({ strength: savedBloomStrength });
+
+    sliderBloomStrength.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      valBloomStrength.textContent = val.toFixed(2);
+      viewer.setBloomParams({ strength: val });
+      localStorage.setItem('x4_bloom_strength', val);
+      viewer.renderScene();
+    });
+  }
+
+  if (sliderEmissiveIntensity && valEmissiveIntensity) {
+    sliderEmissiveIntensity.value = savedEmissiveIntensity;
+    valEmissiveIntensity.textContent = Number(savedEmissiveIntensity).toFixed(2);
+    viewer.setEmissiveIntensity(savedEmissiveIntensity);
+
+    sliderEmissiveIntensity.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      valEmissiveIntensity.textContent = val.toFixed(2);
+      viewer.setEmissiveIntensity(val, selectedIndex);
+      localStorage.setItem('x4_emissive_intensity', val);
+      viewer.renderScene();
+    });
+  }
+
   const gizmoModeSelector = document.getElementById('gizmo-mode-selector');
   if (gizmoModeSelector) {
     gizmoModeSelector.addEventListener('change', (e) => {
@@ -1627,6 +2011,15 @@ function setupEventListeners() {
         saveCheckboxState('toggle-snaps', snapToggle.checked);
         viewer.toggleSnapPoints(snapToggle.checked);
       }
+    } else if (e.key === 'b' || e.key === 'B') {
+      const bloomToggle = document.getElementById('toggle-bloom');
+      if (bloomToggle) {
+        bloomToggle.checked = !bloomToggle.checked;
+        saveCheckboxState('toggle-bloom', bloomToggle.checked);
+        viewer.setBloomEnabled(bloomToggle.checked);
+        viewer.renderScene();
+        showNotification(`FX Bloom Glow: ${bloomToggle.checked ? 'ENABLED' : 'DISABLED'}`, 'info');
+      }
     } else if (e.key === 'r' || e.key === 'R') {
       const modeSel = document.getElementById('gizmo-mode-selector');
       const newMode = viewer.gizmoMode === 'rotate' ? 'combined' : 'rotate';
@@ -1764,10 +2157,89 @@ function setupEventListeners() {
     });
   }
 
+  // 6b. Module Components Dropdown & Floating Pill Overlay over Module Navigator and all other pills
+  const compDropdown = document.getElementById('det-components-dropdown');
+  const compFloatingPill = document.getElementById('module-components-floating-pill');
+  const compNavPillBtn = document.getElementById('btn-nav-components-pill');
+  const btnMinimizeCompPill = document.getElementById('btn-minimize-components-pill');
+
+  function syncModuleComponentsFloatingPill() {
+    if (!compFloatingPill) return;
+    const section = document.getElementById('det-components-section');
+    const isSectionAvailable = (compNavPillBtn && !compNavPillBtn.classList.contains('hidden')) || (section && !section.classList.contains('hidden'));
+    const searchCard = document.querySelector('.search-card');
+    const rightSidebar = document.getElementById('right-sidebar');
+    const isOpen = (compDropdown && compDropdown.open) || !compFloatingPill.classList.contains('hidden');
+
+    if (isOpen && isSectionAvailable) {
+      compFloatingPill.classList.remove('hidden');
+      if (searchCard) {
+        searchCard.classList.add('has-floating-pill');
+        if (typeof searchCard.scrollIntoView === 'function') {
+          searchCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+      if (rightSidebar) rightSidebar.classList.add('components-expanded');
+    } else {
+      compFloatingPill.classList.add('hidden');
+      if (searchCard) {
+        searchCard.classList.remove('has-floating-pill');
+      }
+      if (rightSidebar) rightSidebar.classList.remove('components-expanded');
+    }
+  }
+
+  if (compDropdown) {
+    compDropdown.addEventListener('toggle', syncModuleComponentsFloatingPill);
+  }
+
+  if (btnMinimizeCompPill) {
+    btnMinimizeCompPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (compDropdown) compDropdown.open = false;
+      compFloatingPill.classList.add('hidden');
+      syncModuleComponentsFloatingPill();
+    });
+  }
+
+  if (compNavPillBtn) {
+    compNavPillBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (compDropdown) {
+        compDropdown.open = !compDropdown.open;
+      } else {
+        compFloatingPill.classList.toggle('hidden');
+      }
+      syncModuleComponentsFloatingPill();
+    });
+  }
+
+  // Clicking outside the floating pill minimizes it
+  document.addEventListener('pointerdown', (e) => {
+    if (!compFloatingPill || compFloatingPill.classList.contains('hidden')) return;
+    const section = document.getElementById('det-components-section');
+    if (
+      compFloatingPill.contains(e.target) ||
+      (compNavPillBtn && compNavPillBtn.contains(e.target)) ||
+      (compDropdown && compDropdown.contains(e.target)) ||
+      (section && section.contains(e.target)) ||
+      (e.target && (e.target.tagName === 'OPTION' || e.target.tagName === 'SELECT'))
+    ) {
+      return;
+    }
+    if (compDropdown) compDropdown.open = false;
+    compFloatingPill.classList.add('hidden');
+    syncModuleComponentsFloatingPill();
+  });
+
   // 7. Clickable stats boxes
   const statBoxes = document.querySelectorAll('.category-select-btn');
   statBoxes.forEach(box => {
     box.addEventListener('click', () => {
+      // Clear any previous Component Visibility highlight
+      clearComponentVisibilityHighlights();
+      clearPersistentHighlights();
+      
       const category = box.getAttribute('data-category');
       
       if (activeCategoryFilter === category && !activeMacroFilter) {
@@ -1787,6 +2259,25 @@ function setupEventListeners() {
       }
     });
   });
+
+  // Clear previous Component Visibility highlights on any left-click inside Structure Analysis
+  const structAnalysisCard = document.getElementById('card-structure-analysis');
+  if (structAnalysisCard) {
+    structAnalysisCard.addEventListener('click', (e) => {
+      if (e.button === 0) {
+        clearComponentVisibilityHighlights();
+        // Colorized checkbox should be unchecked for analysis
+        const colorizedCb = document.getElementById('colorized-checkbox');
+        if (colorizedCb && colorizedCb.checked) {
+          colorizedCb.checked = false;
+          saveCheckboxState('colorized-checkbox', false);
+          if (viewer && typeof viewer.setColorized === 'function') {
+            viewer.setColorized(false);
+          }
+        }
+      }
+    }, true);
+  }
 
   // 8. Global visibility "Show All" / "Hide All" toggle button
   const showAllVisBtn = document.getElementById('btn-visibility-show-all');
@@ -1838,7 +2329,7 @@ function setupEventListeners() {
   // 10. Colorized Checkbox
   const colorizedCheckbox = document.getElementById('colorized-checkbox');
   if (colorizedCheckbox) {
-    const savedColorized = getSavedCheckboxState('colorized-checkbox', true);
+    const savedColorized = getSavedCheckboxState('colorized-checkbox', false);
     colorizedCheckbox.checked = savedColorized;
     viewer.setColorized(savedColorized);
     colorizedCheckbox.addEventListener('change', (e) => {

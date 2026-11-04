@@ -85,7 +85,8 @@ const staticCheckboxes = [
   { id: 'toggle-orientation', defaultVal: false },
   { id: 'toggle-dimensions', defaultVal: true },
   { id: 'toggle-snaps', defaultVal: true },
-  { id: 'colorized-checkbox', defaultVal: true }
+  { id: 'toggle-bloom', defaultVal: true },
+  { id: 'colorized-checkbox', defaultVal: false }
 ];
 
 staticCheckboxes.forEach(({ id, defaultVal }) => {

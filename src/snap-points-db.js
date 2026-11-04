@@ -1,3 +1,85 @@
+import customSnapPointsData from './custom-snap-points.json' with { type: 'json' };
+
+export const CUSTOM_SNAP_POINTS_TABLE = { ...customSnapPointsData };
+
+export function getCustomSnapPointsTable() {
+  return CUSTOM_SNAP_POINTS_TABLE;
+}
+
+export function setCustomSnapPointEntry(macroName, snaps) {
+  if (!macroName) return;
+  const rawKey = macroName.toLowerCase().trim();
+  const baseKey = rawKey.replace(/_macro$/, '');
+  CUSTOM_SNAP_POINTS_TABLE[rawKey] = snaps;
+  CUSTOM_SNAP_POINTS_TABLE[baseKey] = snaps;
+  CUSTOM_SNAP_POINTS_TABLE[baseKey + '_macro'] = snaps;
+}
+
+export function removeCustomSnapPointEntry(macroName) {
+  if (!macroName) return;
+  const rawKey = macroName.toLowerCase().trim();
+  const baseKey = rawKey.replace(/_macro$/, '');
+  delete CUSTOM_SNAP_POINTS_TABLE[rawKey];
+  delete CUSTOM_SNAP_POINTS_TABLE[baseKey];
+  delete CUSTOM_SNAP_POINTS_TABLE[baseKey + '_macro'];
+}
+
+export function hasCustomSnapPointsForMacro(macroName) {
+  if (!macroName) return false;
+  const rawKey = macroName.toLowerCase().trim();
+  const baseKey = rawKey.replace(/_macro$/, '');
+  return !!(CUSTOM_SNAP_POINTS_TABLE[rawKey] || CUSTOM_SNAP_POINTS_TABLE[baseKey] || CUSTOM_SNAP_POINTS_TABLE[baseKey + '_macro']);
+}
+
+export async function syncCustomSnapPoints() {
+  if (typeof fetch !== 'undefined') {
+    try {
+      const res = await fetch('/api/load-custom-snap-points');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          for (const [k, v] of Object.entries(data)) {
+            setCustomSnapPointEntry(k, v);
+          }
+        }
+      }
+    } catch (_) {}
+  } else if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      const fsModuleName = 'fs';
+      const pathModuleName = 'path';
+      const fs = await import(/* @vite-ignore */ fsModuleName);
+      const path = await import(/* @vite-ignore */ pathModuleName);
+      const filePath = path.resolve(process.cwd(), 'src/custom-snap-points.json');
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const data = JSON.parse(content);
+        if (data && typeof data === 'object') {
+          for (const [k, v] of Object.entries(data)) {
+            setCustomSnapPointEntry(k, v);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('x4_custom_snap_points');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object') {
+          for (const [k, v] of Object.entries(parsed)) {
+            setCustomSnapPointEntry(k, v);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  return CUSTOM_SNAP_POINTS_TABLE;
+}
+
 export const SNAP_POINTS_DB = {
   "buildmodule_bor_equip_l_macro": [
     {
@@ -3591,7 +3673,7 @@ export const SNAP_POINTS_DB = {
     {
       "name": "ConnectionSnap001",
       "pos": [
-        200,
+        -327.77,
         -400,
         -600
       ]
@@ -3599,7 +3681,7 @@ export const SNAP_POINTS_DB = {
     {
       "name": "ConnectionSnap002",
       "pos": [
-        -200,
+        77.39,
         -400,
         200
       ]
@@ -8925,7 +9007,7 @@ export const SNAP_POINTS_DB = {
     {
       "name": "ConnectionSnap001",
       "pos": [
-        200,
+        -327.77,
         -400,
         -600
       ]
@@ -8933,7 +9015,7 @@ export const SNAP_POINTS_DB = {
     {
       "name": "ConnectionSnap002",
       "pos": [
-        -200,
+        77.39,
         -400,
         200
       ]
@@ -10609,6 +10691,146 @@ export const SNAP_POINTS_DB = {
   ]
 };
 
+// Official Terran DLC Snap Points
+Object.assign(SNAP_POINTS_DB, {
+  "prod_ter_energycells_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 500] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -500] }
+  ],
+  "prod_ter_energycells": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 500] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -500] }
+  ],
+  "pier_ter_harbor_03_macro": [
+    { "name": "ConnectionSnap001", "pos": [200, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap008", "pos": [0, -200, 0] }
+  ],
+  "pier_ter_harbor_03": [
+    { "name": "ConnectionSnap001", "pos": [200, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap008", "pos": [0, -200, 0] }
+  ],
+  "pier_ter_harbor_02_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 200] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -200] },
+    { "name": "ConnectionSnap004", "pos": [200, 0, 0] },
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap006", "pos": [0, 200, 0] }
+  ],
+  "pier_ter_harbor_02": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 200] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -200] },
+    { "name": "ConnectionSnap004", "pos": [200, 0, 0] },
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap006", "pos": [0, 200, 0] }
+  ],
+  "struct_ter_base_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 200] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -200] }
+  ],
+  "struct_ter_base_01": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 200] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -200] }
+  ],
+  "struct_ter_base_02_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] }
+  ],
+  "struct_ter_base_02": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] }
+  ],
+  "struct_ter_base_03_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 800] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -800] },
+    { "name": "ConnectionSnap03", "pos": [-200, 0, 400] },
+    { "name": "ConnectionSnap04", "pos": [200, 0, 400] }
+  ],
+  "struct_ter_base_03": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 800] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -800] },
+    { "name": "ConnectionSnap03", "pos": [-200, 0, 400] },
+    { "name": "ConnectionSnap04", "pos": [200, 0, 400] }
+  ],
+  "struct_ter_cross_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] },
+    { "name": "ConnectionSnap003", "pos": [-400, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [400, 0, 0] },
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap006", "pos": [0, 200, 0] }
+  ],
+  "struct_ter_cross_01": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] },
+    { "name": "ConnectionSnap003", "pos": [-400, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [400, 0, 0] },
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap006", "pos": [0, 200, 0] }
+  ],
+  "struct_ter_vertical_02_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, -400, 0] }
+  ],
+  "struct_ter_vertical_02": [
+    { "name": "ConnectionSnap001", "pos": [0, 400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, -400, 0] }
+  ],
+  "dockarea_ter_m_station_01_hightech_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 600] },
+    { "name": "ConnectionSnap002", "pos": [-424.264, 0, 424.2641] },
+    { "name": "ConnectionSnap003", "pos": [-600, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [-424.2642, 0, -424.264] },
+    { "name": "ConnectionSnap005", "pos": [0, 0, -600] },
+    { "name": "ConnectionSnap006", "pos": [424.2639, 0, -424.2642] },
+    { "name": "ConnectionSnap007", "pos": [600, 0, 0] },
+    { "name": "ConnectionSnap008", "pos": [424.2643, 0, 424.2639] },
+    { "name": "ConnectionSnap009", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap010", "pos": [0, -200, 0] }
+  ],
+  "dockarea_ter_m_station_01_hightech": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 600] },
+    { "name": "ConnectionSnap002", "pos": [-424.264, 0, 424.2641] },
+    { "name": "ConnectionSnap003", "pos": [-600, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [-424.2642, 0, -424.264] },
+    { "name": "ConnectionSnap005", "pos": [0, 0, -600] },
+    { "name": "ConnectionSnap006", "pos": [424.2639, 0, -424.2642] },
+    { "name": "ConnectionSnap007", "pos": [600, 0, 0] },
+    { "name": "ConnectionSnap008", "pos": [424.2643, 0, 424.2639] },
+    { "name": "ConnectionSnap009", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap010", "pos": [0, -200, 0] }
+  ],
+  "storage_ter_l_container_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 800, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 400, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 400, -400] },
+    { "name": "ConnectionSnap05", "pos": [400, 400, 0] },
+    { "name": "ConnectionSnap06", "pos": [-400, 400, 0] }
+  ],
+  "storage_ter_l_container_01": [
+    { "name": "ConnectionSnap01", "pos": [0, 800, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 400, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 400, -400] },
+    { "name": "ConnectionSnap05", "pos": [400, 400, 0] },
+    { "name": "ConnectionSnap06", "pos": [-400, 400, 0] }
+  ],
+  "hab_ter_l_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 800] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -800] },
+    { "name": "ConnectionSnap003", "pos": [-800, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [800, 0, 0] }
+  ],
+  "hab_ter_l_01": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 800] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -800] },
+    { "name": "ConnectionSnap003", "pos": [-800, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [800, 0, 0] }
+  ]
+});
+
 /**
  * Retrieve snap points for a given macro name, with fallback to local bounding face centers if needed.
  *
@@ -10616,13 +10838,27 @@ export const SNAP_POINTS_DB = {
  * @param {import('three').Box3|null} localBounds Optional local bounding box for procedural fallback.
  * @returns {Array<{ name: string, pos: [number, number, number] }>}
  */
-export function getModuleSnapPoints(macroName, localBounds = null) {
+export function getModuleSnapPoints(macroName, localBounds = null, ignoreCustom = false) {
   if (!macroName) return [];
   const rawKey = macroName.toLowerCase().trim();
   const baseKey = rawKey.replace(/_macro$/, '');
 
+  // 0. Check custom snap points table override first (from custom-snap-points.json) unless ignoreCustom is requested
+  let found = null;
+  if (!ignoreCustom) {
+    found = CUSTOM_SNAP_POINTS_TABLE[rawKey] || CUSTOM_SNAP_POINTS_TABLE[baseKey] || CUSTOM_SNAP_POINTS_TABLE[baseKey + '_macro'];
+    if (!found) {
+      const altKey = baseKey.includes('defense_') 
+        ? baseKey.replace('defense_', 'defence_') 
+        : baseKey.replace('defence_', 'defense_');
+      found = CUSTOM_SNAP_POINTS_TABLE[altKey] || CUSTOM_SNAP_POINTS_TABLE[altKey + '_macro'];
+    }
+  }
+
   // 1. Direct lookup
-  let found = SNAP_POINTS_DB[rawKey] || SNAP_POINTS_DB[baseKey] || SNAP_POINTS_DB[baseKey + '_macro'];
+  if (!found) {
+    found = SNAP_POINTS_DB[rawKey] || SNAP_POINTS_DB[baseKey] || SNAP_POINTS_DB[baseKey + '_macro'];
+  }
 
   // 2. Defense vs defence spelling normalization
   if (!found) {

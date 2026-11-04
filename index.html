@@ -134,7 +134,7 @@
         </div>
         <div class="clear-checkbox-container">
           <label for="colorized-checkbox" class="cyber-checkbox-label" title="Colorize components by their module group category color">
-            <input type="checkbox" id="colorized-checkbox" checked>
+            <input type="checkbox" id="colorized-checkbox">
             <span class="checkbox-text">Colorized</span>
           </label>
         </div>
@@ -384,6 +384,10 @@
             <input type="checkbox" id="toggle-snaps" checked>
             <span class="toggle-label">Snaps</span>
           </label>
+          <label class="toggle-control" title="Toggle FX Lights Bloom Glow (Hotkey: B)">
+            <input type="checkbox" id="toggle-bloom" checked>
+            <span class="toggle-label">Bloom</span>
+          </label>
           <button id="btn-toggle-display-panel" class="hub-btn display-panel-btn" title="Open Module Layout & Placement Behaviors Panel">
             <span class="hub-btn-icon">🎛️</span>
             <span class="toggle-label">Layout</span>
@@ -463,11 +467,48 @@
           <div class="card-header">
             <span class="header-dot"></span>
             <h2>Module Navigator</h2>
+            <button id="btn-nav-components-pill" class="card-action-btn pill-btn hidden" title="Toggle Module Components">Components <span id="nav-components-count" class="det-components-count">0/0</span></button>
           </div>
           <div class="card-body search-body">
             <div class="search-input-wrapper">
               <input type="text" id="module-search" placeholder="Component Visibilty name ;  (Procedural)">
               <span class="search-icon">🔍</span>
+            </div>
+          </div>
+
+          <!-- Floating Pill Overlay for Expanded Module Components -->
+          <div id="module-components-floating-pill" class="module-components-floating-pill hidden">
+            <div class="floating-pill-header">
+              <div class="floating-pill-title-group">
+                <span class="header-dot glow-dot"></span>
+                <span class="floating-pill-title">Module Components</span>
+                <span id="floating-components-count" class="det-components-count">0/0</span>
+              </div>
+              <div class="floating-pill-actions">
+                <button id="btn-minimize-components-pill" class="components-pill-minimize-btn" title="Minimize Module Components pill">▲ Minimize</button>
+              </div>
+            </div>
+            <div class="floating-pill-toolbar">
+              <label class="pill-toolbar-checkbox" title="Halt all animations for the selected module">
+                <input type="checkbox" id="chk-stop-anim" />
+                <span>Stop Anim</span>
+              </label>
+              <label class="pill-toolbar-checkbox" title="Toggle all default components off/on">
+                <input type="checkbox" id="chk-subdue-defaults" />
+                <span>Subdue Defaults</span>
+              </label>
+              <div id="toolbar-billboard-group" class="pill-toolbar-group hidden" title="Billboard State (A: Cross/Info/Food/Tools, B: Capsule/Cart/Bed/Law)">
+                <span class="pill-toolbar-tag">Signs:</span>
+                <select id="sel-billboard-state" class="pill-toolbar-select">
+                  <option value="auto">Auto Cycle</option>
+                  <option value="A">State A</option>
+                  <option value="B">State B</option>
+                </select>
+              </div>
+            </div>
+            <div id="floating-components-folder" class="det-components-folder"></div>
+            <div id="floating-components-list" class="det-components-list">
+              <!-- Programmatically populated component checkboxes -->
             </div>
           </div>
         </div>
@@ -543,6 +584,43 @@
                     <span class="cell-lbl">Bounding Dimensions</span>
                     <span class="cell-val font-medium" id="det-dim">Width: 0m | Height: 0m | Depth: 0m</span>
                   </div>
+                </div>
+
+                <div id="det-effects-section" class="det-effects-section">
+                  <hr class="panel-divider" />
+                  <details id="det-effects-dropdown" class="det-effects-dropdown" open>
+                    <summary class="det-effects-summary">
+                      <span class="sub-heading-mini">Effects</span>
+                      <span id="det-effects-badge" class="det-effects-badge">Active</span>
+                    </summary>
+                    <div class="det-effects-body">
+                      <!-- Bloom Strength Slider -->
+                      <div class="det-effect-row">
+                        <div class="det-effect-label-row">
+                          <label for="slider-bloom-strength" class="det-effect-label">Bloom Strength</label>
+                          <span id="val-bloom-strength" class="det-effect-value">0.35</span>
+                        </div>
+                        <div class="slider-container-with-bounds">
+                          <span class="slider-bound-tag min-bound">Min 0.0</span>
+                          <input type="range" id="slider-bloom-strength" class="cyber-slider" min="0" max="5" step="0.05" value="0.35" title="Bloom Strength: Adjusts the radiance and glow of station lights" />
+                          <span class="slider-bound-tag max-bound">Max 5.0</span>
+                        </div>
+                      </div>
+
+                      <!-- HDR Emissive Intensity Slider -->
+                      <div class="det-effect-row">
+                        <div class="det-effect-label-row">
+                          <label for="slider-emissive-intensity" class="det-effect-label">HDR Emissive Intensity</label>
+                          <span id="val-emissive-intensity" class="det-effect-value">2.20</span>
+                        </div>
+                        <div class="slider-container-with-bounds">
+                          <span class="slider-bound-tag min-bound">Min 0.0</span>
+                          <input type="range" id="slider-emissive-intensity" class="cyber-slider" min="0" max="10" step="0.1" value="2.2" title="HDR Emissive Intensity: Adjusts light emission power of FX beacons and glowing surfaces" />
+                          <span class="slider-bound-tag max-bound">Max 10.0</span>
+                        </div>
+                      </div>
+                    </div>
+                  </details>
                 </div>
 
                 <hr class="panel-divider" />
@@ -710,6 +788,8 @@
         </div>
       </div>
     </div>
+
+
 
     <!-- Notification Toast Rack -->
     <div id="notification-container"></div>

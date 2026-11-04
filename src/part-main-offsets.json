@@ -1,0 +1,807 @@
+{
+  "buildmodule_arg_equip_l": [
+    600.1138,
+    -0.000003814697,
+    0
+  ],
+  "buildmodule_arg_ships_l": [
+    -54.40936,
+    0,
+    0
+  ],
+  "buildmodule_arg_ships_m": [
+    -2.968969,
+    -16.30795,
+    61.53074
+  ],
+  "buildmodule_arg_ships_s": [
+    -2.968969,
+    -16.30795,
+    61.53074
+  ],
+  "defence_bor_claim_01": [
+    -0.009863189,
+    415.8868,
+    0.5122176
+  ],
+  "defence_tel_disc_01": [
+    0.000004711922,
+    -111.699,
+    0
+  ],
+  "dockarea_arg_m_station_01": [
+    0,
+    60,
+    0
+  ],
+  "dockarea_arg_m_station_01_hightech": [
+    0,
+    60,
+    0
+  ],
+  "dockarea_arg_m_station_01_lowtech": [
+    0,
+    60,
+    0
+  ],
+  "dockarea_arg_m_station_02": [
+    0,
+    60,
+    0
+  ],
+  "dockarea_arg_m_station_02_hightech": [
+    0,
+    60,
+    0
+  ],
+  "dockarea_arg_m_station_02_lowtech": [
+    0,
+    60,
+    0
+  ],
+  "dockarea_arg_xl_carrier_01": [
+    -0.04518519,
+    0,
+    0
+  ],
+  "dockarea_gen_s_showroom_01": [
+    -0.0000120034,
+    10.97513,
+    -6.238525
+  ],
+  "dockarea_gen_s_showroom_02": [
+    -0.0000152588,
+    2.200884,
+    0
+  ],
+  "dockarea_par_l_miner_solid_01": [
+    0,
+    -0.5997314,
+    0
+  ],
+  "dockarea_par_m_station_01": [
+    200,
+    200,
+    200
+  ],
+  "dockarea_par_xl_resupplier_01": [
+    0,
+    -0.09861755,
+    -0.000002606763
+  ],
+  "pier_arg_harbor_02": [
+    -998.8782,
+    0,
+    0
+  ],
+  "pier_arg_harbor_04": [
+    -200,
+    0,
+    -0.0000301992
+  ],
+  "pier_bor_harbor_02": [
+    289.5625,
+    0.009529656,
+    -0.0003744705
+  ],
+  "pier_bor_harbor_03": [
+    1886.305,
+    -0.000002861,
+    0.0000076294
+  ],
+  "pier_par_harbor_02": [
+    -999.9998,
+    -0.0003051758,
+    0
+  ],
+  "pier_tel_harbor_02": [
+    -995.2827,
+    0,
+    -0.000007865787
+  ],
+  "dockingbay_bor_xl_pier_base_01": [
+    -0.0000076294,
+    -0.000002861,
+    86.30471
+  ],
+  "hab_arg_s_01": [
+    0,
+    29.76285,
+    -2.842171e-14
+  ],
+  "hab_par_l_01": [
+    0,
+    758.2018,
+    -0.000004277579
+  ],
+  "hab_par_m_01": [
+    0,
+    -12.97163,
+    0
+  ],
+  "hab_par_m_02": [
+    200,
+    200,
+    -200
+  ],
+  "hab_par_s_02": [
+    200,
+    200,
+    -200
+  ],
+  "hab_par_s_03": [
+    200,
+    -200,
+    -199.5932
+  ],
+  "hab_pir_l_01": [
+    -15.80591,
+    0,
+    55.41854
+  ],
+  "hab_pir_m_01": [
+    40.38144,
+    0,
+    -46.62254
+  ],
+  "hab_pir_s_01": [
+    5.587769,
+    0,
+    -13.79517
+  ],
+  "hab_tel_m_01": [
+    -0.00006103516,
+    2.464072,
+    0.000004437109
+  ],
+  "landmarks_gen_piratestation_01_exit_01": [
+    505.9569,
+    -98.34872,
+    211.9702
+  ],
+  "landmarks_gen_piratestation_02_ring_02": [
+    79.77499,
+    9.028572,
+    176.7979
+  ],
+  "landmarks_gen_prison_01": [
+    -60.41158,
+    255.1552,
+    65.29249
+  ],
+  "landmarks_kha_hive_02": [
+    -163.7285,
+    814.0449,
+    -1704.033
+  ],
+  "landmarks_kha_hive_arm_01": [
+    0.0003662109,
+    0.0001220703,
+    -29.56531
+  ],
+  "landmarks_research_vault_01": [
+    0.01949406,
+    19.70162,
+    0.01007581
+  ],
+  "landmarks_soh_storage_condensate_01": [
+    7.710175,
+    -37.82239,
+    36.8986
+  ],
+  "landmarks_tel_spacesuit_vertical_bottom_01": [
+    -7.380731e-8,
+    -8.440358,
+    -20.80227
+  ],
+  "landmarks_tel_tradestation_01_centercylinder_01": [
+    -7.951053e-23,
+    8.751617,
+    5.067442
+  ],
+  "landmarks_tel_tradestation_01_extension_01": [
+    0,
+    0.00003051758,
+    -87.79297
+  ],
+  "landmarks_tel_tradestation_01_radar_01": [
+    -0.00006103516,
+    0,
+    -501.0824
+  ],
+  "landmarks_tel_tradestation_01_ringclamp_01": [
+    -74.22485,
+    0,
+    0
+  ],
+  "landmarks_tel_tradestation_01_ringclamp_02": [
+    -74.22485,
+    0,
+    0
+  ],
+  "landmarks_tel_tradestation_01_ring_inside_02": [
+    0.0006103516,
+    -6905.718,
+    0
+  ],
+  "landmarks_tel_tradestation_01_storage_01": [
+    0,
+    1504.645,
+    -77.35373
+  ],
+  "landmarks_tfm_xl_carrier_01": [
+    -26.8489,
+    -129.3435,
+    -562.5082
+  ],
+  "landmarks_vault_01": [
+    0.01949406,
+    19.70162,
+    0.01007581
+  ],
+  "landmarks_vault_02": [
+    0.01949406,
+    1.542698,
+    0.01007659
+  ],
+  "landmarks_vault_03": [
+    0.01949406,
+    19.70162,
+    0.01007581
+  ],
+  "landmarks_vault_04": [
+    0.01949406,
+    19.70162,
+    0.01007581
+  ],
+  "landmarks_xen_water_old_bridge_01": [
+    -4.083496,
+    0,
+    -7.734924
+  ],
+  "landmarks_xen_water_old_bridge_02": [
+    2.623863,
+    0,
+    0
+  ],
+  "landmarks_xen_water_old_special_01": [
+    -49.94607,
+    -23.85392,
+    530.5006
+  ],
+  "landmarks_xen_xl_mothership_01": [
+    -4.909858,
+    7.21747,
+    1264.305
+  ],
+  "masstraffic_station_01_center_01": [
+    0,
+    -7.681744,
+    0
+  ],
+  "xenon_asteroid_01_part_01": [
+    1055.562,
+    348.7986,
+    971.5994
+  ],
+  "xenon_asteroid_01_part_02": [
+    1207.302,
+    351.1992,
+    -885.2642
+  ],
+  "xenon_asteroid_01_part_04": [
+    -201.907,
+    394.5663,
+    -669.3649
+  ],
+  "xenon_asteroid_02": [
+    250.1899,
+    0.001342773,
+    -257.8769
+  ],
+  "xenon_asteroid_02_base_02": [
+    250.1899,
+    0.001342773,
+    -257.8769
+  ],
+  "xenon_asteroid_02_part_01": [
+    357.498,
+    241.6502,
+    654.9605
+  ],
+  "xenon_asteroid_02_part_02": [
+    -516.2717,
+    300.0293,
+    -821.4756
+  ],
+  "xenon_asteroid_02_part_03": [
+    729.2076,
+    315.7573,
+    -1090.858
+  ],
+  "xenon_asteroid_03": [
+    250.1899,
+    0.001342773,
+    -257.8769
+  ],
+  "prod_arg_foodrations": [
+    -78.36777,
+    0.3003836,
+    0.000007629395
+  ],
+  "prod_arg_meat": [
+    0,
+    -57.52296,
+    -18.02638
+  ],
+  "prod_arg_spacefuel": [
+    27.72246,
+    -72.85571,
+    -0.8166932
+  ],
+  "prod_gen_advancedcomposites": [
+    -0.1002197,
+    0,
+    0.0557251
+  ],
+  "prod_gen_advancedelectronics": [
+    -6.933838,
+    164.6301,
+    -200.4841
+  ],
+  "prod_gen_antimattercells": [
+    2.628204,
+    208.7573,
+    191.0058
+  ],
+  "prod_gen_antimatterconverters": [
+    -31.45453,
+    -33.50732,
+    -162.9843
+  ],
+  "prod_gen_claytronics": [
+    0.6916762,
+    -90.55878,
+    18.77536
+  ],
+  "prod_gen_countermeasures": [
+    0.00001831054,
+    150,
+    -0.5391794
+  ],
+  "prod_gen_dronecomponents": [
+    -1.574768,
+    46.47891,
+    0.04702997
+  ],
+  "prod_gen_engineparts": [
+    89.7566,
+    -141.6458,
+    0.8198721
+  ],
+  "prod_gen_fieldcoils": [
+    -0.00001525879,
+    32.48321,
+    45.76962
+  ],
+  "prod_gen_graphene": [
+    32.83372,
+    -52.68745,
+    -0.458374
+  ],
+  "prod_gen_hullparts": [
+    89.51797,
+    4.963562,
+    69.64954
+  ],
+  "prod_gen_medicalsupplies": [
+    39.5042,
+    -10.21402,
+    -199.2765
+  ],
+  "prod_gen_microchips": [
+    -134.1366,
+    130.2084,
+    -0.958971
+  ],
+  "prod_gen_missilecomponents": [
+    -21.99841,
+    190.9775,
+    -4.713791
+  ],
+  "prod_gen_plasmaconductors": [
+    -191.7195,
+    -147.216,
+    -260.7095
+  ],
+  "prod_gen_refinedmetals": [
+    -63.88318,
+    -140.9294,
+    27.99579
+  ],
+  "prod_gen_scanningarrays": [
+    -0.9094874,
+    -3.634506,
+    107.4805
+  ],
+  "prod_gen_shieldcomponents": [
+    -215.206,
+    93.313,
+    11.07
+  ],
+  "prod_gen_siliconwafers": [
+    8.826233,
+    -50.99986,
+    -0.6375122
+  ],
+  "prod_gen_smartchips": [
+    1.873016,
+    -15.85193,
+    -0.000004526228
+  ],
+  "prod_gen_spices": [
+    -14.95143,
+    16.66401,
+    73.24735
+  ],
+  "prod_gen_turretcomponents": [
+    -0.2195979,
+    -18.11649,
+    0.6588726
+  ],
+  "prod_gen_water": [
+    -4.190485,
+    175.7515,
+    -333.9262
+  ],
+  "prod_gen_weaponcomponents": [
+    0.2172394,
+    0.8668709,
+    401.1655
+  ],
+  "prod_par_majasnails": [
+    0,
+    0,
+    14.23969
+  ],
+  "prod_par_sojabeans": [
+    -15.43998,
+    -752.6564,
+    14.17126
+  ],
+  "prod_par_sojahusk": [
+    0.003054261,
+    463.3481,
+    0
+  ],
+  "prod_tel_nostropoil": [
+    -29.15803,
+    190.3748,
+    144.9647
+  ],
+  "prod_tel_spaceweed": [
+    0.00002813339,
+    -53.68765,
+    38.43175
+  ],
+  "prod_tel_sunriseflowers": [
+    0,
+    6.806424,
+    0.00004327943
+  ],
+  "prod_tel_teladianium": [
+    0,
+    40.27491,
+    0
+  ],
+  "radar_par_standard_01": [
+    0,
+    0,
+    200
+  ],
+  "landmarks_gen_spacesuit_level_01_room_01": [
+    2.832074,
+    -0.6262804,
+    2.850383
+  ],
+  "landmarks_gen_spacesuit_level_01_room_02": [
+    -5.927026,
+    2.440443,
+    10.9349
+  ],
+  "landmarks_gen_spacesuit_level_01_room_03": [
+    -8.459002,
+    -11.01718,
+    -8.443552
+  ],
+  "landmarks_gen_spacesuit_level_01_room_04": [
+    2.384e-7,
+    -3.729321,
+    -13.94852
+  ],
+  "landmarks_gen_spacesuit_level_01_room_05": [
+    3.622081,
+    -7.993639,
+    1.050892
+  ],
+  "storage_arg_s_container_01": [
+    16.72591,
+    0,
+    0
+  ],
+  "storage_arg_s_liquid_01": [
+    16.72591,
+    0,
+    0
+  ],
+  "storage_arg_s_solid_01": [
+    16.72591,
+    0,
+    0
+  ],
+  "storage_bor_l_container_01": [
+    0,
+    -376.4056,
+    -0.0006537355
+  ],
+  "storage_bor_l_liquid_01": [
+    0.0078125,
+    -379.4174,
+    -0.001421058
+  ],
+  "storage_bor_l_solid_01": [
+    0,
+    -376.4056,
+    -0.0006537355
+  ],
+  "storage_par_l_container_01": [
+    0,
+    -184.0787,
+    0
+  ],
+  "storage_par_l_liquid_01": [
+    0,
+    -184.0787,
+    0
+  ],
+  "storage_par_l_solid_01": [
+    0,
+    -184.0787,
+    0
+  ],
+  "storage_par_m_container_01": [
+    -0.00007629395,
+    -393.544,
+    -0.0000845684
+  ],
+  "storage_par_m_liquid_01": [
+    -0.00007629395,
+    -393.544,
+    -0.0000845684
+  ],
+  "storage_par_m_solid_01": [
+    -0.00007629395,
+    -393.544,
+    -0.0000845684
+  ],
+  "storage_par_s_container_01": [
+    -0.00006103516,
+    -373.6462,
+    -0.00009982719
+  ],
+  "storage_par_s_liquid_01": [
+    -0.00007629395,
+    -20.82046,
+    -0.0000845684
+  ],
+  "storage_par_s_solid_01": [
+    -0.00007629395,
+    -20.82046,
+    -0.0000845684
+  ],
+  "storage_pir_s_condensate_01": [
+    0.2680664,
+    0.00002014637,
+    -400
+  ],
+  "storage_tel_m_liquid_01": [
+    -0.0003252549,
+    -0.02542114,
+    0.0005562115
+  ],
+  "storage_tel_m_solid_01": [
+    -0.0003252549,
+    -0.02542114,
+    0.0005562115
+  ],
+  "storage_tel_s_container_01": [
+    -0.000007629395,
+    61.33042,
+    0
+  ],
+  "storage_tel_s_liquid_01": [
+    -0.000007629395,
+    9.85691,
+    0
+  ],
+  "storage_tel_s_solid_01": [
+    -0.000007629395,
+    9.85691,
+    0
+  ],
+  "dockarea_gen_m_venturer_01": [
+    0.02148438,
+    0,
+    0
+  ],
+  "dockarea_gen_xl_venturer_01": [
+    107.5498,
+    0,
+    0
+  ],
+  "landmarks_gen_piratestation_01_asteorid_01": [
+    -1500,
+    1000,
+    3000
+  ],
+  "defence_spl_claim_01": [
+    0,
+    582.0139,
+    -0.00001525879
+  ],
+  "pier_spl_harbor_02": [
+    -799.9961,
+    0.01847839,
+    0
+  ],
+  "hab_spl_l_01": [
+    3.170921e-12,
+    0,
+    0.0001964824
+  ],
+  "hab_spl_m_01": [
+    -0.01269531,
+    0,
+    15.86127
+  ],
+  "hab_spl_s_01": [
+    -0.00001187992,
+    0.00004577637,
+    6.650612
+  ],
+  "prod_spl_cheltmeat": [
+    0,
+    505.4954,
+    0
+  ],
+  "storage_spl_l_container_01": [
+    3.170921e-12,
+    0,
+    -35.80736
+  ],
+  "storage_spl_l_liquid_01": [
+    3.170921e-12,
+    0,
+    -35.80737
+  ],
+  "storage_spl_l_solid_01": [
+    3.170921e-12,
+    0,
+    -35.80736
+  ],
+  "buildmodule_ter_equip_l": [
+    600.1138,
+    -0.000003814697,
+    0
+  ],
+  "buildmodule_ter_equip_xl": [
+    759.7438,
+    38.83456,
+    -40.62073
+  ],
+  "buildmodule_ter_ships_l": [
+    -54.40936,
+    0,
+    0
+  ],
+  "pier_ter_harbor_02": [
+    -798.8782,
+    0,
+    0
+  ],
+  "pier_ter_harbor_03": [
+    0,
+    0.0001678467,
+    -0.00003051758
+  ],
+  "pier_ter_harbor_04": [
+    0.01953125,
+    45.79899,
+    0
+  ],
+  "pier_ter_harbor_05": [
+    -49.69183,
+    0.0003479004,
+    -0.0003356934
+  ],
+  "pier_ter_tradestation_01": [
+    -0.0003509521,
+    181.3286,
+    -4.474904e-8
+  ],
+  "hab_ter_m_01": [
+    0,
+    0,
+    -0.0008544922
+  ],
+  "torus_turretbase": [
+    0,
+    0.3674233,
+    -0.1621491
+  ],
+  "torus_turretbase_v2": [
+    0,
+    0.3674233,
+    -0.1621491
+  ],
+  "prod_ter_computronicsubstrate": [
+    0,
+    12.638,
+    0
+  ],
+  "prod_ter_medicalsupplies": [
+    0,
+    528.983,
+    0
+  ],
+  "prod_ter_metallicmicrolattice": [
+    0,
+    21.05243,
+    0
+  ],
+  "prod_ter_proteinpaste": [
+    0,
+    -165.9803,
+    0.00001525879
+  ],
+  "storage_ter_m_container_01": [
+    0,
+    0,
+    0.3183465
+  ],
+  "storage_ter_m_container_tradestation_01": [
+    -0.00006866455,
+    -177.8955,
+    0.00003087796
+  ],
+  "storage_ter_m_solid_01": [
+    0,
+    0,
+    0.3183465
+  ],
+  "storage_ter_s_liquid_01": [
+    -0.488903,
+    0,
+    0.2659017
+  ]
+}

@@ -148,6 +148,34 @@ export function generatePlanXML(planOrName, planDataOrMetadata = {}, options = {
     }
   }
 
+  // Ensure modules are topologically sorted so every predecessor appears before its children (preventing forward references)
+  const modMap = new Map();
+  modulesList.forEach((m, idx) => {
+    const entryIdx = m.index !== undefined ? m.index : (idx + 1);
+    modMap.set(entryIdx, m);
+  });
+
+  const visited = new Set();
+  const sortedModulesList = [];
+
+  function visit(m) {
+    const entryIdx = m.index !== undefined ? m.index : (modulesList.indexOf(m) + 1);
+    if (visited.has(entryIdx)) return;
+    visited.add(entryIdx);
+    if (m.predecessor && m.predecessor.index !== undefined && modMap.has(m.predecessor.index)) {
+      visit(modMap.get(m.predecessor.index));
+    }
+    sortedModulesList.push(m);
+  }
+
+  if (fefbMod) {
+    visit(fefbMod);
+  }
+  for (const m of modulesList) {
+    visit(m);
+  }
+  modulesList = sortedModulesList;
+
   const entriesXml = [];
   modulesList.forEach((mod, idx) => {
     const entryIndex = mod.index !== undefined ? mod.index : (idx + 1);
@@ -159,7 +187,10 @@ export function generatePlanXML(planOrName, planDataOrMetadata = {}, options = {
     let connAttr = mod.connection ? ` connection="${escapeXml(mod.connection)}"` : '';
     let predecessorXml = '';
 
-    if (fefbXmlEntryIndex !== null && !isFefb) {
+    if (mod.predecessor && mod.predecessor.index !== undefined && !isFefb) {
+      const pConn = mod.predecessor.connection ? ` connection="${escapeXml(mod.predecessor.connection)}"` : '';
+      predecessorXml = `\n      <predecessor index="${mod.predecessor.index}"${pConn}/>`;
+    } else if (fefbXmlEntryIndex !== null && !isFefb) {
       if (!connAttr) {
         connAttr = ' connection="connectionsnap001"';
       }
@@ -174,11 +205,22 @@ export function generatePlanXML(planOrName, planDataOrMetadata = {}, options = {
     const rotPitch = typeof mod.rotation?.pitch === 'number' ? mod.rotation.pitch : 0;
     const rotRoll = typeof mod.rotation?.roll === 'number' ? mod.rotation.roll : 0;
 
+    const posAttrs = [];
+    if (posX !== 0) posAttrs.push(`x="${posX}"`);
+    if (posY !== 0) posAttrs.push(`y="${posY}"`);
+    if (posZ !== 0) posAttrs.push(`z="${posZ}"`);
+    const posAttrStr = posAttrs.length > 0 ? posAttrs.join(' ') : 'x="0" y="0" z="0"';
+
+    const rotAttrs = [];
+    if (rotYaw !== 0) rotAttrs.push(`yaw="${rotYaw}"`);
+    if (rotPitch !== 0) rotAttrs.push(`pitch="${rotPitch}"`);
+    if (rotRoll !== 0) rotAttrs.push(`roll="${rotRoll}"`);
+    const rotXml = rotAttrs.length > 0 ? `\n        <rotation ${rotAttrs.join(' ')}/>` : '';
+
     entriesXml.push(
 `    <entry index="${entryIndex}" macro="${escapeXml(macro)}"${connAttr}>${predecessorXml}
       <offset>
-        <position x="${posX}" y="${posY}" z="${posZ}"/>
-        <rotation yaw="${rotYaw}" pitch="${rotPitch}" roll="${rotRoll}"/>
+        <position ${posAttrStr}/>${rotXml}
       </offset>
     </entry>`
     );
