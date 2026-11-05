@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+  <plan id="5CE5F17F-ABE5-4056-924B-69C0DB6B4E59_1791292533" name="8x2x4 Docks Storage" description="">
+    <entry index="1" macro="storage_arg_l_container_01_macro">
+      <offset>
+        <position x="1600" y="742.616" z="400"/>
+        <rotation yaw="-89.99998"/>
+      </offset>
+    </entry>
+    <entry index="2" macro="storage_arg_l_solid_01_macro" connection="connectionsnap001">
+      <predecessor index="1" connection="connectionsnap001"/>
+      <offset>
+        <position x="0.0003662" y="742.616" z="400"/>
+        <rotation yaw="90.00001"/>
+      </offset>
+    </entry>
+    <entry index="3" macro="storage_arg_l_liquid_01_macro" connection="connectionsnap001">
+      <predecessor index="2" connection="connectionsnap004"/>
+      <offset>
+        <position x="-1599.999" y="742.616" z="400.001"/>
+        <rotation yaw="90.00002"/>
+      </offset>
+    </entry>
+    <entry index="4" macro="dockarea_arg_m_02_tradestation_01_macro" connection="connectionsnap004">
+      <predecessor index="2" connection="connectionsnap002"/>
+      <offset>
+        <position x="-0.0001221" y="739.843" z="-399.999"/>
+      </offset>
+    </entry>
+    <entry index="5" macro="pier_arg_harbor_03_macro" connection="connectionsnap001">
+      <predecessor index="4" connection="connectionsnap003"/>
+      <offset>
+        <position x="-0.0004883" y="739.843" z="-999.999"/>
+        <rotation yaw="-89.99997"/>
+      </offset>
+    </entry>
+    <entry index="6" macro="dockarea_arg_m_station_02_hightech_macro" connection="connectionsnap003">
+      <predecessor index="4" connection="connectionsnap001"/>
+      <offset>
+        <position x="-800" y="739.843" z="-399.999"/>
+        <rotation yaw="-89.99995"/>
+      </offset>
+    </entry>
+    <entry index="7" macro="dockarea_arg_m_station_02_hightech_macro" connection="connectionsnap004">
+      <predecessor index="4" connection="connectionsnap002"/>
+      <offset>
+        <position x="800" y="739.843" z="-400"/>
+        <rotation yaw="-90.00003"/>
+      </offset>
+    </entry>
+    <entry index="8" macro="pier_arg_harbor_03_macro" connection="connectionsnap001">
+      <predecessor index="2" connection="connectionsnap003"/>
+      <offset>
+        <position x="0.0003662" y="739.843" z="1000"/>
+        <rotation yaw="90"/>
+      </offset>
+    </entry>
+  </plan>
+</plans>

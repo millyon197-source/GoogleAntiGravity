@@ -182,7 +182,7 @@ function parseXmlPlan(xmlText) {
   return { id, name, description, modules };
 }
 
-const xmlPath = 'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\ebi trading station.xml';
+const xmlPath = 'tests/fixtures/ebi trading station.xml';
 console.log('====================================================');
 console.log('[*] STARTING COMPREHENSIVE ANALYSIS FOR: EBI Trading Station');
 console.log('Path:', xmlPath);
@@ -205,7 +205,7 @@ console.log(`- Total Station Modules: ${planData.modules.length}`);
 // 2. Mesh Asset Resolution & Disk Check
 const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir'];
 const prefixes = ['prod_', 'buildmodule_'];
-const rootDir = 'd:\\Ai\\X4\\GoogleAntiGravity';
+const rootDir = process.cwd();
 
 const colladaCache = new Map();
 let cacheHits = 0;

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+  <plan id="player_1792538450" name="Cross 01 Plasma Conductor" description="">
+    <entry index="1" macro="prod_gen_plasmaconductors_macro">
+      <offset>
+        <position x="378.13" y="0.0002441" z="631.06"/>
+      </offset>
+    </entry>
+    <entry index="2" macro="struct_arg_cross_01_macro" connection="connectionsnap006">
+      <predecessor index="1" connection="connectionsnap001"/>
+      <offset>
+        <position x="178.13" y="-600" z="31.06"/>
+      </offset>
+    </entry>
+  </plan>
+</plans>

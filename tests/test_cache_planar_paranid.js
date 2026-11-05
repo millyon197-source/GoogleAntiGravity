@@ -102,7 +102,7 @@ function loadColladaModelSimulated(url) {
   return loadPromise;
 }
 
-const xmlPath = 'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\Planar - Paranid.xml';
+const xmlPath = 'tests/fixtures/Planar - Paranid.xml';
 console.log('[*] Testing DAE cache storage for:', xmlPath);
 
 const xmlContent = fs.readFileSync(xmlPath, 'utf8');

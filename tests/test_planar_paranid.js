@@ -64,7 +64,7 @@ function lookupDaeUrls(key) {
   return entry.files.map(file => `${entry.folder_path}/${file}`);
 }
 
-const xmlPath = 'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\Planar - Paranid.xml';
+const xmlPath = 'tests/fixtures/Planar - Paranid.xml';
 console.log('[*] Reading plan file:', xmlPath);
 
 if (!fs.existsSync(xmlPath)) {
@@ -101,7 +101,7 @@ const factions = ['arg', 'par', 'tel', 'spl', 'ter', 'bor', 'xen', 'kha', 'pir']
 const prefixes = ['prod_', 'buildmodule_'];
 
 let successCount = 0;
-const rootDir = 'd:\\Ai\\X4\\GoogleAntiGravity';
+const rootDir = process.cwd();
 
 for (const mod of modules) {
   let baseName = mod.macro.replace('_macro', '').toLowerCase();

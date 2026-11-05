@@ -131,7 +131,7 @@ function parseXmlPlan(xmlText) {
   return { id, name, description, modules };
 }
 
-const xmlPath = 'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\Planar - Paranid.xml';
+const xmlPath = 'tests/fixtures/Planar - Paranid.xml';
 console.log('[*] Testing full station object displayability for:', xmlPath);
 
 const xmlContent = fs.readFileSync(xmlPath, 'utf8');

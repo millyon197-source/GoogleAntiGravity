@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+  <plan id="32766536-68E3-46EE-8EED-2BDCABAD43ED_1673310721" name="Docks Only" description="">
+    <patches>
+      <patch extension="ego_dlc_terran" version="510" name="Cradle of Humanity"/>
+    </patches>
+    <entry index="3" macro="pier_arg_harbor_03_macro">
+      <offset>
+        <position x="-1391.228" y="1229.563" z="887.198"/>
+        <rotation roll="60.0"/>
+      </offset>
+    </entry>
+    <entry index="2" macro="dockarea_arg_m_station_02_hightech_macro">
+      <offset>
+        <position x="1408.772" y="-17156.969" z="856.369"/>
+      </offset>
+    </entry>
+    <entry index="1" macro="dockarea_arg_m_station_02_hightech_macro">
+      <offset>
+        <position x="8.769" y="1229.564" z="4487.198"/>
+      </offset>
+    </entry>
+    <entry index="4" macro="dockarea_arg_m_station_02_hightech_macro">
+      <offset>
+        <position x="8.767" y="1229.564" z="-3512.802"/>
+      </offset>
+    </entry>
+    <entry index="5" macro="dockarea_arg_m_02_tradestation_01_macro">
+      <offset>
+        <position x="8.772" y="1229.564" z="887.198"/>
+        <rotation yaw="-89.99995"/>
+      </offset>
+    </entry>
+    <entry index="6" macro="dockarea_arg_m_02_tradestation_01_macro">
+      <offset>
+        <position x="8.771" y="1229.564" z="-1112.802"/>
+        <rotation yaw="-89.99989"/>
+      </offset>
+    </entry>
+    <entry index="7" macro="dockarea_arg_m_02_tradestation_01_macro">
+      <offset>
+        <position x="8.771" y="1229.564" z="2887.198"/>
+        <rotation yaw="-90.00002"/>
+      </offset>
+    </entry>
+    <entry index="8" macro="pier_arg_harbor_03_macro" connection="connectionsnap008">
+      <predecessor index="162" connection="connectionsnap001"/>
+      <offset>
+        <position x="1408.772" y="1229.566" z="887.197"/>
+        <rotation roll="89.99995"/>
+      </offset>
+    </entry>
+   </plan>
+</plans>

@@ -1,0 +1,3593 @@
+[
+  {
+    "baseKey": "prod_arg_foodrations",
+    "macroKey": "prod_arg_foodrations_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -78.36777,
+      0.3003836,
+      0.000007629395
+    ],
+    "partMainSize": [
+      360.1355,
+      375.0013,
+      179.0799
+    ],
+    "partMainCenter": [
+      58.62134,
+      9.536743e-7,
+      -0.000007629395
+    ],
+    "meshBBox": {
+      "min": [
+        -418.757,
+        -375.001,
+        -179.08
+      ],
+      "max": [
+        301.514,
+        375.001,
+        179.08
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          400,
+          -200,
+          0
+        ],
+        "quat": [
+          2.512148e-15,
+          -0.7071068,
+          6.181724e-8,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          400,
+          -200,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_arg_meat",
+    "macroKey": "prod_arg_meat_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      -57.52296,
+      -18.02638
+    ],
+    "partMainSize": [
+      757.1031,
+      176.9839,
+      356.4362
+    ],
+    "partMainCenter": [
+      20.77686,
+      52.47654,
+      -6.816208
+    ],
+    "meshBBox": {
+      "min": [
+        -777.88,
+        -124.507,
+        -363.252
+      ],
+      "max": [
+        736.326,
+        229.46,
+        349.62
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -600,
+          -200,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          600,
+          -200,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -600,
+          -200,
+          -200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          600,
+          -200,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_arg_spacefuel",
+    "macroKey": "prod_arg_spacefuel_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      27.72246,
+      -72.85571,
+      -0.8166932
+    ],
+    "partMainSize": [
+      363.9726,
+      390.036,
+      355.2533
+    ],
+    "partMainCenter": [
+      -17.29564,
+      62.91548,
+      0.00004285574
+    ],
+    "meshBBox": {
+      "min": [
+        -346.677,
+        -327.121,
+        -355.253
+      ],
+      "max": [
+        381.268,
+        452.952,
+        355.253
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -400,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -400,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_arg_wheat",
+    "macroKey": "prod_arg_wheat_macro",
+    "hasBin": false,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": null,
+    "partMainCenter": null,
+    "meshBBox": null,
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          400,
+          -200,
+          800
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          0,
+          0,
+          1000
+        ],
+        "quat": null
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          400,
+          -200,
+          800
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          0,
+          0,
+          1000
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_bor_bofu",
+    "macroKey": "prod_bor_bofu_macro",
+    "hasBin": false,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": null,
+    "partMainCenter": null,
+    "meshBBox": null,
+    "xmlSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          1000,
+          0,
+          0.0000376725
+        ],
+        "quat": [
+          0,
+          -0.7071068,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          -1000,
+          0,
+          0.0000863067
+        ],
+        "quat": [
+          0,
+          0.7071066,
+          0,
+          -0.7071069
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          1000,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          -1000,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_bor_bogas",
+    "macroKey": "prod_bor_bogas_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      297.6248,
+      170.5199,
+      1000
+    ],
+    "partMainCenter": [
+      -0.0000076294,
+      -6.250343,
+      0
+    ],
+    "meshBBox": {
+      "min": [
+        -297.625,
+        -176.77,
+        -1000
+      ],
+      "max": [
+        297.625,
+        164.27,
+        1000
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          -0.0000610352,
+          0,
+          1000
+        ],
+        "quat": [
+          0,
+          -5.96e-8,
+          0,
+          -1
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          0,
+          0,
+          -999.9999
+        ],
+        "quat": [
+          0,
+          1,
+          0,
+          -7.55e-8
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          0,
+          0,
+          1000
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          0,
+          0,
+          -1000
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_bor_medicalsupplies",
+    "macroKey": "prod_bor_medicalsupplies_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      218.5117,
+      668.1139,
+      900
+    ],
+    "partMainCenter": [
+      0.0000267029,
+      114.1322,
+      100.0001
+    ],
+    "meshBBox": {
+      "min": [
+        -218.512,
+        -553.982,
+        -800
+      ],
+      "max": [
+        218.512,
+        782.246,
+        1000
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          -0.0000610352,
+          0,
+          1000
+        ],
+        "quat": [
+          0,
+          -5.96e-8,
+          0,
+          -1
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          -0.0000610352,
+          0,
+          -800.0001
+        ],
+        "quat": [
+          0,
+          1,
+          0,
+          -7.55e-8
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          0,
+          0,
+          1000
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          0,
+          0,
+          -800
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_bor_plankton",
+    "macroKey": "prod_bor_plankton_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      903.5183,
+      801.7931,
+      400.0001
+    ],
+    "partMainCenter": [
+      0,
+      238.1826,
+      0
+    ],
+    "meshBBox": {
+      "min": [
+        -903.518,
+        -563.611,
+        -400
+      ],
+      "max": [
+        903.518,
+        1039.98,
+        400
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          -0.0000610352,
+          0,
+          400
+        ],
+        "quat": [
+          0,
+          -5.96e-8,
+          0,
+          -1
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          0,
+          0,
+          -399.9999
+        ],
+        "quat": [
+          0,
+          1,
+          0,
+          -7.55e-8
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "con_snap_01",
+        "pos": [
+          0,
+          0,
+          400
+        ]
+      },
+      {
+        "name": "con_snap_02",
+        "pos": [
+          0,
+          0,
+          -400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_advancedcomposites",
+    "macroKey": "prod_gen_advancedcomposites_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -0.1002197,
+      0,
+      0.0557251
+    ],
+    "partMainSize": [
+      379.8282,
+      713.1808,
+      180.2508
+    ],
+    "partMainCenter": [
+      0.1013794,
+      -39.41147,
+      0.00004577637
+    ],
+    "meshBBox": {
+      "min": [
+        -379.93,
+        -752.592,
+        -180.251
+      ],
+      "max": [
+        379.727,
+        673.769,
+        180.251
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -800,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -400,
+          600,
+          0
+        ],
+        "quat": [
+          -5.024295e-15,
+          0.7071066,
+          -6.181723e-8,
+          -0.7071069
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -800,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -400,
+          600,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_advancedelectronics",
+    "macroKey": "prod_gen_advancedelectronics_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -6.933838,
+      164.6301,
+      -200.4841
+    ],
+    "partMainSize": [
+      333.3507,
+      179.6572,
+      569.0549
+    ],
+    "partMainCenter": [
+      0,
+      15.02733,
+      0.00001525879
+    ],
+    "meshBBox": {
+      "min": [
+        -333.351,
+        -164.63,
+        -569.055
+      ],
+      "max": [
+        333.351,
+        194.685,
+        569.055
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_antimattercells",
+    "macroKey": "prod_gen_antimattercells_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      2.628204,
+      208.7573,
+      191.0058
+    ],
+    "partMainSize": [
+      381.1555,
+      198.5861,
+      970.3087
+    ],
+    "partMainCenter": [
+      0.00001525879,
+      -10.17117,
+      -0.00003051758
+    ],
+    "meshBBox": {
+      "min": [
+        -381.155,
+        -208.757,
+        -970.309
+      ],
+      "max": [
+        381.155,
+        188.415,
+        970.309
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          200,
+          -800
+        ],
+        "quat": [
+          0,
+          -1,
+          0,
+          7.54979e-8
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          -200,
+          0,
+          -600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          200,
+          200,
+          1200
+        ],
+        "quat": null
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          600
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          200,
+          -800
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          -200,
+          0,
+          -600
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          200,
+          200,
+          1200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_antimatterconverters",
+    "macroKey": "prod_gen_antimatterconverters_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -31.45453,
+      -33.50732,
+      -162.9843
+    ],
+    "partMainSize": [
+      314.4024,
+      795.5396,
+      369.2463
+    ],
+    "partMainCenter": [
+      25.76189,
+      29.08887,
+      172.7221
+    ],
+    "meshBBox": {
+      "min": [
+        -340.164,
+        -766.451,
+        -196.524
+      ],
+      "max": [
+        288.641,
+        824.628,
+        541.968
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -800.6404,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -800.6404,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -800.64,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -800.64,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_claytronics",
+    "macroKey": "prod_gen_claytronics_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0.6916762,
+      -90.55878,
+      18.77536
+    ],
+    "partMainSize": [
+      373.9631,
+      261.2372,
+      339.7945
+    ],
+    "partMainCenter": [
+      0.000004708767,
+      -48.23071,
+      8.457838
+    ],
+    "meshBBox": {
+      "min": [
+        -373.963,
+        -309.468,
+        -331.337
+      ],
+      "max": [
+        373.963,
+        213.007,
+        348.252
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          0,
+          -400,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          0,
+          -400,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_countermeasures",
+    "macroKey": "prod_gen_countermeasures_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0.00001831054,
+      150,
+      -0.5391794
+    ],
+    "partMainSize": [
+      320.1826,
+      387.299,
+      780.1831
+    ],
+    "partMainCenter": [
+      -59.59795,
+      -162.7011,
+      0.9468942
+    ],
+    "meshBBox": {
+      "min": [
+        -260.585,
+        -550,
+        -779.236
+      ],
+      "max": [
+        379.781,
+        224.598,
+        781.13
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          600
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_dronecomponents",
+    "macroKey": "prod_gen_dronecomponents_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -1.574768,
+      46.47891,
+      0.04702997
+    ],
+    "partMainSize": [
+      368.946,
+      190.1698,
+      373.2625
+    ],
+    "partMainCenter": [
+      -0.00003051758,
+      -36.29477,
+      -0.0613122
+    ],
+    "meshBBox": {
+      "min": [
+        -368.946,
+        -226.465,
+        -373.324
+      ],
+      "max": [
+        368.946,
+        153.875,
+        373.201
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -200,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -200,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          200,
+          0,
+          400
+        ],
+        "quat": null
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          400,
+          0,
+          -200
+        ],
+        "quat": [
+          0,
+          -0.7071068,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -200,
+          -200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -200,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          200,
+          0,
+          400
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          400,
+          0,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_energycells",
+    "macroKey": "prod_gen_energycells_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      1200,
+      680.6602,
+      354.1512
+    ],
+    "partMainCenter": [
+      0,
+      11.74597,
+      -27.25587
+    ],
+    "meshBBox": {
+      "min": [
+        -1200,
+        -668.914,
+        -381.407
+      ],
+      "max": [
+        1200,
+        692.406,
+        326.895
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          1200,
+          0,
+          0
+        ],
+        "quat": [
+          2.247646e-8,
+          -0.7071068,
+          8.42937e-8,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -1200,
+          0,
+          0
+        ],
+        "quat": [
+          -8.42937e-8,
+          0.7071068,
+          2.247646e-8,
+          -0.7071068
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          1200,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -1200,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_engineparts",
+    "macroKey": "prod_gen_engineparts_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      89.7566,
+      -141.6458,
+      0.8198721
+    ],
+    "partMainSize": [
+      256.9495,
+      247.5465,
+      378.7203
+    ],
+    "partMainCenter": [
+      -2.452721,
+      -10.80798,
+      -0.7702352
+    ],
+    "meshBBox": {
+      "min": [
+        -254.497,
+        -258.354,
+        -379.491
+      ],
+      "max": [
+        259.402,
+        236.739,
+        377.95
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          200,
+          -400,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -400,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          200,
+          -400,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -400,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_fieldcoils",
+    "macroKey": "prod_gen_fieldcoils_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -0.00001525879,
+      32.48321,
+      45.76962
+    ],
+    "partMainSize": [
+      378.9584,
+      135.6267,
+      377.2812
+    ],
+    "partMainCenter": [
+      0.00001525879,
+      -0.000003814697,
+      -44.6503
+    ],
+    "meshBBox": {
+      "min": [
+        -378.958,
+        -135.627,
+        -421.931
+      ],
+      "max": [
+        378.958,
+        135.627,
+        332.631
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          -200,
+          -200,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -200,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          -200,
+          -200,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -200,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_graphene",
+    "macroKey": "prod_gen_graphene_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      32.83372,
+      -52.68745,
+      -0.458374
+    ],
+    "partMainSize": [
+      349.664,
+      137.3129,
+      716.3719
+    ],
+    "partMainCenter": [
+      0.00001525879,
+      -9.99971,
+      0
+    ],
+    "meshBBox": {
+      "min": [
+        -349.664,
+        -147.313,
+        -716.372
+      ],
+      "max": [
+        349.664,
+        127.313,
+        716.372
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -200,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -200,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -200,
+          -200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -200,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_hullparts",
+    "macroKey": "prod_gen_hullparts_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      89.51797,
+      4.963562,
+      69.64954
+    ],
+    "partMainSize": [
+      166.9196,
+      143.9145,
+      579.4266
+    ],
+    "partMainCenter": [
+      -86.12432,
+      -63.06178,
+      -70.53024
+    ],
+    "meshBBox": {
+      "min": [
+        -80.7953,
+        -206.976,
+        -649.957
+      ],
+      "max": [
+        253.044,
+        80.8527,
+        508.896
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          -400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          -400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_medicalsupplies",
+    "macroKey": "prod_gen_medicalsupplies_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      39.5042,
+      -10.21402,
+      -199.2765
+    ],
+    "partMainSize": [
+      337.9708,
+      762.2253,
+      178.9486
+    ],
+    "partMainCenter": [
+      -1.580673,
+      -0.00003051758,
+      -0.1092682
+    ],
+    "meshBBox": {
+      "min": [
+        -336.39,
+        -762.225,
+        -179.058
+      ],
+      "max": [
+        339.551,
+        762.225,
+        178.839
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -800,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -800,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_microchips",
+    "macroKey": "prod_gen_microchips_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -134.1366,
+      130.2084,
+      -0.958971
+    ],
+    "partMainSize": [
+      341.6954,
+      185.7258,
+      778.153
+    ],
+    "partMainCenter": [
+      128.2737,
+      55.51321,
+      -0.8195324
+    ],
+    "meshBBox": {
+      "min": [
+        -469.969,
+        -130.213,
+        -778.973
+      ],
+      "max": [
+        213.422,
+        241.239,
+        777.333
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          0,
+          600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          0,
+          600
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_missilecomponents",
+    "macroKey": "prod_gen_missilecomponents_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -21.99841,
+      190.9775,
+      -4.713791
+    ],
+    "partMainSize": [
+      334.0854,
+      183.5732,
+      570.4082
+    ],
+    "partMainCenter": [
+      -8.648712,
+      -7.404266,
+      -0.00001525879
+    ],
+    "meshBBox": {
+      "min": [
+        -325.437,
+        -190.978,
+        -570.408
+      ],
+      "max": [
+        342.734,
+        176.169,
+        570.408
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          0,
+          400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          200,
+          0,
+          -400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          0,
+          400
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          200,
+          0,
+          -400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_plasmaconductors",
+    "macroKey": "prod_gen_plasmaconductors_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -191.7195,
+      -147.216,
+      -260.7095
+    ],
+    "partMainSize": [
+      363.6989,
+      389.4937,
+      576.8025
+    ],
+    "partMainCenter": [
+      187.2754,
+      136.7097,
+      57.0162
+    ],
+    "meshBBox": {
+      "min": [
+        -550.974,
+        -252.784,
+        -519.786
+      ],
+      "max": [
+        176.423,
+        526.203,
+        633.819
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -400,
+          -600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -400,
+          -600
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_quantumtubes",
+    "macroKey": "prod_gen_quantumtubes_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      182.125,
+      588.5938,
+      190.1473
+    ],
+    "partMainCenter": [
+      0.01379395,
+      -11.40515,
+      9.841553
+    ],
+    "meshBBox": {
+      "min": [
+        -182.139,
+        -599.999,
+        -180.306
+      ],
+      "max": [
+        182.111,
+        577.189,
+        199.989
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -600,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -600,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_refinedmetals",
+    "macroKey": "prod_gen_refinedmetals_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -63.88318,
+      -140.9294,
+      27.99579
+    ],
+    "partMainSize": [
+      345.2437,
+      328.0976,
+      777.087
+    ],
+    "partMainCenter": [
+      112.1488,
+      69.00804,
+      -38.3548
+    ],
+    "meshBBox": {
+      "min": [
+        -457.393,
+        -259.09,
+        -815.442
+      ],
+      "max": [
+        233.095,
+        397.106,
+        738.732
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          -600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -400,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          -600
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -400,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_scanningarrays",
+    "macroKey": "prod_gen_scanningarrays_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -0.9094874,
+      -3.634506,
+      107.4805
+    ],
+    "partMainSize": [
+      397.1172,
+      185.5881,
+      582.3512
+    ],
+    "partMainCenter": [
+      0.000002503395,
+      -10.7774,
+      -104.8399
+    ],
+    "meshBBox": {
+      "min": [
+        -397.117,
+        -196.366,
+        -687.191
+      ],
+      "max": [
+        397.117,
+        174.811,
+        477.511
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -200,
+          -400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -200,
+          -400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_scrap_recycler",
+    "macroKey": "prod_gen_scrap_recycler_macro",
+    "hasBin": false,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": null,
+    "partMainCenter": null,
+    "meshBBox": null,
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap_01",
+        "pos": [
+          400.0001,
+          -0.0000087423,
+          0.0001220703
+        ],
+        "quat": [
+          0,
+          -0.7071068,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap_02",
+        "pos": [
+          0,
+          -0.0000087423,
+          400.0001
+        ],
+        "quat": null
+      },
+      {
+        "name": "ConnectionSnap_03",
+        "pos": [
+          -400.0001,
+          -0.0000087423,
+          0.0001220703
+        ],
+        "quat": [
+          0,
+          0.7071069,
+          0,
+          -0.7071066
+        ]
+      },
+      {
+        "name": "ConnectionSnap_04",
+        "pos": [
+          0,
+          200.0007,
+          0.0003662109
+        ],
+        "quat": [
+          0.4999999,
+          0.5000001,
+          0.5000001,
+          -0.4999999
+        ]
+      },
+      {
+        "name": "ConnectionSnap_05",
+        "pos": [
+          0,
+          -3400,
+          0.0003662109
+        ],
+        "quat": [
+          -0.4999999,
+          -0.5000001,
+          0.5000003,
+          -0.4999997
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap_01",
+        "pos": [
+          400,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap_02",
+        "pos": [
+          0,
+          0,
+          400
+        ]
+      },
+      {
+        "name": "ConnectionSnap_03",
+        "pos": [
+          -400,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap_04",
+        "pos": [
+          0,
+          200,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap_05",
+        "pos": [
+          0,
+          -3400,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_scrap_recyclerkhaak",
+    "macroKey": "prod_gen_scrap_recyclerkhaak_macro",
+    "hasBin": false,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": null,
+    "partMainCenter": null,
+    "meshBBox": null,
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap_01",
+        "pos": [
+          400.0001,
+          -0.0000087423,
+          0.0001220703
+        ],
+        "quat": [
+          0,
+          -0.7071068,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap_02",
+        "pos": [
+          0,
+          -0.0000087423,
+          400.0001
+        ],
+        "quat": null
+      },
+      {
+        "name": "ConnectionSnap_03",
+        "pos": [
+          -400.0001,
+          -0.0000087423,
+          0.0001220703
+        ],
+        "quat": [
+          0,
+          0.7071069,
+          0,
+          -0.7071066
+        ]
+      },
+      {
+        "name": "ConnectionSnap_04",
+        "pos": [
+          0,
+          200.0007,
+          0.0003662109
+        ],
+        "quat": [
+          0.4999999,
+          0.5000001,
+          0.5000001,
+          -0.4999999
+        ]
+      },
+      {
+        "name": "ConnectionSnap_05",
+        "pos": [
+          0,
+          -3400,
+          0.0003662109
+        ],
+        "quat": [
+          -0.4999999,
+          -0.5000001,
+          0.5000003,
+          -0.4999997
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap_01",
+        "pos": [
+          400,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap_02",
+        "pos": [
+          0,
+          0,
+          400
+        ]
+      },
+      {
+        "name": "ConnectionSnap_03",
+        "pos": [
+          -400,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap_04",
+        "pos": [
+          0,
+          200,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap_05",
+        "pos": [
+          0,
+          -3400,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_shieldcomponents",
+    "macroKey": "prod_gen_shieldcomponents_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -215.206,
+      93.313,
+      11.07
+    ],
+    "partMainSize": [
+      244.8221,
+      180.3671,
+      772.6125
+    ],
+    "partMainCenter": [
+      188.9523,
+      -112.9461,
+      -7.157799
+    ],
+    "meshBBox": {
+      "min": [
+        -433.774,
+        -293.313,
+        -779.77
+      ],
+      "max": [
+        55.8698,
+        67.421,
+        765.455
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -200,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -200,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_siliconwafers",
+    "macroKey": "prod_gen_siliconwafers_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      8.826233,
+      -50.99986,
+      -0.6375122
+    ],
+    "partMainSize": [
+      169.7446,
+      138.3034,
+      1266.099
+    ],
+    "partMainCenter": [
+      -0.000007629395,
+      -10.67303,
+      0.00006103516
+    ],
+    "meshBBox": {
+      "min": [
+        -169.745,
+        -148.976,
+        -1266.1
+      ],
+      "max": [
+        169.745,
+        127.63,
+        1266.1
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_smartchips",
+    "macroKey": "prod_gen_smartchips_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      1.873016,
+      -15.85193,
+      -0.000004526228
+    ],
+    "partMainSize": [
+      181.2348,
+      571.6975,
+      123.8534
+    ],
+    "partMainCenter": [
+      0,
+      0,
+      -0.000003103167
+    ],
+    "meshBBox": {
+      "min": [
+        -181.235,
+        -571.698,
+        -123.853
+      ],
+      "max": [
+        181.235,
+        571.698,
+        123.853
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -600,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -600,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_spices",
+    "macroKey": "prod_gen_spices_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -14.95143,
+      16.66401,
+      73.24735
+    ],
+    "partMainSize": [
+      366.5159,
+      185.0193,
+      540.2648
+    ],
+    "partMainCenter": [
+      31.65218,
+      -31.67148,
+      -32.98263
+    ],
+    "meshBBox": {
+      "min": [
+        -398.168,
+        -216.691,
+        -573.247
+      ],
+      "max": [
+        334.864,
+        153.348,
+        507.282
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -200,
+          -400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -200,
+          -400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_superfluidcoolant",
+    "macroKey": "prod_gen_superfluidcoolant_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      339.1204,
+      577.2521,
+      381.279
+    ],
+    "partMainCenter": [
+      -0.7008362,
+      -22.77466,
+      -3.370026
+    ],
+    "meshBBox": {
+      "min": [
+        -338.42,
+        -600.027,
+        -384.649
+      ],
+      "max": [
+        339.821,
+        554.477,
+        377.909
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          -200,
+          -600,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap01",
+        "pos": [
+          -200,
+          -600,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_turretcomponents",
+    "macroKey": "prod_gen_turretcomponents_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -0.2195979,
+      -18.11649,
+      0.6588726
+    ],
+    "partMainSize": [
+      379.4447,
+      396.3773,
+      376.8909
+    ],
+    "partMainCenter": [
+      -0.000006556511,
+      14.49359,
+      -2.553709
+    ],
+    "meshBBox": {
+      "min": [
+        -379.445,
+        -381.884,
+        -379.445
+      ],
+      "max": [
+        379.445,
+        410.871,
+        374.337
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -400,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -400,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          200,
+          -400,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          200,
+          -400,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -400,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -400,
+          -200
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          200,
+          -400,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          200,
+          -400,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_water",
+    "macroKey": "prod_gen_water_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -4.190485,
+      175.7515,
+      -333.9262
+    ],
+    "partMainSize": [
+      365.4082,
+      189.6389,
+      779.8349
+    ],
+    "partMainCenter": [
+      3.801463,
+      13.86067,
+      333.9703
+    ],
+    "meshBBox": {
+      "min": [
+        -369.21,
+        -175.778,
+        -445.865
+      ],
+      "max": [
+        361.607,
+        203.5,
+        1113.81
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          0,
+          600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          0,
+          600
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_gen_weaponcomponents",
+    "macroKey": "prod_gen_weaponcomponents_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0.2172394,
+      0.8668709,
+      401.1655
+    ],
+    "partMainSize": [
+      178.7343,
+      588.4541,
+      578.1566
+    ],
+    "partMainCenter": [
+      0.1318588,
+      -12.43953,
+      -400.774
+    ],
+    "meshBBox": {
+      "min": [
+        -178.866,
+        -600.894,
+        -978.931
+      ],
+      "max": [
+        178.602,
+        576.015,
+        177.383
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -600,
+          400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -600,
+          400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_par_majadust",
+    "macroKey": "prod_par_majadust_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -1.427321e-7,
+      0,
+      -1.99825e-8
+    ],
+    "partMainSize": [
+      600.0001,
+      532.8807,
+      238.7963
+    ],
+    "partMainCenter": [
+      1.427321e-7,
+      332.8807,
+      1.99825e-8
+    ],
+    "meshBBox": {
+      "min": [
+        -600,
+        -200,
+        -238.796
+      ],
+      "max": [
+        600,
+        865.761,
+        238.796
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          -600,
+          0,
+          0
+        ],
+        "quat": [
+          0,
+          0.7071068,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          600,
+          0,
+          0
+        ],
+        "quat": [
+          0,
+          -0.7071068,
+          0,
+          -0.7071068
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          -600,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          600,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_par_majasnails",
+    "macroKey": "prod_par_majasnails_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      14.23969
+    ],
+    "partMainSize": [
+      292.1344,
+      918.903,
+      355.7473
+    ],
+    "partMainCenter": [
+      0,
+      518.903,
+      -0.000009536743
+    ],
+    "meshBBox": {
+      "min": [
+        -292.134,
+        -400,
+        -355.747
+      ],
+      "max": [
+        292.134,
+        1437.81,
+        355.747
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -400,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -400,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_par_sojabeans",
+    "macroKey": "prod_par_sojabeans_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -15.43998,
+      -752.6564,
+      14.17126
+    ],
+    "partMainSize": [
+      288.6185,
+      776.0313,
+      358.2128
+    ],
+    "partMainCenter": [
+      15.74725,
+      728.5845,
+      -6.980082
+    ],
+    "meshBBox": {
+      "min": [
+        -304.366,
+        -47.4468,
+        -365.193
+      ],
+      "max": [
+        272.871,
+        1504.62,
+        351.233
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -800,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -800,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -800,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -800,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_par_sojahusk",
+    "macroKey": "prod_par_sojahusk_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0.003054261,
+      463.3481,
+      0
+    ],
+    "partMainSize": [
+      299.1649,
+      544.689,
+      306.3223
+    ],
+    "partMainCenter": [
+      0.00001275539,
+      81.34088,
+      -31.25688
+    ],
+    "meshBBox": {
+      "min": [
+        -299.165,
+        -463.348,
+        -337.579
+      ],
+      "max": [
+        299.165,
+        626.03,
+        275.065
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          0,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          0,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          -200,
+          0,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          200,
+          0,
+          -200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          0,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          0,
+          200
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          -200,
+          0,
+          -200
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          200,
+          0,
+          -200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_tel_nostropoil",
+    "macroKey": "prod_tel_nostropoil_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      -29.15803,
+      190.3748,
+      144.9647
+    ],
+    "partMainSize": [
+      348.7369,
+      190.2995,
+      220.6463
+    ],
+    "partMainCenter": [
+      -0.1110764,
+      -0.1020813,
+      -11.57114
+    ],
+    "meshBBox": {
+      "min": [
+        -348.626,
+        -190.402,
+        -232.217
+      ],
+      "max": [
+        348.848,
+        190.197,
+        209.075
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          200
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          0,
+          200
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_tel_spaceweed",
+    "macroKey": "prod_tel_spaceweed_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0.00002813339,
+      -53.68765,
+      38.43175
+    ],
+    "partMainSize": [
+      337.9912,
+      346.3644,
+      537.8793
+    ],
+    "partMainCenter": [
+      0.000002384186,
+      0.02528,
+      0.00001525879
+    ],
+    "meshBBox": {
+      "min": [
+        -337.991,
+        -346.339,
+        -537.879
+      ],
+      "max": [
+        337.991,
+        346.39,
+        537.879
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -400,
+          -400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -400,
+          -400
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          -200,
+          -400,
+          -400
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          200,
+          -400,
+          -400
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_tel_sunriseflowers",
+    "macroKey": "prod_tel_sunriseflowers_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      6.806424,
+      0.00004327943
+    ],
+    "partMainSize": [
+      799.9999,
+      216.3892,
+      799.9999
+    ],
+    "partMainCenter": [
+      0,
+      9.582729,
+      0.00001775573
+    ],
+    "meshBBox": {
+      "min": [
+        -800,
+        -206.806,
+        -800
+      ],
+      "max": [
+        800,
+        225.972,
+        800
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          5.349745e-12,
+          0.00007108138,
+          -800
+        ],
+        "quat": [
+          4.371139e-8,
+          -1,
+          4.371139e-8,
+          -1.910685e-15
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -5.349745e-12,
+          2.218585e-7,
+          800
+        ],
+        "quat": null
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          800,
+          2.218575e-7,
+          0
+        ],
+        "quat": [
+          2.247646e-8,
+          -0.7071068,
+          8.42937e-8,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          -800,
+          0.00007108138,
+          0
+        ],
+        "quat": [
+          -1.685874e-7,
+          0.7071068,
+          -1.685874e-7,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap005",
+        "pos": [
+          0,
+          -200,
+          0
+        ],
+        "quat": [
+          -0.5,
+          0.5,
+          -0.5000001,
+          -0.5
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          0,
+          -800
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          0,
+          0,
+          800
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          800,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap004",
+        "pos": [
+          -800,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap005",
+        "pos": [
+          0,
+          -200,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_tel_swampplants",
+    "macroKey": "prod_tel_swampplants_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      0,
+      0
+    ],
+    "partMainSize": [
+      982.7954,
+      177.2989,
+      600.0001
+    ],
+    "partMainCenter": [
+      0,
+      -22.70105,
+      -0.0002441406
+    ],
+    "meshBBox": {
+      "min": [
+        -982.795,
+        -230,
+        -599.461
+      ],
+      "max": [
+        982.795,
+        124.598,
+        600.539
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          0
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          0,
+          0,
+          600
+        ],
+        "quat": null
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          0,
+          0,
+          -600
+        ],
+        "quat": [
+          0,
+          -1,
+          0,
+          7.54979e-8
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          0,
+          -200,
+          0
+        ]
+      },
+      {
+        "name": "ConnectionSnap003",
+        "pos": [
+          0,
+          0,
+          600
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          0,
+          0,
+          -600
+        ]
+      }
+    ]
+  },
+  {
+    "baseKey": "prod_tel_teladianium",
+    "macroKey": "prod_tel_teladianium_macro",
+    "hasBin": true,
+    "partMainOffset": [
+      0,
+      40.27491,
+      0
+    ],
+    "partMainSize": [
+      371.6804,
+      384.763,
+      761.4845
+    ],
+    "partMainCenter": [
+      0.00001525879,
+      -55.4882,
+      0
+    ],
+    "meshBBox": {
+      "min": [
+        -371.68,
+        -440.251,
+        -761.484
+      ],
+      "max": [
+        371.68,
+        329.275,
+        761.484
+      ]
+    },
+    "xmlSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          -600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -400,
+          -600
+        ],
+        "quat": [
+          -0.7071068,
+          0,
+          0,
+          -0.7071067
+        ]
+      }
+    ],
+    "dbSnaps": [
+      {
+        "name": "ConnectionSnap001",
+        "pos": [
+          200,
+          -400,
+          -600
+        ]
+      },
+      {
+        "name": "ConnectionSnap002",
+        "pos": [
+          -200,
+          -400,
+          -600
+        ]
+      }
+    ]
+  }
+]

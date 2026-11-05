@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+  <plan id="player_1792360110" name="4 E Piers" description="">
+    <entry index="1" macro="pier_arg_harbor_03_macro">
+      <offset>
+        <position x="-1260.196" z="849.023"/>
+        <rotation roll="44.97312"/>
+      </offset>
+    </entry>
+    <entry index="2" macro="struct_arg_cross_01_macro" connection="connectionsnap003">
+      <predecessor index="1" connection="connectionsnap001"/>
+      <offset>
+        <position x="-977.221" y="-282.71" z="849.023"/>
+        <rotation roll="44.97311"/>
+      </offset>
+    </entry>
+    <entry index="3" macro="pier_arg_harbor_03_macro" connection="connectionsnap001">
+      <predecessor index="2" connection="connectionsnap004"/>
+      <offset>
+        <position x="-694.245" y="-565.42" z="849.023"/>
+        <rotation roll="-135.02686"/>
+      </offset>
+    </entry>
+    <entry index="4" macro="pier_arg_harbor_03_macro" connection="connectionsnap001">
+      <predecessor index="2" connection="connectionsnap006"/>
+      <offset>
+        <position x="-694.51" y="0.2654" z="849.023"/>
+        <rotation roll="134.97313"/>
+      </offset>
+    </entry>
+    <entry index="5" macro="pier_arg_harbor_03_macro" connection="connectionsnap001">
+      <predecessor index="2" connection="connectionsnap005"/>
+      <offset>
+        <position x="-1259.931" y="-565.685" z="849.023"/>
+        <rotation roll="-45.02687"/>
+      </offset>
+    </entry>
+  </plan>
+</plans>

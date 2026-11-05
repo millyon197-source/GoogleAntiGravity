@@ -101,12 +101,12 @@ function alignPierProngsOutward(moduleGroup, macroName, stationBBox, modulesGrou
 console.log('--- VERIFYING PIER PRONG ALIGNMENT TO CLOSEST BB DIMENSION ---');
 
 const testFiles = [
-  'D:/Ai/X4/ConstructionPlans/constructionplan/Planar - Paranid.xml',
-  'D:/Ai/X4/ConstructionPlans/constructionplan/Sym_s Shipyard_Wharf With Storage_Defended_Habs.xml',
-  'D:/Ai/X4/ConstructionPlans/constructionplan/Dock Planar Accepted.xml',
-  'C:/Users/Zeus/OneDrive/Documents/Egosoft/X4/47624366/constructionplan/4 E Piers.xml',
-  'C:/Users/Zeus/OneDrive/Documents/Egosoft/X4/47624366/constructionplan/8x2x4 Docks Storage.xml',
-  'C:/Users/Zeus/OneDrive/Documents/Egosoft/X4/47624366/constructionplan/Prod Max.xml'
+  'tests/fixtures/Planar - Paranid.xml',
+  'tests/fixtures/Sym_s Shipyard_Wharf With Storage_Defended_Habs.xml',
+  'tests/fixtures/Dock Planar Accepted.xml',
+  'tests/fixtures/4 E Piers.xml',
+  'tests/fixtures/8x2x4 Docks Storage.xml',
+  'tests/fixtures/Prod Max.xml'
 ];
 
 for (const file of testFiles) {
@@ -278,8 +278,8 @@ console.log(`[PASS] Orientation flip behavior verified for all ${pierHarborMacro
 console.log('\n--- VERIFYING TINY SHIPYARD ONE DOCK PIER ALIGNMENT & CONNECTION ---');
 
 const tinyShipyardPaths = [
-  'D:/Ai/X4/ConstructionPlans/constructionplan/tiny shipyard.xml',
-  'C:/Users/Zeus/OneDrive/Documents/Egosoft/X4/47624366/constructionplan/tiny shipyard.xml'
+  'tests/fixtures/alt/tiny shipyard.xml',
+  'tests/fixtures/tiny shipyard.xml'
 ];
 
 for (const tinyPath of tinyShipyardPaths) {

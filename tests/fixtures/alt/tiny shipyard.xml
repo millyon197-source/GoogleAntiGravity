@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+<plan id="player_1612245280" name="Tiny Shipyard" description="">
+<patches>
+<patch extension="ego_dlc_split" version="100" name="Split Vendetta"/>
+</patches>
+<entry index="1" macro="buildmodule_gen_ships_xl_macro">
+<offset>
+<position x="94.887" y="-883.545" z="64.624"/>
+<rotation yaw="-89.95437"/>
+</offset>
+</entry>
+<entry index="2" macro="buildmodule_gen_ships_l_macro">
+<offset>
+<position x="26.829" y="963.154" z="-152.075"/>
+<rotation yaw="-179.98842"/>
+</offset>
+</entry>
+<entry index="3" macro="struct_arg_cross_01_macro" connection="connectionsnap003">
+<predecessor index="2" connection="connectionsnap001"/>
+<offset>
+<position x="-973.171" y="963.154" z="-151.874"/>
+<rotation yaw="-179.98853"/>
+</offset>
+</entry>
+<entry index="4" macro="hab_tel_m_01_macro" connection="connectionsnap001">
+<predecessor index="3" connection="connectionsnap006"/>
+<offset>
+<position x="-973.171" y="1563.154" z="-151.874"/>
+<rotation yaw="-179.98842"/>
+</offset>
+</entry>
+<entry index="5" macro="hab_tel_s_01_macro">
+<offset>
+<position x="1005.66" y="1413.441" z="526.002"/>
+<rotation yaw="-179.34407"/>
+</offset>
+</entry>
+<entry index="6" macro="hab_arg_s_01_macro" connection="connectionsnap002">
+<predecessor index="5" connection="connectionsnap001"/>
+<offset>
+<position x="1005.66" y="813.441" z="526.003"/>
+<rotation yaw="-179.34407"/>
+</offset>
+</entry>
+<entry index="7" macro="pier_arg_harbor_02_macro">
+<offset>
+<position x="345.728" y="-1793.896" z="-135.224"/>
+<rotation yaw="89.99995"/>
+</offset>
+</entry>
+<entry index="8" macro="pier_arg_harbor_02_macro" connection="connectionsnap002">
+<predecessor index="7" connection="connectionsnap002"/>
+<offset>
+<position x="-54.272" y="-1793.896" z="264.776"/>
+<rotation yaw="-90"/>
+</offset>
+</entry>
+<entry index="9" macro="storage_arg_l_container_01_macro">
+<offset>
+<position x="-704.049" y="494.984" z="-439.63"/>
+</offset>
+</entry>
+<entry index="10" macro="hab_tel_s_01_macro">
+<offset>
+<position x="-979.821" y="1707.29" z="-1118.003"/>
+<rotation yaw="1.10144"/>
+</offset>
+</entry>
+<entry index="11" macro="hab_arg_s_01_macro" connection="connectionsnap002">
+<predecessor index="10" connection="connectionsnap001"/>
+<offset>
+<position x="-979.821" y="1107.29" z="-1118.003"/>
+<rotation yaw="1.10144"/>
+</offset>
+</entry>
+<entry index="12" macro="storage_arg_m_container_01_macro" connection="connectionsnap002">
+<predecessor index="9" connection="connectionsnap001"/>
+<offset>
+<position x="-704.049" y="492.212" z="760.37"/>
+</offset>
+<upgrades>
+<groups>
+<shields macro="shield_arg_m_standard_02_mk2_macro" path=".." group="front_01"/>
+<turrets macro="turret_spl_m_flak_02_mk1_macro" path=".." group="front_01" exact="2"/>
+</groups>
+</upgrades>
+</entry>
+<entry index="13" macro="storage_arg_m_container_01_macro">
+<offset>
+<position x="669.416" y="306.746" z="41.258"/>
+<rotation yaw="179.68977"/>
+</offset>
+<upgrades>
+<groups>
+<shields macro="shield_arg_m_standard_02_mk2_macro" path=".." group="front_01"/>
+<turrets macro="turret_spl_m_flak_02_mk1_macro" path=".." group="front_01" exact="2"/>
+</groups>
+</upgrades>
+</entry>
+<entry index="14" macro="hab_tel_m_01_macro">
+<offset>
+<position x="963.897" y="1570.786" z="-435.353"/>
+</offset>
+</entry>
+<entry index="15" macro="hab_arg_s_01_macro" connection="connectionsnap002">
+<predecessor index="14" connection="connectionsnap001"/>
+<offset>
+<position x="963.897" y="770.786" z="-435.353"/>
+</offset>
+</entry>
+<entry index="16" macro="hab_tel_s_01_macro">
+<offset>
+<position x="948.052" y="1739.971" z="-1346.263"/>
+</offset>
+</entry>
+<entry index="17" macro="storage_tel_m_container_01_macro" connection="connectionsnap001">
+<predecessor index="16" connection="connectionsnap001"/>
+<offset>
+<position x="948.052" y="939.971" z="-1346.263"/>
+<rotation yaw="-26.77653"/>
+</offset>
+</entry>
+<entry index="18" macro="hab_tel_s_01_macro">
+<offset>
+<position x="-955.475" y="1739.724" z="763.62"/>
+<rotation yaw="-179.34407"/>
+</offset>
+</entry>
+<entry index="19" macro="hab_arg_s_01_macro" connection="connectionsnap002">
+<predecessor index="18" connection="connectionsnap001"/>
+<offset>
+<position x="-955.475" y="1139.724" z="763.621"/>
+<rotation yaw="-179.34407"/>
+</offset>
+</entry>
+<entry index="20" macro="dockarea_arg_m_02_tradestation_01_macro">
+<offset>
+<position x="23.996" y="1505.094" z="-133.433"/>
+<rotation yaw="89.64191"/>
+</offset>
+</entry>
+<entry index="21" macro="dockarea_arg_m_station_02_hightech_macro" connection="connectionsnap004">
+<predecessor index="20" connection="connectionsnap002"/>
+<offset>
+<position x="28.996" y="1505.094" z="-933.417"/>
+<rotation yaw="-0.358101"/>
+</offset>
+</entry>
+<entry index="22" macro="dockarea_arg_m_station_02_hightech_macro" connection="connectionsnap003">
+<predecessor index="20" connection="connectionsnap001"/>
+<offset>
+<position x="18.997" y="1505.094" z="666.552"/>
+<rotation yaw="-0.358027"/>
+</offset>
+</entry>
+</plan>
+</plans>

@@ -54,8 +54,8 @@ function parseXmlFile(xmlPath) {
 console.log('[*] Testing pier and module rotation alignment with +180° Z-axis rotation...');
 
 const testFiles = [
-  'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\Planar - Paranid.xml',
-  'D:\\Ai\\X4\\ConstructionPlans\\constructionplan\\ebi trading station.xml'
+  'tests/fixtures/Planar - Paranid.xml',
+  'tests/fixtures/ebi trading station.xml'
 ];
 
 let allMatch = true;
