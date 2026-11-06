@@ -1417,29 +1417,12 @@ export function getLayerPlacementCategoryOrder() {
  */
 export function sortModulesByLayerCategoryOrder(modules, layerOrder = null) {
   if (!Array.isArray(modules) || modules.length === 0) return [];
-  const order = layerOrder || getLayerPlacementCategoryOrder();
-  const buckets = {};
-  order.forEach(cat => {
-    buckets[cat] = [];
-  });
-  const unclassified = [];
+  return StationLayoutEngine.sortByCategoryOrder(modules, layerOrder || getLayerPlacementCategoryOrder(), moduleCategoryOf);
+}
 
-  modules.forEach(mod => {
-    const macro = mod.userData?.macro || mod.macro || mod.key || '';
-    const cat = getModuleCategory(macro);
-    if (buckets[cat]) {
-      buckets[cat].push(mod);
-    } else {
-      unclassified.push(mod);
-    }
-  });
-
-  const sorted = [];
-  order.forEach(cat => {
-    if (buckets[cat]) sorted.push(...buckets[cat]);
-  });
-  sorted.push(...unclassified);
-  return sorted;
+/** Catalog category of a module object, mesh or placement record (by macro). */
+function moduleCategoryOf(mod) {
+  return getModuleCategory(mod.userData?.macro || mod.macro || mod.key || '');
 }
 
 /**
@@ -1602,253 +1585,33 @@ export function ensureNoBoundingBoxOverlaps(modules, plotConfig = null, options 
 export function calculateLayeredPlacement(modules, alignmentAnchor = null, plotConfig = null, layerOrder = null, options = {}) {
   if (!Array.isArray(modules) || modules.length === 0) return [];
 
-  const pConfig = plotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
-  const order = layerOrder || getLayerPlacementCategoryOrder();
-
-  // 1. Sort modules by Layout, Layers category order
-  const sortedModules = sortModulesByLayerCategoryOrder(modules, order);
-
-  // 2. Parse plot bounds from getPlotBoundingBox
-  const bb = getPlotBoundingBox(pConfig);
-  const { minX, maxX, minY, maxY, minZ, maxZ, centerX, centerY, centerZ } = bb;
-
-  // 3. Parse active alignment anchor selection (mutually exclusive single selection defining start of placement)
-  let activeKeys = [];
-  if (Array.isArray(alignmentAnchor)) {
-    activeKeys = alignmentAnchor.map(e => (e.behaviorKey || e.id || e.name || '').toLowerCase());
-  } else if (typeof alignmentAnchor === 'string') {
-    activeKeys = alignmentAnchor.toLowerCase().split('+').map(k => k.trim());
-  } else if (alignmentAnchor && typeof alignmentAnchor === 'object') {
-    if (Array.isArray(alignmentAnchor.activeEntries)) {
-      activeKeys = alignmentAnchor.activeEntries.map(e => (e.behaviorKey || e.id || e.name || '').toLowerCase());
-    } else {
-      activeKeys = [alignmentAnchor.key || alignmentAnchor.behaviorKey || alignmentAnchor.name || ''].map(k => k.toLowerCase());
-    }
-  } else if (typeof displayValues !== 'undefined' && Array.isArray(displayValues)) {
+  // Default the anchor to the alignment checkboxes currently checked in the panel
+  let defaultAlignmentKeys = [];
+  if (typeof displayValues !== 'undefined' && Array.isArray(displayValues)) {
     const alignVal = displayValues.find(v => v.id === 'alignment-anchor');
     if (alignVal && Array.isArray(alignVal.checkboxes)) {
-      activeKeys = alignVal.checkboxes.filter(cb => cb.checked).map(cb => (cb.behaviorKey || cb.name || '').toLowerCase());
+      defaultAlignmentKeys = alignVal.checkboxes.filter(cb => cb.checked).map(cb => (cb.behaviorKey || cb.name || '').toLowerCase());
     }
   }
 
-  const hasGround = activeKeys.some(k => k.includes('ground') || k.includes('floor') || k.includes('lowest'));
-  const hasTop = activeKeys.some(k => k.includes('ceiling') || k.includes('top') || k.includes('highest'));
-  const hasOrigin = activeKeys.some(k => k.includes('origin') || k.includes('0,0,0'));
-  const hasCenter = activeKeys.some(k => k.includes('center') || k.includes('middle'));
-  const hasXMirror = activeKeys.some(k => k.includes('x-mirror') || k.includes('reflection') || k.includes('min-x') || k.includes('left'));
-  const hasRight = activeKeys.some(k => k.includes('max-x') || k.includes('right'));
-  const hasFront = activeKeys.some(k => k.includes('min-z') || k.includes('front'));
-  const hasBack = activeKeys.some(k => k.includes('max-z') || k.includes('back'));
-  const hasCompact = activeKeys.some(k => k.includes('compact') || k.includes('core'));
-
-  // 4. Define Start of Placement
-  // Vertical start (Y): Ground Floor value becomes lowest Y value as defined in plot size
-  let startFloorY;
-  if (hasGround) {
-    startFloorY = minY;
-  } else if (hasTop) {
-    startFloorY = maxY;
-  } else if (hasOrigin && !hasCenter) {
-    startFloorY = Math.max(minY, Math.min(maxY, 0));
-  } else if (hasCenter) {
-    startFloorY = centerY;
-  } else {
-    startFloorY = minY; // Default to ground floor
-  }
-
-  // Horizontal start (X):
-  let startX;
-  if (hasXMirror) {
-    startX = minX;
-  } else if (hasRight) {
-    startX = maxX;
-  } else if (hasOrigin && !hasCenter && !hasXMirror) {
-    startX = Math.max(minX, Math.min(maxX, 0));
-  } else if (hasCenter || hasCompact) {
-    startX = centerX;
-  } else {
-    startX = minX;
-  }
-
-  // Depth start (Z):
-  let startZ;
-  if (hasFront) {
-    startZ = maxZ;
-  } else if (hasBack) {
-    startZ = minZ;
-  } else if (hasOrigin && !hasCenter && !hasFront && !hasBack) {
-    startZ = Math.max(minZ, Math.min(maxZ, 0));
-  } else if (hasCenter || hasCompact) {
-    startZ = centerZ;
-  } else {
-    startZ = minZ;
-  }
-
-  const gap = typeof options.gap === 'number' ? options.gap : 35;
-  const getSize = options.getModuleSize || ((m) => {
-    if (m.userData?.initialSize) return m.userData.initialSize;
-    const macro = m.userData?.macro || m.macro || m.key || '';
-    const arr = getInitialModuleSize(macro);
-    return { x: arr[0], y: arr[1], z: arr[2] };
-  });
-
-  const dirX = hasRight ? -1 : 1;
-  const dirZ = hasFront ? -1 : 1;
-  const dirY = hasTop ? -1 : 1;
-
-  let currentLayer = 0;
-  let currentFloorY = startFloorY;
-  let currentLayerMaxH = 0;
-
-  let currentRowZ = startZ;
-  let currentRowMaxD = 0;
-
-  let currentCursorX = startX;
-  let modulesInRow = 0;
-  let rowsInLayer = 0;
-
-  const placedResults = [];
-
-  // Place components one at a time honoring bounding box
-  sortedModules.forEach((mod) => {
-    const s = getSize(mod);
-    const halfX = (s.x || 100) / 2;
-    const halfY = (s.y || 100) / 2;
-    const halfZ = (s.z || 100) / 2;
-
-    let candX;
-    if (modulesInRow === 0) {
-      candX = currentCursorX + dirX * halfX;
-    } else {
-      candX = currentCursorX + dirX * (gap + halfX);
-    }
-
-    const exceedsX = (dirX > 0)
-      ? (candX + halfX > maxX + 0.1)
-      : (candX - halfX < minX - 0.1);
-
-    // Check if candidate position would collide with any previously placed module's bounding box
-    let candPos = { x: candX, y: currentFloorY + dirY * halfY, z: currentRowZ + dirZ * halfZ };
-    let collides = placedResults.some(p => doBoxesOverlap(candPos, s, p.position, p.initialSize, 0));
-
-    if ((exceedsX || collides) && modulesInRow > 0) {
-      // Row fills! Advance to next row along Z in current layer
-      const candRowZ = currentRowZ + dirZ * (currentRowMaxD + gap);
-      const candEdgeZ = candRowZ + dirZ * (2 * halfZ);
-      const exceedsZ = (dirZ > 0)
-        ? (candEdgeZ > maxZ + 0.1)
-        : (candEdgeZ < minZ - 0.1);
-
-      const candRowPos = { x: startX + dirX * halfX, y: currentFloorY + dirY * halfY, z: candRowZ + dirZ * halfZ };
-      const rowCollides = placedResults.some(p => doBoxesOverlap(candRowPos, s, p.position, p.initialSize, 0));
-
-      if ((exceedsZ || rowCollides) && rowsInLayer > 0) {
-        // Once a layer fills, start a new layer and continue placing!
-        currentLayer++;
-        currentFloorY = currentFloorY + dirY * (currentLayerMaxH + gap);
-        currentLayerMaxH = s.y || 100;
-        if (dirY > 0 && currentFloorY + 2 * halfY > maxY + 0.1) {
-          currentFloorY = minY; // Wrap within vertical plot limits
-        } else if (dirY < 0 && currentFloorY - 2 * halfY < minY - 0.1) {
-          currentFloorY = maxY - (s.y || 100);
-        }
-
-        // Reset cursor to start of new layer
-        currentRowZ = startZ;
-        currentRowMaxD = s.z || 100;
-        rowsInLayer = 1;
-
-        currentCursorX = startX;
-        candX = currentCursorX + dirX * halfX;
-        modulesInRow = 1;
-      } else {
-        // Start next row in current layer
-        currentRowZ = candRowZ;
-        currentRowMaxD = s.z || 100;
-        rowsInLayer++;
-
-        currentCursorX = startX;
-        candX = currentCursorX + dirX * halfX;
-        modulesInRow = 1;
-      }
-    } else {
-      modulesInRow++;
-      if (rowsInLayer === 0) rowsInLayer = 1;
-    }
-
-    // Position of component
-    const posX = candX;
-    const posY = currentFloorY + dirY * halfY;
-    const posZ = currentRowZ + dirZ * halfZ;
-
-    // Advance cursor X
-    currentCursorX = candX + dirX * halfX;
-    currentRowMaxD = Math.max(currentRowMaxD, s.z || 100);
-    currentLayerMaxH = Math.max(currentLayerMaxH, s.y || 100);
-
-    const pos = { x: posX, y: posY, z: posZ };
-    clampModulePositionToPlot(pos, s, pConfig);
-
-    if (options.applyToObjects) {
-      if (typeof mod.position?.set === 'function') {
-        mod.position.set(pos.x, pos.y, pos.z);
-      } else if (mod.position) {
-        mod.position.x = pos.x;
-        mod.position.y = pos.y;
-        mod.position.z = pos.z;
-      }
-    }
-
-    placedResults.push({
-      module: mod,
-      macro: mod.userData?.macro || mod.macro || '',
-      position: pos,
-      initialSize: s,
-      layerIndex: currentLayer,
-      rowIndex: rowsInLayer - 1
-    });
-  });
-
-  // If Bounding Center or Compact Core is selected, horizontally center within plot
-  if (hasCenter || hasCompact) {
-    let pMinX = Infinity, pMaxX = -Infinity, pMinZ = Infinity, pMaxZ = -Infinity;
-    placedResults.forEach(r => {
-      pMinX = Math.min(pMinX, r.position.x - r.initialSize.x / 2);
-      pMaxX = Math.max(pMaxX, r.position.x + r.initialSize.x / 2);
-      pMinZ = Math.min(pMinZ, r.position.z - r.initialSize.z / 2);
-      pMaxZ = Math.max(pMaxZ, r.position.z + r.initialSize.z / 2);
-    });
-
-    if (isFinite(pMinX) && isFinite(pMaxX)) {
-      const curCenterX = (pMinX + pMaxX) / 2;
-      const curCenterZ = (pMinZ + pMaxZ) / 2;
-      const shiftX = centerX - curCenterX;
-      const shiftZ = centerZ - curCenterZ;
-
-      placedResults.forEach(r => {
-        r.position.x += shiftX;
-        r.position.z += shiftZ;
-        clampModulePositionToPlot(r.position, r.initialSize, pConfig);
-        if (options.applyToObjects) {
-          if (typeof r.module.position?.set === 'function') {
-            r.module.position.set(r.position.x, r.position.y, r.position.z);
-          } else if (r.module.position) {
-            r.module.position.x = r.position.x;
-            r.module.position.z = r.position.z;
-          }
-        }
-      });
-    }
-  }
-
-  // For any component placement, insure no bounding box overlaps another component's BB
-  ensureNoBoundingBoxOverlaps(placedResults, pConfig, {
-    gap: Math.max(10, gap * 0.5),
-    getModuleSize: (m) => m.initialSize,
+  return StationLayoutEngine.calculateLayeredPlacement(modules, {
+    plotBounds: plotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG,
+    categoryOrder: layerOrder || getLayerPlacementCategoryOrder(),
+    getCategory: moduleCategoryOf,
+    getModuleSize: options.getModuleSize || defaultModuleSize,
+    alignmentAnchor,
+    defaultAlignmentKeys,
+    gap: options.gap,
     applyToObjects: options.applyToObjects
   });
+}
 
-  return placedResults;
+/** Initial bounding-box size of a module object or mesh (userData.initialSize, else by macro). */
+function defaultModuleSize(m) {
+  if (m.userData?.initialSize) return m.userData.initialSize;
+  const macro = m.userData?.macro || m.macro || m.key || '';
+  const arr = getInitialModuleSize(macro);
+  return { x: arr[0], y: arr[1], z: arr[2] };
 }
 
 /**
@@ -2001,117 +1764,16 @@ export function applyModuleDisplayBehavior(valueId, behaviorValue, behaviorKey, 
  */
 export function calculateLayoutPlacement(modules, options = {}) {
   if (!Array.isArray(modules) || modules.length === 0) return [];
-
-  const mode = (options.mode || 'planar').toLowerCase();
-  const dimension = (options.dimension || 'x').toLowerCase();
-  const gap = typeof options.gap === 'number' ? options.gap : 50;
-
-  // Retrieve initial bounding box sizes for each module using macro name as key into module-bounds-hashtable
-  const moduleData = modules.map((m, idx) => {
-    const macro = m.macro || m.userData?.macro || m.key || '';
-    const initialSize = getInitialModuleDimensions(macro);
-    return {
-      index: m.index !== undefined ? m.index : (m.userData?.index !== undefined ? m.userData.index : idx),
-      macro,
-      initialSize,
-      origPos: m.position ? { x: m.position.x, y: m.position.y, z: m.position.z } : { x: 0, y: 0, z: 0 },
-      position: { x: 0, y: 0, z: 0 }
-    };
+  return StationLayoutEngine.calculateLayoutPlacement(modules, {
+    plotBounds: getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG,
+    categoryOrder: getLayerPlacementCategoryOrder(),
+    getCategory: moduleCategoryOf,
+    getInitialSize: getInitialModuleDimensions,
+    mode: options.mode,
+    dimension: options.dimension,
+    gap: options.gap,
+    useBlueprintOrder: isOrderOfLayoutBlueprint()
   });
-
-  // Consider the order of Layout, Layers to select which category of modules to place first
-  const layerOrder = getLayerPlacementCategoryOrder();
-  const sortedModuleData = sortModulesByLayerCategoryOrder(moduleData, layerOrder);
-
-  const curPlotCfg = getCurrentPlotConfig();
-  const bb = getPlotBoundingBox(curPlotCfg);
-
-  if (mode.includes('blueprint') || isOrderOfLayoutBlueprint()) {
-    sortedModuleData.forEach(m => {
-      m.position = { ...m.origPos };
-    });
-    return sortedModuleData;
-  } else if (mode.includes('height') || dimension === 'y') {
-    // Dimension considered: Y (height)
-    let currentY = 0;
-    sortedModuleData.forEach((m, i) => {
-      const h = m.initialSize.y;
-      if (i > 0) currentY += h / 2;
-      m.position = { x: bb.centerX, y: currentY, z: bb.centerZ };
-      currentY += h / 2 + gap;
-    });
-    const totalSpan = currentY - gap;
-    sortedModuleData.forEach(m => { m.position.y = bb.centerY + (m.position.y - totalSpan / 2); });
-  } else if (mode.includes('grid')) {
-    // 2D grid matrix: dimensions considered dim1, dim2
-    let dim1 = 'x', dim2 = 'z', dimOther = 'y';
-    if (dimension.includes('x-y')) { dim1 = 'x'; dim2 = 'y'; dimOther = 'z'; }
-    else if (dimension.includes('y-z')) { dim1 = 'y'; dim2 = 'z'; dimOther = 'x'; }
-
-    const n = sortedModuleData.length;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
-
-    const colWidths = new Array(cols).fill(0);
-    const rowDepths = new Array(rows).fill(0);
-
-    sortedModuleData.forEach((m, idx) => {
-      const c = idx % cols;
-      const r = Math.floor(idx / cols);
-      if (m.initialSize[dim1] > colWidths[c]) colWidths[c] = m.initialSize[dim1];
-      if (m.initialSize[dim2] > rowDepths[r]) rowDepths[r] = m.initialSize[dim2];
-    });
-
-    const colPos = new Array(cols).fill(0);
-    const rowPos = new Array(rows).fill(0);
-
-    let cur1 = 0;
-    for (let c = 0; c < cols; c++) {
-      if (c === 0) { colPos[c] = colWidths[c] / 2; cur1 = colWidths[c]; }
-      else { colPos[c] = cur1 + gap + colWidths[c] / 2; cur1 += gap + colWidths[c]; }
-    }
-    let cur2 = 0;
-    for (let r = 0; r < rows; r++) {
-      if (r === 0) { rowPos[r] = rowDepths[r] / 2; cur2 = rowDepths[r]; }
-      else { rowPos[r] = cur2 + gap + rowDepths[r] / 2; cur2 += gap + rowDepths[r]; }
-    }
-
-    sortedModuleData.forEach((m, idx) => {
-      const c = idx % cols;
-      const r = Math.floor(idx / cols);
-      m.position[dim1] = bb[dim1 === 'x' ? 'centerX' : dim1 === 'y' ? 'centerY' : 'centerZ'] + (colPos[c] - cur1 / 2);
-      m.position[dim2] = bb[dim2 === 'x' ? 'centerX' : dim2 === 'y' ? 'centerY' : 'centerZ'] + (rowPos[r] - cur2 / 2);
-      m.position[dimOther] = bb[dimOther === 'x' ? 'centerX' : dimOther === 'y' ? 'centerY' : 'centerZ'];
-    });
-  } else {
-    // Planar Row along dimension X (default) or Z
-    const dim = dimension === 'z' ? 'z' : 'x';
-    let currentOffset = 0;
-    sortedModuleData.forEach((m, i) => {
-      const s = m.initialSize[dim];
-      if (i > 0) currentOffset += s / 2;
-      m.position = { x: bb.centerX, y: bb.centerY, z: bb.centerZ };
-      m.position[dim] = currentOffset;
-      currentOffset += s / 2 + gap;
-    });
-    const totalSpan = currentOffset - gap;
-    sortedModuleData.forEach(m => {
-      m.position[dim] = bb[dim === 'x' ? 'centerX' : 'centerZ'] + (m.position[dim] - totalSpan / 2);
-    });
-  }
-
-  // Ensure no module is placed outside the current plot size
-  sortedModuleData.forEach(m => {
-    clampModulePositionToPlot(m.position, m.initialSize, curPlotCfg);
-  });
-
-  // For any component placement, insure no bounding box overlaps another component's BB
-  ensureNoBoundingBoxOverlaps(sortedModuleData, curPlotCfg, {
-    gap: Math.max(10, gap * 0.5),
-    getModuleSize: (m) => m.initialSize
-  });
-
-  return sortedModuleData;
 }
 
 /**
