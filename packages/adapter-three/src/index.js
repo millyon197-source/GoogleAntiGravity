@@ -11,3 +11,4 @@ export { SelectionManager } from './selection/selection-manager.js';
 export { MeshLoader } from './mesh/mesh-loader.js';
 export { ThreeCoordinator } from './mesh/three-coordinator.js';
 export { computeModuleGroupRotation, computeX4RotationFromModuleGroup } from './math/rotation-math.js';
+export { resolveTextureForModel } from './textures/texture-resolver.js';

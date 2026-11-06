@@ -14,23 +14,9 @@ assert(viewerSrc.includes("partBase.startsWith('fx')"), 'partBase.startsWith("fx
 assert(viewerSrc.includes("uLower.includes('/fx_')"), "uLower.includes('/fx_') must be present in Collada fast-path");
 console.log('  ✓ [PASS] fx* components bypass binary loader directly to ColladaLoader');
 
-// 2. Extract resolveTextureForModel
+// 2. resolveTextureForModel (pure function in @x4/adapter-three)
 console.log('  [2] Verifying material resolution for production FX...');
-const lines = viewerSrc.split('\n');
-const startIdx = lines.findIndex(l => l.includes('resolveTextureForModel(modelUrl, materialName'));
-let depth = 0;
-let endIdx = -1;
-for (let i = startIdx; i < lines.length; i++) {
-  const l = lines[i];
-  if (l.includes('{')) depth += (l.match(/\{/g) || []).length;
-  if (l.includes('}')) depth -= (l.match(/\}/g) || []).length;
-  if (depth === 0 && i > startIdx) {
-    endIdx = i;
-    break;
-  }
-}
-const fnBody = lines.slice(startIdx + 1, endIdx).join('\n');
-const resolveTex = new Function('modelUrl', 'materialName = ""', fnBody);
+const { resolveTextureForModel: resolveTex } = await import('@x4/adapter-three');
 
 // Test smoke resolution
 const crystalSmoke = resolveTex('/assets1/structures/production/prod_gen_cutcrystals_data/fx_anim_crystal_smoke01-lod0.dae', 'effectsXcrystal_smoke');

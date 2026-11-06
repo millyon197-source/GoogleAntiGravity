@@ -14,23 +14,9 @@ assert(viewerSrc.includes("partBase.startsWith('anim')"), 'partBase.startsWith("
 assert(viewerSrc.includes("uLower.includes('/anim_')"), "uLower.includes('/anim_') must be present in Collada fast-path");
 console.log('  ✓ [PASS] anim* components bypass binary loader directly to ColladaLoader');
 
-// 2. Extract resolveTextureForModel
+// 2. resolveTextureForModel (pure function in @x4/adapter-three)
 console.log('  [2] Verifying material resolution for production anim*...');
-const lines = viewerSrc.split('\n');
-const startIdx = lines.findIndex(l => l.includes('resolveTextureForModel(modelUrl, materialName'));
-let depth = 0;
-let endIdx = -1;
-for (let i = startIdx; i < lines.length; i++) {
-  const l = lines[i];
-  if (l.includes('{')) depth += (l.match(/\{/g) || []).length;
-  if (l.includes('}')) depth -= (l.match(/\}/g) || []).length;
-  if (depth === 0 && i > startIdx) {
-    endIdx = i;
-    break;
-  }
-}
-const fnBody = lines.slice(startIdx + 1, endIdx).join('\n');
-const resolveTex = new Function('modelUrl', 'materialName = ""', fnBody);
+const { resolveTextureForModel: resolveTex } = await import('@x4/adapter-three');
 
 // Test lava resolution
 const lavaRes = resolveTex('/assets1/structures/production/prod_gen_refinedmetals_data/anim_lavariver-lod0.dae', 'p1effectsXp1_gradient_lava_01');
