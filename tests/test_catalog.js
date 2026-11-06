@@ -21,8 +21,6 @@ const expected = [
   'HASH_TABLE_SIZE', 'murmur3_32', 'MODULE_BOUNDS_TABLE', 'lookupModuleBounds',
   'getInitialModuleSize', 'getInitialModuleDimensions', 'getInitialModuleBounds',
   'MODULE_BOUNDS_REGISTRY',
-  'CUSTOM_SNAP_POINTS_TABLE', 'getCustomSnapPointsTable', 'setCustomSnapPointEntry',
-  'removeCustomSnapPointEntry', 'hasCustomSnapPointsForMacro', 'syncCustomSnapPoints',
   'SNAP_POINTS_DB', 'getModuleSnapPoints'
 ];
 for (const name of expected) {
@@ -41,11 +39,12 @@ assert.strictEqual(typeof catalog.getFriendlyName(someMacro), 'string');
 assert.strictEqual(catalog.getInitialModuleSize('__no_such_macro__', [1, 2, 3]).length, 3);
 console.log('  ✓ catalog lookups work through package entry point');
 
-// custom-snap-points.json now lives inside the package; Node fallback must find it
-const table = await catalog.syncCustomSnapPoints();
-assert.ok(table && typeof table === 'object', 'syncCustomSnapPoints returns a table');
-assert.ok(Object.keys(table).length > 0, 'custom-snap-points.json loaded from package directory');
-console.log(`  ✓ syncCustomSnapPoints loads ${Object.keys(table).length} custom entries from package`);
+// Custom snap-point overrides (custom-snap-points.json) were removed; snaps come only from SNAP_POINTS_DB
+for (const name of ['CUSTOM_SNAP_POINTS_TABLE', 'getCustomSnapPointsTable', 'setCustomSnapPointEntry',
+  'removeCustomSnapPointEntry', 'hasCustomSnapPointsForMacro', 'syncCustomSnapPoints']) {
+  assert.ok(!(name in catalog), `@x4/catalog should no longer export ${name}`);
+}
+console.log('  ✓ custom snap-point override API is gone');
 
 // Rotation math + mesh loading moved to @x4/adapter-three
 for (const name of ['computeModuleGroupRotation', 'computeX4RotationFromModuleGroup']) {

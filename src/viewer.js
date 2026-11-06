@@ -35,10 +35,6 @@ import {
   getInitialModuleDimensions,
   getInitialModuleBounds,
   getModuleSnapPoints,
-  setCustomSnapPointEntry,
-  getCustomSnapPointsTable,
-  syncCustomSnapPoints,
-  hasCustomSnapPointsForMacro,
   createDaeAssetIndex
 } from '@x4/catalog';
 import DAE_HASH_TABLE from '../dae_hash_table.json' with { type: 'json' };
@@ -1056,11 +1052,6 @@ export class StationViewer {
     this.currentBuildProgressPercentage = 100;
     this.clearFilterHighlights();
     minimizePlotPill();
-
-    // Ensure any custom-snap-points.json entries are synced and active for rendering
-    try {
-      await syncCustomSnapPoints();
-    } catch (_) {}
 
     if (!planData.modules || planData.modules.length === 0) return;
 
@@ -3141,8 +3132,6 @@ export class StationViewer {
     const snaps = getModuleSnapPoints(macroName, localBounds);
     if (!snaps || snaps.length === 0) return;
 
-    const isCustom = hasCustomSnapPointsForMacro(macroName);
-    moduleGroup.userData.hasCustomSnapPoints = isCustom;
     moduleGroup.userData.snapPoints = snaps;
 
     const snapsGroup = new THREE.Group();
@@ -3154,7 +3143,6 @@ export class StationViewer {
       dot.name = `snap_dot_${snap.name}`;
       dot.userData = {
         isSnapPoint: true,
-        isCustomSnapPoint: isCustom,
         snapName: snap.name,
         moduleIndex: moduleGroup.userData.index,
         localPos: [...snap.pos]

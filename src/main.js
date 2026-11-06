@@ -7,8 +7,7 @@ import {
   estimateModuleCosts,
   CATEGORY_COLORS,
   CATEGORY_NAMES,
-  getInitialModuleDimensions,
-  syncCustomSnapPoints
+  getInitialModuleDimensions
 } from '@x4/catalog';
 import { setFefbModuleIndex } from './blueprint-exporter.js';
 import { initModuleDisplayPanel, setActiveBlueprint } from './module-display-panel.js';
@@ -173,7 +172,6 @@ function initApp() {
 
   // 2. Initialize sample plans storage & selector
   initSamplesStorage();
-  syncCustomSnapPoints();
 
   // 3. Initialize Module Display & Placement Behaviors Panel (5-checkbox examination system)
   initModuleDisplayPanel(viewer);

@@ -34,28 +34,6 @@ export default defineConfig({
             }
             res.statusCode = 200;
             res.end('ok');
-          } else if (req.url.startsWith('/api/save-snap-points') && req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => { body += chunk; });
-            req.on('end', () => {
-              try {
-                const data = JSON.parse(body);
-                const filePath = path.resolve(__dirname, 'packages/catalog/src/custom-snap-points.json');
-                let existing = {};
-                if (fs.existsSync(filePath)) {
-                  try { existing = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (e) {}
-                }
-                const updated = { ...existing, ...data };
-                fs.writeFileSync(filePath, JSON.stringify(updated, null, 2), 'utf8');
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ success: true, table: updated }));
-              } catch (err) {
-                res.statusCode = 500;
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ error: err.message }));
-              }
-            });
           } else if (req.url.startsWith('/api/module-asset-files')) {
             // Lists the .dae component files inside a module's asset folder
             // (e.g. /assets1/structures/production/prod_gen_energycells_data)
@@ -77,14 +55,6 @@ export default defineConfig({
             } catch (err) {
               res.statusCode = 500;
               res.end(JSON.stringify({ error: err.message, files: [] }));
-            }
-          } else if (req.url.startsWith('/api/load-custom-snap-points')) {
-            const filePath = path.resolve(__dirname, 'packages/catalog/src/custom-snap-points.json');
-            res.setHeader('Content-Type', 'application/json');
-            if (fs.existsSync(filePath)) {
-              res.end(fs.readFileSync(filePath, 'utf8'));
-            } else {
-              res.end('{}');
             }
           } else if (req.url.startsWith('/textures/') || req.url.startsWith('/assets1/textures/') || req.url.startsWith('/assets/textures/')) {
             const relUrl = req.url.replace(/^\/(?:assets1?\/)?textures\//, '').split('?')[0];
@@ -126,8 +96,6 @@ export default defineConfig({
         '**/assets/**',
         // ~32k extracted game files; watching them blocked server startup for ~40s
         '**/assets1/**',
-        '**/packages/catalog/src/custom-snap-points.json',
-        '**/custom-snap-points.json',
         '**/src/part-main-offsets.json'
       ]
     }

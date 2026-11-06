@@ -1,83 +1,50 @@
+import assert from 'node:assert';
 import fs from 'fs';
 import { getModuleSnapPoints } from '../src/snap-points-db.js';
 
-console.log('[*] Testing Refined Metals snap points centering at lowest Y mesh parts...');
-
-const partMainOffsets = JSON.parse(fs.readFileSync('src/part-main-offsets.json', 'utf8'));
-
-const meta = JSON.parse(fs.readFileSync('assets1/structures/production/prod_gen_refinedmetals_data/part_main-lod0.json', 'utf8'));
-const buf = fs.readFileSync('assets1/structures/production/prod_gen_refinedmetals_data/part_main-lod0.bin');
-const floats = new Float32Array(buf.buffer, buf.byteOffset, meta.vertexCount * (meta.vertexStrideBytes / 4));
-const stride = meta.vertexStrideBytes / 4;
+console.log('[*] Testing Refined Metals snap points against the game data and the rendered mesh...');
 
 const baseKey = 'prod_gen_refinedmetals';
 const macro = 'prod_gen_refinedmetals_macro';
-const partOffset = partMainOffsets[baseKey]; // [-63.88318, -140.9294, 27.99579]
 
-const snaps = getModuleSnapPoints(macro, null, true);
+// 1. The database must match the game's component file (ConnectionSnap connections tagged "snap")
+const componentXml = fs.readFileSync(`assets1/structures/production/${baseKey}.xml`, 'utf8');
+const gameSnaps = [...componentXml.matchAll(/<connection name="(ConnectionSnap\d+)" tags="snap ">\s*<offset>\s*<position x="([-\d.]+)" y="([-\d.]+)" z="([-\d.]+)"/g)]
+  .map(m => ({ name: m[1], pos: [Number(m[2]), Number(m[3]), Number(m[4])] }));
+assert.strictEqual(gameSnaps.length, 2, 'game component defines two snap connections');
 
-let allCentered = true;
+const snaps = getModuleSnapPoints(macro);
+assert.deepStrictEqual(snaps, gameSnaps, 'SNAP_POINTS_DB matches the game component snap positions');
+console.log('  ✓ snap positions match the game component file');
+
+// 2. Measure in the viewer's module frame (adapter-three loadModuleMesh + viewer.buildModuleSnapPoints):
+//    part_main vertices sit in a group at (-x, y, z) of the part_main offset; snap dots at (-x, y, z).
+const partMainOffsets = JSON.parse(fs.readFileSync('src/part-main-offsets.json', 'utf8'));
+const [ox, oy, oz] = partMainOffsets[baseKey];
+const meta = JSON.parse(fs.readFileSync(`assets1/structures/production/${baseKey}_data/part_main-lod0.json`, 'utf8'));
+const buf = fs.readFileSync(`assets1/structures/production/${baseKey}_data/part_main-lod0.bin`);
+const stride = meta.vertexStrideBytes / 4;
+const floats = new Float32Array(buf.buffer, buf.byteOffset, meta.vertexCount * stride);
+
+let lowestY = Infinity;
+for (let i = 0; i < meta.vertexCount; i++) lowestY = Math.min(lowestY, floats[i * stride + 1] + oy);
 
 for (const snap of snaps) {
-  const dotPos = snap.pos; // Direct viewer position for Refined Metals
-
-  let minDist = Infinity;
-  let closestMeshV = null;
-  const nearbyVerts = [];
-
+  const dot = [-snap.pos[0], snap.pos[1], snap.pos[2]];
+  let nearest = Infinity;
+  let collar = 0; // both snaps face down: count hull within 60 m sideways and up to 40 m above the snap
   for (let i = 0; i < meta.vertexCount; i++) {
-    const vx = floats[i * stride] + partOffset[0];
-    const vy = floats[i * stride + 1] + partOffset[1];
-    const vz = floats[i * stride + 2] + partOffset[2];
-
-    const d = Math.hypot(vx - dotPos[0], vy - dotPos[1], vz - dotPos[2]);
-    if (d < minDist) {
-      minDist = d;
-      closestMeshV = [vx, vy, vz];
-    }
-    if (d <= 75.0) {
-      nearbyVerts.push([vx, vy, vz]);
-    }
+    const vx = floats[i * stride] - ox, vy = floats[i * stride + 1] + oy, vz = floats[i * stride + 2] + oz;
+    const d = Math.hypot(vx - dot[0], vy - dot[1], vz - dot[2]);
+    if (d < nearest) nearest = d;
+    if (Math.hypot(vx - dot[0], vz - dot[2]) < 60 && vy >= dot[1] - 5 && vy - dot[1] < 40) collar++;
   }
-
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
-  let minZ = Infinity, maxZ = -Infinity;
-
-  for (const v of nearbyVerts) {
-    minX = Math.min(minX, v[0]); maxX = Math.max(maxX, v[0]);
-    minY = Math.min(minY, v[1]); maxY = Math.max(maxY, v[1]);
-    minZ = Math.min(minZ, v[2]); maxZ = Math.max(maxZ, v[2]);
-  }
-
-  const midX = (minX + maxX) / 2;
-  const midZ = (minZ + maxZ) / 2;
-
-  const dx = Math.abs(dotPos[0] - midX);
-  const dy = Math.abs(dotPos[1] - minY);
-  const dz = Math.abs(dotPos[2] - midZ);
-
-  console.log(`[OK] Snap ${snap.name}: [${dotPos.join(', ')}]`);
-  console.log(`     Closest mesh vertex: [${closestMeshV.map(n => n.toFixed(2)).join(', ')}] (dist: ${minDist.toFixed(2)}m)`);
-  console.log(`     Offset from part midpoint: dx=${dx.toFixed(2)}m, dy=${dy.toFixed(2)}m, dz=${dz.toFixed(2)}m`);
-
-  // Verify that snap is at the lowest Y of the mesh (-400m)
-  if (Math.abs(dotPos[1] - (-400.0)) > 1.0) {
-    console.error(`[FAIL] Snap Y ${dotPos[1]} does not match lowest Y (-400m)!`);
-    allCentered = false;
-  }
-
-  // Verify that snap is centered on that part of the mesh in X and Z (< 10m)
-  if (dx > 10.0 || dz > 10.0) {
-    console.error(`[FAIL] Snap is not centered on mesh part: dx=${dx.toFixed(2)}, dz=${dz.toFixed(2)}`);
-    allCentered = false;
-  }
+  console.log(`  ${snap.name}: drawn at [${dot.join(', ')}], nearest hull vertex ${nearest.toFixed(2)} m, ${collar} collar vertices`);
+  assert.ok(nearest < 5, `${snap.name} must sit on the hull (nearest vertex ${nearest.toFixed(2)} m)`);
+  // Game positions have ~280-300 here; the old hand-edited values had 0 and a removed override had 14
+  assert.ok(collar >= 100, `${snap.name} must sit on a docking collar (${collar} collar vertices)`);
+  assert.ok(Math.abs(dot[1] - lowestY) < 1, `${snap.name} must be on the bottom face (y ${dot[1]} vs lowest ${lowestY.toFixed(2)})`);
 }
+console.log('  ✓ both snaps sit on the bottom-face docking collars of part_main');
 
-if (allCentered) {
-  console.log('[SUCCESS] Refined Metals snap points are centered at lowest Y on both mesh mounting parts!');
-  process.exit(0);
-} else {
-  console.error('[FAIL] Centering check failed.');
-  process.exit(1);
-}
+console.log('\n[SUCCESS] Refined Metals snap points match the game data and the rendered hull');
