@@ -55,7 +55,10 @@ for (const macro of allMacros) {
   // the former getOneDockPierMeshOffset special case never existed in src/ and is not used by the renderer)
   const xmlOffset = partMainOffsets[baseKey] || [0, 0, 0];
 
-  const offsetX = xmlOffset[0];
+  // Work in the renderer's module-local frame (adapter-three loadModuleMesh + viewer.buildModuleSnapPoints):
+  // part_main vertices are used as-is inside a group placed at (-x, y, z) of the part_main offset,
+  // and snap dots are placed at (-x, y, z) of their DB position.
+  const offsetX = -xmlOffset[0];
   const offsetY = xmlOffset[1];
   const offsetZ = xmlOffset[2];
 
@@ -77,26 +80,18 @@ for (const macro of allMacros) {
     totalSnapsAudited++;
     categoryStats[category].snaps++;
 
-    // Evaluate both un-inverted and inverted orientations to match mesh modeling frame
-    // Mode A: (x, y, z)
-    // Mode B: (-x, y, -z)
-    let distA = Infinity, distB = Infinity;
+    // Snap dot exactly where the viewer draws it
+    const dotX = -snap.pos[0];
+    const dotY = snap.pos[1];
+    const dotZ = snap.pos[2];
+    let closestDist = Infinity;
     for (let i = 0; i < meta.vertexCount; i++) {
       const vx = floats[i * stride] + offsetX;
       const vy = floats[i * stride + 1] + offsetY;
       const vz = floats[i * stride + 2] + offsetZ;
-
-      const dA = Math.hypot(vx - snap.pos[0], vy - snap.pos[1], vz - snap.pos[2]);
-      const dB = Math.hypot(vx - (-snap.pos[0]), vy - snap.pos[1], vz - (-snap.pos[2]));
-      if (dA < distA) distA = dA;
-      if (dB < distB) distB = dB;
+      const d = Math.hypot(vx - dotX, vy - dotY, vz - dotZ);
+      if (d < closestDist) closestDist = d;
     }
-
-    const useModeB = distB < distA;
-    const dotX = useModeB ? -snap.pos[0] : snap.pos[0];
-    const dotY = snap.pos[1];
-    const dotZ = useModeB ? -snap.pos[2] : snap.pos[2];
-    const closestDist = Math.min(distA, distB);
 
     // Identify collar vertices in a sphere of radius 60m around the snap point
     let collarVerts = [];
