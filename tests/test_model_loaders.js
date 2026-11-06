@@ -16,7 +16,7 @@ globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {}
 const THREE = await import('three');
 const { ColladaLoader } = await import('three/addons/loaders/ColladaLoader.js');
 const {
-  loadDdsTexture, loadBinaryModel, loadColladaModel, getRaceGlowColor, getRaceHullColor
+  loadDdsTexture, loadBinaryModel, loadColladaModel, getRaceGlowColor, getRaceHullColor, applyTexturesToMeshGroup
 } = await import('@x4/adapter-three');
 const { StationViewer } = await import('../src/viewer.js');
 
@@ -121,6 +121,30 @@ function binaryHost() {
   assert.deepStrictEqual(Array.from(signMesh.geometry.attributes.uv.array), Array.from(signMesh.userData.billboardStateBUvs));
   assert.ok(renders > 0, 'host.renderScene called after billboard switch');
   console.log('  ✓ loadColladaModel: caching, raw UV capture, billboard A/B switching via host');
+}
+
+// ---------------------------------------------------------------- applyTexturesToMeshGroup
+{
+  const texLoads = [];
+  const host = {
+    colladaCache: new Map(), colladaLoader: new ColladaLoader(), renderScene() {},
+    glowingEmissiveIntensity: 2.2, animatedTextures: [], animatedParts: [],
+    loadDdsTexture: async (u) => { if (!u) return null; texLoads.push(u); const t = new THREE.Texture(); t.name = u; return t; }
+  };
+  const url = '/assets1/structures/buildmodule/buildmodule_gen_equip_m_dockarea_01_data/anim_forcefieldfx-lod0.dae';
+  const scene = await loadColladaModel(host, url);
+  await applyTexturesToMeshGroup(host, scene, url, 3);
+  let mesh = null, light = null;
+  scene.traverse(o => { if (o.isMesh) mesh = o; if (o.isPointLight) light = o; });
+  const m = mesh.material;
+  assert.ok(m.isMeshStandardMaterial, 'material replaced with MeshStandardMaterial');
+  assert.ok(texLoads.length > 0, 'textures requested through host.loadDdsTexture');
+  assert.ok(m.emissiveMap && m.emissiveMap.name.endsWith('p1_gate_haze_02_diff.dds'), 'forcefield gets haze emissive map');
+  assert.strictEqual(m.blending, THREE.AdditiveBlending, 'forcefield blends additively');
+  assert.ok(m.transparent && !m.depthWrite && !mesh.castShadow, 'forcefield is transparent, no depth write, no shadow');
+  assert.ok(light, 'forcefield adds a point light');
+  assert.deepStrictEqual(host.animatedTextures.map(a => [a.speedX, a.speedY]), [[0.04, 0.015]], 'forcefield UV scroll registered on host');
+  console.log('  ✓ applyTexturesToMeshGroup: forcefield materials, light and UV scroll via plain host');
 }
 
 // ---------------------------------------------------------------- viewer delegates

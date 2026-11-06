@@ -16,3 +16,4 @@ export { getRaceGlowColor, getRaceHullColor } from './textures/race-colors.js';
 export { loadDdsTexture } from './textures/dds-texture-loader.js';
 export { loadBinaryModel } from './models/binary-model-loader.js';
 export { loadColladaModel } from './models/collada-model-loader.js';
+export { applyTexturesToMeshGroup } from './materials/mesh-group-materials.js';

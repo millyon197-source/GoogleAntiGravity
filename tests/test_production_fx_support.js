@@ -6,7 +6,13 @@ import * as THREE from 'three';
 console.log('[*] Testing Production FX Assets & Support Code Pipeline...');
 
 // Read viewer.js
-const viewerSrc = fs.readFileSync('src/viewer.js', 'utf8');
+// Material/animation setup lives in viewer.js and the loaders/materials extracted into @x4/adapter-three.
+const viewerSrc = [
+  'src/viewer.js',
+  'packages/adapter-three/src/materials/mesh-group-materials.js',
+  'packages/adapter-three/src/models/binary-model-loader.js',
+  'packages/adapter-three/src/models/collada-model-loader.js'
+].map(f => fs.readFileSync(f, 'utf8')).join(String.fromCharCode(10));
 
 // 1. Verify DAE fast-path includes fx*
 console.log('  [1] Verifying ColladaLoader fast-path includes fx*...');
