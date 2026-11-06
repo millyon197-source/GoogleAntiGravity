@@ -3817,8 +3817,11 @@ export class StationViewer {
         }
         if (!text && typeof process !== 'undefined' && process.versions && process.versions.node) {
           try {
-            const fs = await import('fs');
-            const path = await import('path');
+            // Node-only (tests/tools) disk fallback; variable specifiers keep the bundler out.
+            const fsModuleName = 'fs';
+            const pathModuleName = 'path';
+            const fs = await import(/* @vite-ignore */ fsModuleName);
+            const path = await import(/* @vite-ignore */ pathModuleName);
             const cleanPath = url.replace(/^\/+/, '');
             const diskPath = path.resolve(process.cwd(), cleanPath);
             if (fs.existsSync(diskPath)) {
@@ -3978,7 +3981,10 @@ export class StationViewer {
 
           if (typeof DOMParser === 'undefined' && typeof process !== 'undefined' && process.versions && process.versions.node) {
             try {
-              const { JSDOM } = await import('jsdom');
+              // Node-only (tests/tools) fallback. The specifier is held in a variable so the
+              // bundler does not follow it and pack jsdom + undici into the browser build.
+              const jsdomModuleName = 'jsdom';
+              const { JSDOM } = await import(/* @vite-ignore */ jsdomModuleName);
               const dom = new JSDOM();
               globalThis.DOMParser = dom.window.DOMParser;
               globalThis.XMLSerializer = dom.window.XMLSerializer;
