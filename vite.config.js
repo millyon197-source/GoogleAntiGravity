@@ -133,29 +133,20 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    rollupOptions: {
+    // Vite 8 bundles with Rolldown; codeSplitting groups replace Rollup's manualChunks.
+    // includeDependenciesRecursively is off so the addons group does not pull three's core
+    // (which every addon imports) into itself. Higher priority wins.
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('three/examples') || id.includes('three\\examples') || id.includes('three/addons') || id.includes('three\\addons')) {
-            return 'three-addons';
-          }
-          if (id.includes('node_modules/three')) {
-            return 'three-core';
-          }
-          if (
-            id.includes('snap-points-db') ||
-            id.includes('modules-cost-db') ||
-            id.includes('dae_hash_table') ||
-            id.includes('module-bounds-hashtable')
-          ) {
-            return 'x4-databases';
-          }
-          if (id.includes('samples.js')) {
-            return 'x4-samples';
-          }
-          if (id.includes('blueprint-exporter.js')) {
-            return 'blueprint-exporter';
-          }
+        codeSplitting: {
+          includeDependenciesRecursively: false,
+          groups: [
+            { name: 'three-addons', test: /node_modules[\\/]three[\\/]examples[\\/]/, priority: 30 },
+            { name: 'three-core', test: /node_modules[\\/]three[\\/]/, priority: 20 },
+            { name: 'x4-databases', test: /snap-points-db|modules-cost-db|dae_hash_table|module-bounds-hashtable/, priority: 10 },
+            { name: 'x4-samples', test: /[\\/]samples\.js$/, priority: 10 },
+            { name: 'blueprint-exporter', test: /blueprint-exporter\.js$/, priority: 10 }
+          ]
         }
       }
     },

@@ -19,7 +19,7 @@
     "@x4/catalog": "^1.0.0",
     "@x4/domain": "^1.0.0",
     "puppeteer": "^25.16.0",
-    "three": "^0.160.0"
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "jsdom": "^30.1.3",

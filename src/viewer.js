@@ -2,13 +2,15 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { ColladaLoader } from 'three/addons/loaders/ColladaLoader.js';
-import { DDSLoader } from 'three/addons/loaders/DDSLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import {
   MeshLoader,
+  X4DDSLoader,
+  adaptTransformControls,
+  getTransformControlsHelper,
   resolveTextureForModel,
   loadModuleMesh,
   applyTexturesToMeshGroup,
@@ -138,7 +140,7 @@ export class StationViewer {
     this.highlightHelpers = [];
     this.isColorized = false;
     this.colladaLoader = new ColladaLoader();
-    this.ddsLoader = new DDSLoader();
+    this.ddsLoader = new X4DDSLoader(); // stock DDS formats + BC4/BC5 (ATI1/ATI2)
     this.composer = null;
     this.bloomPass = null;
     this.bloomEnabled = true;
@@ -393,7 +395,7 @@ export class StationViewer {
     };
     setupCenterDiamond(this.transformControls);
 
-    this.scene.add(this.transformControls);
+    this.scene.add(getTransformControlsHelper(this.transformControls));
 
     this.transformControls.addEventListener('mouseDown', onTranslateStart);
     this.transformControls.addEventListener('mouseUp', () => this.handleModuleDragEnd());
@@ -444,7 +446,7 @@ export class StationViewer {
     };
     hideOuterRings(this.transformControlsRotate);
 
-    this.scene.add(this.transformControlsRotate);
+    this.scene.add(getTransformControlsHelper(this.transformControlsRotate));
 
     this.transformControlsRotate.addEventListener('mouseDown', onRotateStart);
     this.transformControlsRotate.addEventListener('mouseUp', () => this.handleModuleRotateEnd());
@@ -2725,36 +2727,12 @@ export class StationViewer {
   }
 
   /**
-   * Overrides TransformControls.updateMatrixWorld to apply gizmoWorldOffset
-   * to handles and interaction plane when the gizmo is visually relocated to visible viewport during zoom.
+   * Applies gizmoWorldOffset to handles and interaction plane when the gizmo is visually
+   * relocated to the visible viewport during zoom, and adapts the r169+ TransformControls
+   * API (helper object, visibility) to the viewer's call sites.
    */
   setupTransformControlsOverride(tc) {
-    if (!tc) return;
-    const scope = this;
-    const origUpdate = tc.updateMatrixWorld ? tc.updateMatrixWorld.bind(tc) : null;
-    tc.updateMatrixWorld = function(force) {
-      if (origUpdate) {
-        origUpdate(force);
-      } else if (THREE.Object3D.prototype.updateMatrixWorld) {
-        THREE.Object3D.prototype.updateMatrixWorld.call(this, force);
-      }
-      if (scope.gizmoWorldOffset && scope.gizmoWorldOffset.lengthSq() > 0.0001) {
-        if (this.worldPosition) {
-          this.worldPosition.add(scope.gizmoWorldOffset);
-        }
-        if (this.camera && this.eye && this.cameraPosition && this.camera.isPerspectiveCamera && this.worldPosition) {
-          this.eye.copy(this.cameraPosition).sub(this.worldPosition).normalize();
-        }
-        if (this._gizmo && this._gizmo.worldPosition) {
-          this._gizmo.worldPosition.copy(this.worldPosition);
-          this._gizmo.updateMatrixWorld(force);
-        }
-        if (this._plane && this._plane.worldPosition) {
-          this._plane.worldPosition.copy(this.worldPosition);
-          this._plane.updateMatrixWorld(force);
-        }
-      }
-    };
+    adaptTransformControls(tc, { getWorldOffset: () => this.gizmoWorldOffset });
   }
 
   isGizmoDragging() {
@@ -5483,12 +5461,12 @@ export class StationViewer {
     this.haltedModuleAnimations = new Set();
     if (this.transformControls) {
       this.transformControls.dispose();
-      this.scene.remove(this.transformControls);
+      this.scene.remove(getTransformControlsHelper(this.transformControls));
       this.transformControls = null;
     }
     if (this.transformControlsRotate) {
       this.transformControlsRotate.dispose();
-      this.scene.remove(this.transformControlsRotate);
+      this.scene.remove(getTransformControlsHelper(this.transformControlsRotate));
       this.transformControlsRotate = null;
     }
     if (this.selectionBoxEl) {

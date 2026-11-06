@@ -190,7 +190,7 @@ const mockDom = { style: {}, addEventListener: () => {}, removeEventListener: ()
 const realTc = new TransformControls(viewer.camera, mockDom);
 realTc.setMode('translate');
 realTc.space = 'world';
-viewer.scene.add(realTc);
+viewer.scene.add(realTc.getHelper()); // three r169+: controls are not an Object3D; add the helper
 viewer.setupTransformControlsOverride(realTc);
 viewer.transformControls = realTc;
 

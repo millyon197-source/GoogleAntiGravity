@@ -18,3 +18,7 @@ export { loadBinaryModel } from './models/binary-model-loader.js';
 export { loadColladaModel } from './models/collada-model-loader.js';
 export { applyTexturesToMeshGroup } from './materials/mesh-group-materials.js';
 export { loadModuleMesh } from './models/module-mesh-loader.js';
+export { adaptTransformControls, getTransformControlsHelper } from './gizmos/transform-controls-compat.js';
+export { restoreAuthoredVertexColors } from './models/collada-model-loader.js';
+export { X4DDSLoader, detectX4BlockFormat } from './textures/x4-dds-loader.js';
+export { decodeBC4Block, decodeBC4ToRGBA, decodeBC5NormalToRGBA, bcLevelByteLength } from './textures/bc-decoder.js';

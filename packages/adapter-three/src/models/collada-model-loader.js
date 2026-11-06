@@ -1,6 +1,30 @@
 import * as THREE from 'three';
 
 /**
+ * Since three r17x the ColladaLoader converts vertex colours from sRGB to linear on parse.
+ * X4 materials (and the emissive `vColor` modulation in applyTexturesToMeshGroup) were tuned
+ * against the authored values the older loader kept, so convert them back to keep the
+ * upgrade visually neutral. Remove this to adopt colour-managed vertex colours.
+ * @param {THREE.Object3D} root
+ */
+export function restoreAuthoredVertexColors(root) {
+  if (!root) return;
+  const seen = new Set();
+  const c = new THREE.Color();
+  root.traverse((child) => {
+    const attr = child.isMesh && child.geometry && child.geometry.attributes.color;
+    if (!attr || seen.has(attr)) return;
+    seen.add(attr);
+    for (let i = 0; i < attr.count; i++) {
+      c.setRGB(attr.getX(i), attr.getY(i), attr.getZ(i));
+      THREE.ColorManagement.workingToColorSpace(c, THREE.SRGBColorSpace);
+      attr.setXYZ(i, c.r, c.g, c.b);
+    }
+    attr.needsUpdate = true;
+  });
+}
+
+/**
  * @typedef {Object} ColladaModelHost
  * @property {Map<string, Promise<THREE.Object3D>>} colladaCache Shared model cache keyed by URL.
  * @property {{ parse: Function, load: Function }} colladaLoader A THREE ColladaLoader.
@@ -207,6 +231,7 @@ export function loadColladaModel(host, url) {
           } catch (_) {}
         }
         const collada = host.colladaLoader.parse(text, url);
+        if (collada) restoreAuthoredVertexColors(collada.scene);
         if (collada && collada.scene) {
           collada.scene.traverse((child) => {
             if (child.isMesh && child.geometry && child.geometry.attributes && child.geometry.attributes.position) {
@@ -321,7 +346,7 @@ export function loadColladaModel(host, url) {
     return new Promise((resolve, reject) => {
       host.colladaLoader.load(
         url,
-        (collada) => resolve(collada.scene),
+        (collada) => { restoreAuthoredVertexColors(collada.scene); resolve(collada.scene); },
         undefined,
         (err) => reject(err)
       );
