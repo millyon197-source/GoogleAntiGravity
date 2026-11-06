@@ -170,5 +170,56 @@ const sameMips = (a, b) => a.length === b.length && a.every((m, i) => m.width ==
   assert.strictEqual(new X4DDSLoader()._getWorker(), null, 'Node has no Worker global -> main-thread decode');
   console.log('  ✓ worker fallbacks: error reply, failed worker, no Worker support');
 }
+{
+  // LoadingManager must not report "loaded" until worker-decoded textures are filled.
+  // Serve the files from THREE.Cache so FileLoader needs no network in Node.
+  const wasEnabled = THREE.Cache.enabled;
+  THREE.Cache.enabled = true;
+  const files = ['assets1/textures/natural/natural_cow_01_normal.dds', 'assets1/textures/fx/fx_p2_grey_01_diff.dds'];
+  for (const f of files) THREE.Cache.add(`file:/test/${f}`, load(f));
+
+  // Slow worker: replies well after FileLoader has delivered the bytes
+  class SlowWorker extends InProcessWorker {
+    constructor() { super(); const reply = workerSelf.postMessage; workerSelf.postMessage = (d) => setTimeout(() => reply(d), 30); }
+  }
+  const events = [];
+  const textures = [];
+  let doneResolve;
+  const allDone = new Promise((r) => { doneResolve = r; });
+  const manager = new THREE.LoadingManager(() => {
+    events.push('manager:load');
+    doneResolve();
+  }, (url, loaded, total) => events.push(`progress:${loaded}/${total}`));
+  const loader = new X4DDSLoader(manager, { createWorker: () => new SlowWorker() });
+  loader.setPath('/test/');
+  for (const f of files) textures.push(loader.load(f, () => events.push(`tex:${f.split('/').pop()}`)));
+  await allDone;
+  assert.strictEqual(events[events.length - 1], 'manager:load', 'manager onLoad fires last');
+  assert.strictEqual(events.filter(e => e === 'manager:load').length, 1, 'manager onLoad fires once');
+  assert.ok(events.includes('tex:natural_cow_01_normal.dds') && events.includes('tex:fx_p2_grey_01_diff.dds'), 'both texture callbacks ran');
+  assert.ok(textures.every(t => t.mipmaps && t.mipmaps.length > 0 && t.image.width > 0), 'textures filled when manager reports loaded');
+  loader.dispose();
+
+  // A missing file still settles the manager (with an error) instead of hanging it
+  const errors = [];
+  let errDone;
+  const errFinished = new Promise((r) => { errDone = r; });
+  const errManager = new THREE.LoadingManager(() => errDone());
+  errManager.onError = (url) => errors.push(url);
+  let onErrorCalls = 0;
+  new X4DDSLoader(errManager, { createWorker: null }).load('http://127.0.0.1:9/does_not_exist.dds', () => {}, undefined, () => { onErrorCalls++; });
+  // A URL that cannot even be parsed throws synchronously; the manager item must still close
+  let throwSettled = false;
+  const throwManager = new THREE.LoadingManager(() => { throwSettled = true; });
+  assert.throws(() => new X4DDSLoader(throwManager, { createWorker: null }).load('relative/no_base.dds'));
+  assert.ok(throwSettled, 'manager settled after a synchronous throw');
+  await Promise.race([errFinished, new Promise((_, rej) => setTimeout(() => rej(new Error('manager never finished after a failed load')), 2000))]);
+  assert.strictEqual(onErrorCalls, 1, 'onError called once');
+  assert.ok(errors.length >= 1, 'manager reports the error');
+
+  for (const f of files) THREE.Cache.remove(`file:/test/${f}`);
+  THREE.Cache.enabled = wasEnabled;
+  console.log('  ✓ LoadingManager waits for worker decodes; failed loads still settle it');
+}
 
 console.log('\n[PASS] test_dds_bc_decoder');

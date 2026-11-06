@@ -84,14 +84,42 @@ export class X4DDSLoader extends DDSLoader {
     fileLoader.setRequestHeader(this.requestHeader);
     fileLoader.setWithCredentials(this.withCredentials);
 
-    fileLoader.load(url, (buffer) => {
-      this.decodeInto(texture, buffer).then(
-        () => { if (onLoad) onLoad(texture); },
-        (err) => { if (onError) onError(err); else console.error(err); }
-      );
-    }, onProgress, onError);
+    // FileLoader reports the item done as soon as the bytes arrive, but BC4/BC5 decoding finishes
+    // later (in the worker). Hold one extra manager item open until the texture is filled, so
+    // manager.onLoad fires only when every texture is actually ready.
+    const managerKey = this.manager.resolveURL(this.path + url);
+    this.manager.itemStart(managerKey);
+    let settled = false;
+    const finish = (failed) => {
+      if (settled) return;
+      settled = true;
+      if (failed) this.manager.itemError(managerKey);
+      this.manager.itemEnd(managerKey);
+    };
+
+    try {
+      this._loadFile(fileLoader, url, texture, onLoad, onProgress, onError, finish);
+    } catch (err) {
+      finish(true); // e.g. an unparseable URL throws before FileLoader registers the item
+      throw err;
+    }
 
     return texture;
+  }
+
+  _loadFile(fileLoader, url, texture, onLoad, onProgress, onError, finish) {
+    fileLoader.load(url, (buffer) => {
+      this.decodeInto(texture, buffer).then(
+        () => {
+          try { if (onLoad) onLoad(texture); } finally { finish(false); }
+        },
+        (err) => {
+          try { if (onError) onError(err); else console.error(err); } finally { finish(true); }
+        }
+      );
+    }, onProgress, (err) => {
+      try { if (onError) onError(err); } finally { finish(true); }
+    });
   }
 
   /**
