@@ -12,7 +12,8 @@ export default defineConfig({
       '@x4/domain': path.resolve(__dirname, 'packages/domain/src/index.js'),
       '@x4/application': path.resolve(__dirname, 'packages/application/src/index.js'),
       '@x4/adapter-xml': path.resolve(__dirname, 'packages/adapter-xml/src/index.js'),
-      '@x4/adapter-three': path.resolve(__dirname, 'packages/adapter-three/src/index.js')
+      '@x4/adapter-three': path.resolve(__dirname, 'packages/adapter-three/src/index.js'),
+      '@x4/catalog': path.resolve(__dirname, 'packages/catalog/src/index.js')
     }
   },
   plugins: [
@@ -39,7 +40,7 @@ export default defineConfig({
             req.on('end', () => {
               try {
                 const data = JSON.parse(body);
-                const filePath = path.resolve(__dirname, 'src/custom-snap-points.json');
+                const filePath = path.resolve(__dirname, 'packages/catalog/src/custom-snap-points.json');
                 let existing = {};
                 if (fs.existsSync(filePath)) {
                   try { existing = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (e) {}
@@ -78,7 +79,7 @@ export default defineConfig({
               res.end(JSON.stringify({ error: err.message, files: [] }));
             }
           } else if (req.url.startsWith('/api/load-custom-snap-points')) {
-            const filePath = path.resolve(__dirname, 'src/custom-snap-points.json');
+            const filePath = path.resolve(__dirname, 'packages/catalog/src/custom-snap-points.json');
             res.setHeader('Content-Type', 'application/json');
             if (fs.existsSync(filePath)) {
               res.end(fs.readFileSync(filePath, 'utf8'));
@@ -123,7 +124,7 @@ export default defineConfig({
     watch: {
       ignored: [
         '**/assets/**',
-        '**/src/custom-snap-points.json',
+        '**/packages/catalog/src/custom-snap-points.json',
         '**/custom-snap-points.json',
         '**/src/part-main-offsets.json'
       ]

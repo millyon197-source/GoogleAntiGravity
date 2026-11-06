@@ -7,12 +7,30 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { MeshLoader } from './mesh-loader.js';
-import { createProceduralModule, getModuleCategory, getFriendlyName, CATEGORY_COLORS } from './modules.js';
+import {
+  MeshLoader,
+  computeModuleGroupRotation,
+  computeX4RotationFromModuleGroup,
+  CameraController,
+  TransformGizmoCoordinator
+} from '@x4/adapter-three';
+import {
+  createProceduralModule,
+  getModuleCategory,
+  getFriendlyName,
+  CATEGORY_COLORS,
+  MACRO_TO_NAME_DB,
+  lookupModuleBounds,
+  getInitialModuleSize,
+  getInitialModuleDimensions,
+  getInitialModuleBounds,
+  getModuleSnapPoints,
+  setCustomSnapPointEntry,
+  getCustomSnapPointsTable,
+  syncCustomSnapPoints,
+  hasCustomSnapPointsForMacro
+} from '@x4/catalog';
 import DAE_HASH_TABLE from '../dae_hash_table.json' with { type: 'json' };
-import { MACRO_TO_NAME_DB } from './modules-cost-db.js';
-import { getModuleSnapPoints, setCustomSnapPointEntry, getCustomSnapPointsTable, syncCustomSnapPoints, hasCustomSnapPointsForMacro } from './snap-points-db.js';
-import { lookupModuleBounds, getInitialModuleSize, getInitialModuleDimensions, getInitialModuleBounds } from './module-bounds-hashtable.js';
 import {
   getCurrentPlotConfig,
   setPlotConfig,
@@ -27,13 +45,8 @@ import {
   doBoxesOverlap,
   ensureNoBoundingBoxOverlaps
 } from './module-display-panel.js';
-import {
-  CameraController,
-  TransformGizmoCoordinator
-} from '@x4/adapter-three';
 import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
 import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
-import { computeModuleGroupRotation, computeX4RotationFromModuleGroup } from './rotation-math.js';
 
 
 function sendLogToVSC(msg, type = 'log') {
@@ -187,7 +200,7 @@ export class StationViewer {
     this.animatedTextures = [];
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
-    this.meshLoader = new MeshLoader('./src/mesh-worker.js');
+    this.meshLoader = new MeshLoader();
     this.colladaCache = new Map();
     this.isGridAtComponentScale = false;
     this.cameraTransitionAnimId = null;

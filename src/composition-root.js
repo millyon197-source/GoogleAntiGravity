@@ -10,7 +10,7 @@ import {
 import {
   ThreeRenderEngine
 } from '@x4/adapter-three';
-import { getFriendlyName, estimateModuleCosts } from './modules.js';
+import { getFriendlyName, estimateModuleCosts } from '@x4/catalog';
 
 /**
  * Composition Root for X4 Station Visualizer.

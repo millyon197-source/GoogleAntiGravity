@@ -1,18 +1,20 @@
 import { parseConstructionPlan } from './parser.js';
 import { StationViewer } from './viewer.js';
 import { SAMPLES } from './samples.js';
-import { 
-  getModuleCategory, 
-  getFriendlyName, 
-  estimateModuleCosts, 
-  CATEGORY_COLORS, 
-  CATEGORY_NAMES 
-} from './modules.js';
+import {
+  getModuleCategory,
+  getFriendlyName,
+  estimateModuleCosts,
+  CATEGORY_COLORS,
+  CATEGORY_NAMES,
+  getInitialModuleDimensions,
+  SNAP_POINTS_DB,
+  syncCustomSnapPoints,
+  hasCustomSnapPointsForMacro
+} from '@x4/catalog';
 import { generatePlanXML, downloadXMLFile, showCreateBlueprintModal, setFefbModuleIndex, getFefbModuleIndex } from './blueprint-exporter.js';
 import { initModuleDisplayPanel, setActiveBlueprint, setPlotConfig } from './module-display-panel.js';
-import { getInitialModuleDimensions } from './module-bounds-hashtable.js';
 import { compositionRoot } from './composition-root.js';
-import { SNAP_POINTS_DB, syncCustomSnapPoints, hasCustomSnapPointsForMacro } from './snap-points-db.js';
 
 const RESOURCE_METADATA = {
   hullParts: { name: 'Hull Parts', desc: 'Primary structural material', colorClass: 'text-cyan' },

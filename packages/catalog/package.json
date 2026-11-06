@@ -1,0 +1,10 @@
+{
+  "name": "@x4/catalog",
+  "version": "1.0.0",
+  "description": "X4 module catalog: cost database, macro/name mappings, module classification and initial bounds hashtable",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  }
+}

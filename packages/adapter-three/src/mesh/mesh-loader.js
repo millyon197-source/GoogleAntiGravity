@@ -10,10 +10,14 @@
  */
 export class MeshLoader {
   /**
-   * @param {string} [workerPath='./mesh-worker.js'] Path to the mesh worker script.
+   * @param {string|URL} [workerPath] Optional override for the mesh worker script.
+   *   Defaults to the co-located mesh-worker.js, resolved via import.meta.url so
+   *   Vite bundles it as a worker chunk (works in dev and in dist builds).
    */
-  constructor(workerPath = './mesh-worker.js') {
-    this.worker = new Worker(workerPath);
+  constructor(workerPath) {
+    this.worker = workerPath
+      ? new Worker(workerPath)
+      : new Worker(new URL('./mesh-worker.js', import.meta.url));
     this.callbacks = new Map();
     this.nextTaskId = 1;
 

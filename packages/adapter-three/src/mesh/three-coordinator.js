@@ -22,7 +22,7 @@ export class ThreeCoordinator {
    */
   constructor(targetContainer, options = {}) {
     this.container = targetContainer;
-    this.loader = new MeshLoader(options.workerPath || './mesh-worker.js');
+    this.loader = new MeshLoader(options.workerPath);
     this.defaultMaterial = options.defaultMaterial || new THREE.MeshStandardMaterial({
       color: 0x88aaee,
       roughness: 0.4,

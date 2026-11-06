@@ -8,3 +8,6 @@ export { TransformGizmoCoordinator } from './gizmos/transform-gizmo-coordinator.
 export { DimensionOverlayManager } from './overlays/dimension-overlay-manager.js';
 export { PlotBoundsManager } from './plot/plot-bounds-manager.js';
 export { SelectionManager } from './selection/selection-manager.js';
+export { MeshLoader } from './mesh/mesh-loader.js';
+export { ThreeCoordinator } from './mesh/three-coordinator.js';
+export { computeModuleGroupRotation, computeX4RotationFromModuleGroup } from './math/rotation-math.js';

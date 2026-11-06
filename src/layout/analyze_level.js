@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { parseConstructionPlan } from '../parser.js';
-import { getModuleCategory, getFriendlyName } from '../modules.js';
+import { getModuleCategory, getFriendlyName } from '@x4/catalog';
 
 export function analyzeLevel(xmlContent, targetY = -4570, tolerance = 100) {
   const plan = parseConstructionPlan(xmlContent);

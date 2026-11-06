@@ -1,6 +1,11 @@
-import { lookupModuleBounds, getInitialModuleSize, getInitialModuleDimensions, getInitialModuleBounds } from './module-bounds-hashtable.js';
-import { getModuleCategory } from './modules.js';
-import { PlotBounds, StationLayoutEngine } from './domain/index.js';
+import {
+  lookupModuleBounds,
+  getInitialModuleSize,
+  getInitialModuleDimensions,
+  getInitialModuleBounds,
+  getModuleCategory
+} from '@x4/catalog';
+import { PlotBounds, StationLayoutEngine } from '@x4/domain';
 
 const STORAGE_KEY = 'x4_module_display_panel_config';
 const PLOT_STORAGE_KEY = 'x4_layout_plot_config';
