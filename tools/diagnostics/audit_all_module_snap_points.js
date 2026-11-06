@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { SNAP_POINTS_DB, getModuleSnapPoints } from '../../src/snap-points-db.js';
-import { getOneDockPierMeshOffset, getModuleCategory } from '../../src/modules.js';
+import { getModuleCategory } from '../../src/modules.js';
 import DAE_HASH_TABLE from '../../dae_hash_table.json' with { type: 'json' };
 
 const daeEntries = DAE_HASH_TABLE.flat();
@@ -51,13 +51,11 @@ for (const macro of allMacros) {
   }
   categoryStats[category].modules++;
 
-  const isOneDockPier = macro.toLowerCase().includes('harbor_02');
-  const oneDockOffset = isOneDockPier ? getOneDockPierMeshOffset(macro) : 0;
+  // part_main offset from part-main-offsets.json (1-dock harbor_02 piers have their own entries there;
+  // the former getOneDockPierMeshOffset special case never existed in src/ and is not used by the renderer)
   const xmlOffset = partMainOffsets[baseKey] || [0, 0, 0];
 
-  // Apply part_main offset:
-  // If oneDockOffset is set, it overrides X for 1-dock pier
-  const offsetX = isOneDockPier ? oneDockOffset : xmlOffset[0];
+  const offsetX = xmlOffset[0];
   const offsetY = xmlOffset[1];
   const offsetZ = xmlOffset[2];
 

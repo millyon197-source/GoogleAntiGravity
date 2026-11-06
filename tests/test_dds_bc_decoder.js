@@ -118,4 +118,57 @@ const x4 = new X4DDSLoader();
   console.log('  ✓ maxDecodedSize skips oversized mip levels');
 }
 
+// --- Worker decoding path (X4DDSLoader.load / decodeInto) ---------------------------------
+// Runs the real bc-decode-worker.js in-process behind a minimal Worker shim.
+const workerSelf = {};
+globalThis.self = workerSelf;
+await import('../packages/adapter-three/src/textures/bc-decode-worker.js'); // keeps using `self` per message
+class InProcessWorker {
+  constructor() { this.posted = 0; this.terminated = false; workerSelf.postMessage = (data) => setTimeout(() => this.onmessage && this.onmessage({ data }), 0); }
+  postMessage(data) { this.posted++; setTimeout(() => workerSelf.onmessage({ data }), 0); }
+  terminate() { this.terminated = true; }
+}
+const sameMips = (a, b) => a.length === b.length && a.every((m, i) => m.width === b[i].width && m.height === b[i].height && Buffer.compare(Buffer.from(m.data), Buffer.from(b[i].data)) === 0);
+{
+  let worker = null;
+  const loader = new X4DDSLoader(undefined, { createWorker: () => (worker = new InProcessWorker()) });
+  for (const file of ['assets1/textures/natural/natural_cow_01_normal.dds', 'assets1/textures/generic/generic_engine_trim_metal.dds']) {
+    const buf = load(file);
+    const before = buf.byteLength;
+    const tex = await loader.decodeInto(new THREE.CompressedTexture(), buf);
+    const sync = x4.parse(buf, true);
+    assert.ok(sameMips(tex.mipmaps, sync.mipmaps), `worker output identical to main-thread decode (${file.split('/').pop()})`);
+    assert.deepStrictEqual([tex.image.width, tex.image.height, tex.format], [sync.width, sync.height, THREE.RGBAFormat]);
+    assert.ok(tex.needsUpdate !== false && tex.version > 0, 'texture marked for upload');
+    assert.strictEqual(buf.byteLength, before, 'source buffer not detached (worker got a copy)');
+  }
+  assert.strictEqual(worker.posted, 2, 'both BC files decoded in the worker');
+  const dxt5 = load('assets1/textures/fx/fx_p2_grey_01_diff.dds');
+  const t5 = await loader.decodeInto(new THREE.CompressedTexture(), dxt5);
+  assert.strictEqual(worker.posted, 2, 'stock formats are not sent to the worker');
+  assert.strictEqual(t5.format, new DDSLoader().parse(dxt5, true).format);
+  loader.dispose();
+  assert.ok(worker.terminated, 'dispose terminates the worker');
+  console.log('  ✓ worker decode: identical to main thread, copies input, stock formats stay local');
+}
+{
+  // Worker reports an error for a request -> falls back to main-thread decode
+  const errLoader = new X4DDSLoader(undefined, { createWorker: () => ({ postMessage({ id }) { setTimeout(() => this.onmessage({ data: { id, error: 'boom' } }), 0); }, terminate() {} }) });
+  const buf = load('assets1/textures/natural/natural_cow_01_normal.dds');
+  const tex = await errLoader.decodeInto(new THREE.CompressedTexture(), buf);
+  assert.ok(sameMips(tex.mipmaps, x4.parse(buf, true).mipmaps), 'worker error -> main-thread result');
+  // Worker fails to start (onerror) -> pending request falls back, later requests skip the worker
+  let posts = 0;
+  const deadLoader = new X4DDSLoader(undefined, { createWorker: () => ({ postMessage() { posts++; setTimeout(() => this.onerror({ message: 'load failed' }), 0); }, terminate() {} }) });
+  const t1 = await deadLoader.decodeInto(new THREE.CompressedTexture(), buf);
+  const t2 = await deadLoader.decodeInto(new THREE.CompressedTexture(), buf);
+  assert.ok(sameMips(t1.mipmaps, t2.mipmaps) && t1.mipmaps.length === 7, 'both decoded despite dead worker');
+  assert.strictEqual(posts, 1, 'dead worker is not used again');
+  // No Worker available -> main thread
+  const noWorker = new X4DDSLoader(undefined, { createWorker: null });
+  assert.strictEqual((await noWorker.decodeInto(new THREE.CompressedTexture(), buf)).mipmaps.length, 7);
+  assert.strictEqual(new X4DDSLoader()._getWorker(), null, 'Node has no Worker global -> main-thread decode');
+  console.log('  ✓ worker fallbacks: error reply, failed worker, no Worker support');
+}
+
 console.log('\n[PASS] test_dds_bc_decoder');

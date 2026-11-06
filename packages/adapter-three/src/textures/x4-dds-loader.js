@@ -1,98 +1,164 @@
-import { RGBAFormat } from 'three';
+import { CompressedTexture, FileLoader, LinearFilter } from 'three';
 import { DDSLoader } from 'three/addons/loaders/DDSLoader.js';
-import { decodeBC4ToRGBA, decodeBC5NormalToRGBA, bcLevelByteLength } from './bc-decoder.js';
+import { detectX4BlockFormat, decodeX4BlockDDS } from './bc-dds-parse.js';
 
-const DDS_MAGIC = 0x20534444;
-const DDSD_MIPMAPCOUNT = 0x20000;
-const DDSCAPS2_CUBEMAP = 0x200;
-const DDSCAPS2_VOLUME = 0x200000;
-const DDPF_FOURCC = 0x4;
+export { detectX4BlockFormat } from './bc-dds-parse.js';
 
-// Header int32 offsets (same layout as three's DDSLoader)
-const OFF_SIZE = 1, OFF_FLAGS = 2, OFF_HEIGHT = 3, OFF_WIDTH = 4, OFF_MIPMAPCOUNT = 7;
-const OFF_PF_FLAGS = 20, OFF_PF_FOURCC = 21, OFF_CAPS2 = 28;
-const DX10_HEADER_BYTES = 20;
-const DXGI_FORMAT_BC4_UNORM = 80;
-const DXGI_FORMAT_BC5_UNORM = 83;
-
-const fourCC = (s) => s.charCodeAt(0) + (s.charCodeAt(1) << 8) + (s.charCodeAt(2) << 16) + (s.charCodeAt(3) << 24);
-const FOURCC_BC4 = new Set([fourCC('ATI1'), fourCC('BC4U')]);
-const FOURCC_BC5 = new Set([fourCC('ATI2'), fourCC('BC5U')]);
-const FOURCC_DX10 = fourCC('DX10');
+/** Default worker factory: a module worker Vite bundles from the co-located script. */
+function createDefaultDecodeWorker() {
+  if (typeof Worker === 'undefined') return null;
+  return new Worker(new URL('./bc-decode-worker.js', import.meta.url), { type: 'module' });
+}
 
 /**
- * Identifies the BC variant of a DDS buffer this loader decodes itself.
- * @param {ArrayBuffer} buffer
- * @returns {{ kind: 'bc4'|'bc5', dataOffset: number } | null} null when the stock loader should handle it.
+ * Fills a CompressedTexture from a DDSLoader.parse-shaped result, exactly as three's
+ * CompressedTextureLoader.load does for a single (possibly cubemap) DDS file.
  */
-export function detectX4BlockFormat(buffer) {
-  if (buffer.byteLength < 128) return null;
-  const header = new Int32Array(buffer, 0, 31);
-  if (header[0] !== DDS_MAGIC) return null;
-  if (header[OFF_CAPS2] & (DDSCAPS2_CUBEMAP | DDSCAPS2_VOLUME)) return null; // 2D only
-  if (!(header[OFF_PF_FLAGS] & DDPF_FOURCC)) return null;
-  const cc = header[OFF_PF_FOURCC];
-  const dataOffset = header[OFF_SIZE] + 4;
-  if (FOURCC_BC4.has(cc)) return { kind: 'bc4', dataOffset };
-  if (FOURCC_BC5.has(cc)) return { kind: 'bc5', dataOffset };
-  if (cc === FOURCC_DX10 && buffer.byteLength >= dataOffset + DX10_HEADER_BYTES) {
-    const ext = new Uint32Array(buffer, dataOffset, 5);
-    const [dxgi, , , arraySize] = ext;
-    if (arraySize > 1) return null; // texture arrays: not supported here
-    if (dxgi === DXGI_FORMAT_BC4_UNORM) return { kind: 'bc4', dataOffset: dataOffset + DX10_HEADER_BYTES };
-    if (dxgi === DXGI_FORMAT_BC5_UNORM) return { kind: 'bc5', dataOffset: dataOffset + DX10_HEADER_BYTES };
+function fillTexture(texture, texDatas) {
+  if (texDatas.isCubemap) {
+    const images = [];
+    const faces = texDatas.mipmaps.length / texDatas.mipmapCount;
+    for (let f = 0; f < faces; f++) {
+      images[f] = { mipmaps: [] };
+      for (let i = 0; i < texDatas.mipmapCount; i++) {
+        images[f].mipmaps.push(texDatas.mipmaps[f * texDatas.mipmapCount + i]);
+        images[f].format = texDatas.format;
+        images[f].width = texDatas.width;
+        images[f].height = texDatas.height;
+      }
+    }
+    texture.image = images;
+  } else {
+    texture.image.width = texDatas.width;
+    texture.image.height = texDatas.height;
+    texture.mipmaps = texDatas.mipmaps;
   }
-  return null;
+  if (texDatas.mipmapCount === 1) texture.minFilter = LinearFilter;
+  texture.format = texDatas.format;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 /**
  * DDSLoader that additionally reads BC4 (ATI1/BC4U, DXGI 80) and BC5 (ATI2/BC5U, DXGI 83)
- * 2D textures, decoding them on the CPU to RGBA8 mip chains (see bc-decoder.js). All other
- * formats are delegated to three's DDSLoader unchanged.
+ * 2D textures, decoding them to RGBA8 mip chains (see bc-decoder.js). All other formats are
+ * handled by three's DDSLoader unchanged.
  *
- * Decoded RGBA is 4-8x larger than the compressed source, so mip levels larger than
- * `maxDecodedSize` (default 2048) are skipped: they are never decoded and the texture
- * starts at the first level within the cap.
+ * - `load()` decodes BC4/BC5 in a module worker (bc-decode-worker.js) so large textures do
+ *   not stall the main thread; without Worker support, or if the worker fails, it decodes
+ *   on the main thread instead. `parse()` stays synchronous.
+ * - Decoded RGBA is 4-8x larger than the compressed source, so mip levels larger than
+ *   `maxDecodedSize` (default 2048) are skipped: never decoded, and the texture starts at the
+ *   first level within the cap.
  */
 export class X4DDSLoader extends DDSLoader {
   /**
    * @param {import('three').LoadingManager} [manager]
-   * @param {{ maxDecodedSize?: number }} [options]
+   * @param {{ maxDecodedSize?: number, createWorker?: (() => Worker|null) | null }} [options]
+   *   createWorker: factory for the decode worker (null disables the worker).
    */
-  constructor(manager, { maxDecodedSize = 2048 } = {}) {
+  constructor(manager, { maxDecodedSize = 2048, createWorker = createDefaultDecodeWorker } = {}) {
     super(manager);
     this.maxDecodedSize = maxDecodedSize;
+    this.createWorker = createWorker;
+    this._worker = undefined; // undefined = not created yet, null = unavailable/failed
+    this._pending = new Map();
+    this._nextId = 1;
   }
 
   parse(buffer, loadMipmaps) {
     const fmt = detectX4BlockFormat(buffer);
     if (!fmt) return super.parse(buffer, loadMipmaps);
+    return decodeX4BlockDDS(buffer, fmt, { loadMipmaps, maxDecodedSize: this.maxDecodedSize });
+  }
 
-    const header = new Int32Array(buffer, 0, 31);
-    const width = header[OFF_WIDTH];
-    const height = header[OFF_HEIGHT];
-    const mipmapCount = (header[OFF_FLAGS] & DDSD_MIPMAPCOUNT) && loadMipmaps !== false
-      ? Math.max(1, header[OFF_MIPMAPCOUNT]) : 1;
-    const blockBytes = fmt.kind === 'bc4' ? 8 : 16;
-    const decode = fmt.kind === 'bc4' ? decodeBC4ToRGBA : decodeBC5NormalToRGBA;
+  load(url, onLoad, onProgress, onError) {
+    if (Array.isArray(url)) return super.load(url, onLoad, onProgress, onError); // 6-file cubemaps: stock path
 
-    const dds = { mipmaps: [], width, height, format: RGBAFormat, mipmapCount, isCubemap: false };
-    let offset = fmt.dataOffset;
-    let w = width, h = height;
-    for (let level = 0; level < mipmapCount; level++) {
-      const len = bcLevelByteLength(w, h, blockBytes);
-      if (offset + len > buffer.byteLength) break; // truncated file: keep the levels we have
-      const overCap = Math.max(w, h) > this.maxDecodedSize && level < mipmapCount - 1;
-      if (!overCap) dds.mipmaps.push({ data: decode(new Uint8Array(buffer, offset, len), w, h), width: w, height: h });
-      offset += len;
-      w = Math.max(1, w >> 1);
-      h = Math.max(1, h >> 1);
+    const texture = new CompressedTexture();
+    const fileLoader = new FileLoader(this.manager);
+    fileLoader.setPriority?.(this.priority);
+    fileLoader.setCache?.(this.cache);
+    fileLoader.setPath(this.path);
+    fileLoader.setResponseType('arraybuffer');
+    fileLoader.setRequestHeader(this.requestHeader);
+    fileLoader.setWithCredentials(this.withCredentials);
+
+    fileLoader.load(url, (buffer) => {
+      this.decodeInto(texture, buffer).then(
+        () => { if (onLoad) onLoad(texture); },
+        (err) => { if (onError) onError(err); else console.error(err); }
+      );
+    }, onProgress, onError);
+
+    return texture;
+  }
+
+  /**
+   * Parses `buffer` into `texture` (worker for BC4/BC5 when available, otherwise synchronously).
+   * @param {CompressedTexture} texture
+   * @param {ArrayBuffer} buffer
+   * @returns {Promise<CompressedTexture>}
+   */
+  decodeInto(texture, buffer) {
+    try {
+      const fmt = detectX4BlockFormat(buffer);
+      const worker = fmt ? this._getWorker() : null;
+      if (worker) {
+        return this._decodeInWorker(worker, buffer).then(
+          (dds) => fillTexture(texture, dds),
+          () => fillTexture(texture, this.parse(buffer, true)) // worker failed: decode here
+        );
+      }
+      return Promise.resolve(fillTexture(texture, this.parse(buffer, true)));
+    } catch (err) {
+      return Promise.reject(err);
     }
-    if (dds.mipmaps.length) {
-      dds.width = dds.mipmaps[0].width;
-      dds.height = dds.mipmaps[0].height;
+  }
+
+  /** Terminates the decode worker (pending decodes fall back to the main thread). */
+  dispose() {
+    if (this._worker) this._worker.terminate();
+    this._failPending(new Error('X4DDSLoader disposed'));
+    this._worker = undefined;
+  }
+
+  _getWorker() {
+    if (this._worker !== undefined) return this._worker;
+    try {
+      this._worker = this.createWorker ? this.createWorker() : null;
+    } catch (_) {
+      this._worker = null;
     }
-    dds.mipmapCount = dds.mipmaps.length;
-    return dds;
+    if (this._worker) {
+      this._worker.onmessage = (event) => {
+        const { id, dds, error } = event.data || {};
+        const pending = this._pending.get(id);
+        if (!pending) return;
+        this._pending.delete(id);
+        if (error) pending.reject(new Error(error)); else pending.resolve(dds);
+      };
+      this._worker.onerror = (event) => {
+        // Worker unusable (e.g. failed to load): stop using it, fall back for queued work
+        this._worker = null;
+        this._failPending(new Error(event && event.message || 'decode worker error'));
+      };
+    }
+    return this._worker;
+  }
+
+  _decodeInWorker(worker, buffer) {
+    const id = this._nextId++;
+    // Send a copy: the source buffer may be held by THREE.Cache and is needed for fallback.
+    const copy = buffer.slice(0);
+    return new Promise((resolve, reject) => {
+      this._pending.set(id, { resolve, reject });
+      worker.postMessage({ id, buffer: copy, maxDecodedSize: this.maxDecodedSize }, [copy]);
+    });
+  }
+
+  _failPending(err) {
+    for (const { reject } of this._pending.values()) reject(err);
+    this._pending.clear();
   }
 }

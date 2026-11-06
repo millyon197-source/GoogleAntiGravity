@@ -558,7 +558,7 @@ export class StationLayoutEngine {
       let currentY = 0;
       sortedModuleData.forEach((m, i) => {
         const h = m.initialSize.y;
-        if (i > 0) currentY += h / 2;
+        currentY += h / 2; // centre of module i; the first starts at its own half-height so the span begins at its lower edge
         m.position = { x: bb.centerX, y: currentY, z: bb.centerZ };
         currentY += h / 2 + gap;
       });
@@ -611,7 +611,7 @@ export class StationLayoutEngine {
       let currentOffset = 0;
       sortedModuleData.forEach((m, i) => {
         const s = m.initialSize[dim];
-        if (i > 0) currentOffset += s / 2;
+        currentOffset += s / 2; // centre of module i; the first starts at its own half-size so the span begins at its edge
         m.position = { x: bb.centerX, y: bb.centerY, z: bb.centerZ };
         m.position[dim] = currentOffset;
         currentOffset += s / 2 + gap;

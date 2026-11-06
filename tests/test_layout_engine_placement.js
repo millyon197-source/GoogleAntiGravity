@@ -95,15 +95,18 @@ function assertInsideAndSeparated(placed, bounds) {
 {
   const mods = [{ macro: 'a', index: 0 }, { macro: 'b', index: 1 }, { macro: 'c', index: 2 }];
   const base = { plotBounds: smallPlot, categoryOrder: ['docks'], getCategory: () => 'docks', getInitialSize: () => box(100, 50, 100), gap: 20 };
-  // Planar row / height stack: consecutive modules are size + gap apart. (Known issue, kept as-is
-  // by the extraction: the row is off-centre by a quarter of the first module's size.)
   const row = StationLayoutEngine.calculateLayoutPlacement(mods, { ...base, mode: 'planar', dimension: 'x' });
-  const xs = row.map(m => m.position.x);
-  assert.deepStrictEqual([xs[1] - xs[0], xs[2] - xs[1]], [120, 120], 'planar X row spaced by size + gap');
+  assert.deepStrictEqual(row.map(m => m.position.x), [-120, 0, 120], 'planar X row centred with gap');
   assert.ok(row.every(m => m.position.y === 0 && m.position.z === 0), 'planar row sits on the plot centre in Y/Z');
+  const zRow = StationLayoutEngine.calculateLayoutPlacement(mods, { ...base, mode: 'planar', dimension: 'z' });
+  assert.deepStrictEqual(zRow.map(m => m.position.z), [-120, 0, 120], 'planar Z row centred with gap');
   const stack = StationLayoutEngine.calculateLayoutPlacement(mods, { ...base, mode: 'height' });
-  const ys = stack.map(m => m.position.y);
-  assert.deepStrictEqual([ys[1] - ys[0], ys[2] - ys[1]], [70, 70], 'height stack spaced by size + gap');
+  assert.deepStrictEqual(stack.map(m => m.position.y), [-70, 0, 70], 'height stack centred in Y');
+  // Mixed sizes: the outer edges are symmetric about the plot centre
+  const sizes = [box(300, 50, 100), box(100, 50, 100), box(60, 50, 100)];
+  const mixed = StationLayoutEngine.calculateLayoutPlacement(mods, { ...base, getInitialSize: (macro) => sizes['abc'.indexOf(macro)], mode: 'planar' });
+  const left = mixed[0].position.x - 150, right = mixed[2].position.x + 30;
+  assert.ok(Math.abs(left + right) < 1e-9, `mixed-size row centred (edges ${left}, ${right})`);
   const grid = StationLayoutEngine.calculateLayoutPlacement([...mods, { macro: 'd', index: 3 }], { ...base, mode: 'grid', dimension: 'x-z' });
   assert.deepStrictEqual(grid.map(m => [m.position.x, m.position.z]), [[-60, -60], [60, -60], [-60, 60], [60, 60]], '2x2 grid on X/Z');
   const moved = [{ macro: 'a', index: 0, position: { x: 7, y: 8, z: 9 } }];
