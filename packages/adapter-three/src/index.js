@@ -12,3 +12,7 @@ export { MeshLoader } from './mesh/mesh-loader.js';
 export { ThreeCoordinator } from './mesh/three-coordinator.js';
 export { computeModuleGroupRotation, computeX4RotationFromModuleGroup } from './math/rotation-math.js';
 export { resolveTextureForModel } from './textures/texture-resolver.js';
+export { getRaceGlowColor, getRaceHullColor } from './textures/race-colors.js';
+export { loadDdsTexture } from './textures/dds-texture-loader.js';
+export { loadBinaryModel } from './models/binary-model-loader.js';
+export { loadColladaModel } from './models/collada-model-loader.js';

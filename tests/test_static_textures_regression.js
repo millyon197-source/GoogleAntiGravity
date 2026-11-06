@@ -14,7 +14,14 @@ if (typeof globalThis.localStorage === 'undefined') {
   };
 }
 
-const viewerCode = fs.readFileSync('src/viewer.js', 'utf8');
+// Material/mesh classification now spans viewer.js and the extracted loaders in
+// @x4/adapter-three; scan all of them so the negative guards below stay effective.
+const viewerCode = [
+  'src/viewer.js',
+  'packages/adapter-three/src/models/binary-model-loader.js',
+  'packages/adapter-three/src/models/collada-model-loader.js',
+  'packages/adapter-three/src/textures/texture-resolver.js'
+].map(f => fs.readFileSync(f, 'utf8')).join('\n');
 
 // 1. Verify source-level guard checks in viewer.js
 console.log('  [1] Verifying boolean flags and guard conditions in viewer.js...');
