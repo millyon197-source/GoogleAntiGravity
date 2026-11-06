@@ -2735,39 +2735,41 @@ export class StationViewer {
     adaptTransformControls(tc, { getWorldOffset: () => this.gizmoWorldOffset });
   }
 
-  isGizmoDragging() {
-    if (this.gizmoCoordinator) {
-      return this.gizmoCoordinator.isGizmoDragging() || !!this._isGizmoDragging;
+  /**
+   * Returns the TransformGizmoCoordinator, creating it on first use and keeping its camera,
+   * controls and offset vector in sync with this viewer. The coordinator writes directly into
+   * this.gizmoWorldOffset (shared instance), which the TransformControls helper reads during
+   * updateMatrixWorld, so a relocation applies in the same update.
+   * @returns {TransformGizmoCoordinator}
+   */
+  getGizmoCoordinator() {
+    if (!this.gizmoCoordinator) {
+      this.gizmoCoordinator = new TransformGizmoCoordinator({ camera: this.camera });
     }
-    const isTransDragging = !!(this.transformControls && this.transformControls.dragging);
-    const isRotDragging = !!(this.transformControlsRotate && this.transformControlsRotate.dragging);
-    return isTransDragging || isRotDragging || !!this._isGizmoDragging;
+    const coordinator = this.gizmoCoordinator;
+    coordinator.camera = this.camera;
+    coordinator.transformControls = this.transformControls || null;
+    coordinator.transformControlsRotate = this.transformControlsRotate || null;
+    if (!this.gizmoWorldOffset) {
+      this.gizmoWorldOffset = new THREE.Vector3();
+    }
+    coordinator.gizmoWorldOffset = this.gizmoWorldOffset;
+    return coordinator;
+  }
+
+  isGizmoDragging() {
+    return this.getGizmoCoordinator().isGizmoDragging() || !!this._isGizmoDragging;
   }
 
   isGizmoAttached() {
-    if (this.gizmoCoordinator) {
-      return this.gizmoCoordinator.isGizmoAttached();
-    }
-    return !!(
-      (this.transformControls && this.transformControls.object) ||
-      (this.transformControlsRotate && this.transformControlsRotate.object)
-    );
+    return this.getGizmoCoordinator().isGizmoAttached();
   }
 
   /**
    * Calculates the appropriate gizmo size based on camera distance to the gizmo location.
    */
   getAppropriateGizmoSize(distance) {
-    if (this.gizmoCoordinator) {
-      return this.gizmoCoordinator.getAppropriateGizmoSize(distance);
-    }
-    if (!distance || isNaN(distance)) return 0.85;
-    if (distance < 150) {
-      return Math.max(0.68, Math.min(0.85, 0.68 + (distance / 150) * 0.17));
-    } else if (distance > 2000) {
-      return Math.min(1.10, 0.85 + ((distance - 2000) / 8000) * 0.25);
-    }
-    return 0.85;
+    return this.getGizmoCoordinator().getAppropriateGizmoSize(distance);
   }
 
   /**
@@ -2775,69 +2777,12 @@ export class StationViewer {
    * Uses raycasting from camera through pointer/viewport center against the module meshes or bounding box.
    */
   getModuleZoomedLocation(targetModule) {
-    if (this.gizmoCoordinator) {
-      return this.gizmoCoordinator.getModuleZoomedLocation(
-        targetModule,
-        this.mouse,
-        (mod) => (this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(mod) : new THREE.Box3().setFromObject(mod))
-      );
-    }
-    if (!targetModule) return null;
+    return this.getGizmoCoordinator().getModuleZoomedLocation(targetModule, this.mouse, (mod) => this.getGizmoBounds(mod));
+  }
 
-    const pointerNdc = (this.mouse && typeof this.mouse.x === 'number' && !isNaN(this.mouse.x))
-      ? new THREE.Vector2(this.mouse.x, this.mouse.y)
-      : new THREE.Vector2(0, 0);
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(pointerNdc, this.camera);
-
-    const minSafeDist = Math.max(15, (this.camera.near || 1) + 5);
-
-    // 1. First attempt: raycast against meshes belonging to this module
-    const intersects = raycaster.intersectObjects([targetModule], true);
-    if (intersects && intersects.length > 0) {
-      const hit = intersects[0].point.clone();
-      const hitCamSpace = hit.clone().applyMatrix4(this.camera.matrixWorldInverse);
-      if (-hitCamSpace.z >= minSafeDist) {
-        return hit;
-      }
-    }
-
-    // 2. Second attempt: raycast against the module's world bounding box
-    const box = this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(targetModule) : new THREE.Box3().setFromObject(targetModule);
-    if (box && !box.isEmpty()) {
-      const hitPoint = new THREE.Vector3();
-      if (raycaster.ray.intersectBox(box, hitPoint)) {
-        const hitCamSpace = hitPoint.clone().applyMatrix4(this.camera.matrixWorldInverse);
-        if (-hitCamSpace.z >= minSafeDist) {
-          return hitPoint;
-        }
-      }
-      
-      // Determine safe depth in front of the camera
-      const center = box.getCenter(new THREE.Vector3());
-      const camSpaceCenter = center.clone().applyMatrix4(this.camera.matrixWorldInverse);
-      const safeDepth = Math.max(25, -camSpaceCenter.z > 0 ? -camSpaceCenter.z : 100);
-
-      // Viewport frustum extents at safeDepth
-      const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 60);
-      const halfH = safeDepth * Math.tan(fovRad / 2);
-      const halfW = halfH * (this.camera.aspect || 1);
-
-      // Safe viewport margin limit (0.75 leaves room inside display)
-      const maxMargin = 0.75;
-      const targetCamSpace = new THREE.Vector3(
-        Math.max(-halfW * maxMargin, Math.min(halfW * maxMargin, camSpaceCenter.x)),
-        Math.max(-halfH * maxMargin, Math.min(halfH * maxMargin, camSpaceCenter.y)),
-        -safeDepth
-      );
-
-      return targetCamSpace.applyMatrix4(this.camera.matrixWorld);
-    }
-
-    // Fallback: point directly in front of camera at safe viewing depth
-    const fallbackDepth = 100;
-    return new THREE.Vector3(0, 0, -fallbackDepth).applyMatrix4(this.camera.matrixWorld);
+  /** World bounding box used for gizmo relocation. */
+  getGizmoBounds(mod) {
+    return this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(mod) : new THREE.Box3().setFromObject(mod);
   }
 
   /**
@@ -2848,93 +2793,11 @@ export class StationViewer {
   ensureActiveGizmoVisible(options = {}) {
     if (!this.isGizmoAttached()) return;
     if (this.isGizmoDragging()) return;
-    if (this._isEnsuringGizmoVisible) return;
-
-    if (this.gizmoCoordinator) {
-      this.gizmoCoordinator.transformControls = this.transformControls;
-      this.gizmoCoordinator.transformControlsRotate = this.transformControlsRotate;
-      this.gizmoCoordinator.ensureActiveGizmoVisible(
-        { isZooming: options.isZooming || this._isZooming, force: options.force },
-        this.mouse,
-        (mod) => (this.getModuleWorldBoundingBox ? this.getModuleWorldBoundingBox(mod) : new THREE.Box3().setFromObject(mod))
-      );
-      if (this.gizmoCoordinator.gizmoWorldOffset) {
-        if (!this.gizmoWorldOffset) {
-          this.gizmoWorldOffset = new THREE.Vector3();
-        }
-        this.gizmoWorldOffset.copy(this.gizmoCoordinator.gizmoWorldOffset);
-      }
-      return;
-    }
-
-    const isZooming = options.isZooming || this._isZooming || options.force;
-    if (!isZooming) return;
-
-    const activeTarget = this.transformControls?.object || this.transformControlsRotate?.object;
-    if (!activeTarget) return;
-
-    this._isEnsuringGizmoVisible = true;
-    try {
-      const gizmoPos = new THREE.Vector3();
-      activeTarget.getWorldPosition(gizmoPos);
-
-      this.camera.updateMatrixWorld(true);
-
-      // Transform gizmo position into camera view space
-      const camSpace = gizmoPos.clone().applyMatrix4(this.camera.matrixWorldInverse);
-      const zDist = -camSpace.z;
-
-      // Check if gizmo is behind the camera or outside the visible viewport
-      const minSafeDist = Math.max(15, (this.camera.near || 1) + 5);
-      const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 60);
-      const halfH = Math.max(0.001, zDist * Math.tan(fovRad / 2));
-      const halfW = halfH * (this.camera.aspect || 1);
-
-      const ndcX = camSpace.x / halfW;
-      const ndcY = camSpace.y / halfH;
-
-      const isBehindCamera = zDist < minSafeDist;
-      const maxDisplayMargin = 0.85; // Outside visible display margin
-      const isOutsideViewport = isBehindCamera || Math.abs(ndcX) > maxDisplayMargin || Math.abs(ndcY) > maxDisplayMargin;
-
-      if (isOutsideViewport) {
-        // Move ONLY the visual gizmo to the zoomed location on the active module without displacing the module
-        const zoomedLoc = this.getModuleZoomedLocation(activeTarget);
-        if (zoomedLoc) {
-          if (!this.gizmoWorldOffset) {
-            this.gizmoWorldOffset = new THREE.Vector3();
-          }
-          this.gizmoWorldOffset.subVectors(zoomedLoc, gizmoPos);
-        }
-      } else {
-        if (this.gizmoWorldOffset) {
-          this.gizmoWorldOffset.set(0, 0, 0);
-        }
-      }
-
-      // Size gizmo appropriately based on distance from camera to the active gizmo location
-      const currentGizmoPos = gizmoPos.clone();
-      if (this.gizmoWorldOffset && this.gizmoWorldOffset.lengthSq() > 0.0001) {
-        currentGizmoPos.add(this.gizmoWorldOffset);
-      }
-      const distToCamera = this.camera.position.distanceTo(currentGizmoPos);
-      const appropriateSize = this.getAppropriateGizmoSize(distToCamera);
-
-      if (this.transformControls) {
-        this.transformControls.size = appropriateSize;
-        if (typeof this.transformControls.updateMatrixWorld === 'function') {
-          this.transformControls.updateMatrixWorld(true);
-        }
-      }
-      if (this.transformControlsRotate) {
-        this.transformControlsRotate.size = appropriateSize;
-        if (typeof this.transformControlsRotate.updateMatrixWorld === 'function') {
-          this.transformControlsRotate.updateMatrixWorld(true);
-        }
-      }
-    } finally {
-      this._isEnsuringGizmoVisible = false;
-    }
+    this.getGizmoCoordinator().ensureActiveGizmoVisible(
+      { isZooming: options.isZooming || this._isZooming, force: options.force },
+      this.mouse,
+      (mod) => this.getGizmoBounds(mod)
+    );
   }
 
   deselect(restoreGrid = true, clearGizmoTarget = true) {
