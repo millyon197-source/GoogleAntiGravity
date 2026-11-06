@@ -6,6 +6,29 @@ import DAE_HASH_TABLE from '../../dae_hash_table.json' with { type: 'json' };
 const daeEntries = DAE_HASH_TABLE.flat();
 const allMacros = Object.keys(SNAP_POINTS_DB);
 
+/**
+ * Reads snap connection facings from the module's game component file
+ * (<folder>/<name>.xml next to <name>_data). A connection faces along its local +Z
+ * rotated by its offset quaternion (identity when the quaternion is omitted).
+ * Returns Map<connectionName, [x, y, z]> in X4 component space, or null if the file is missing.
+ */
+function readComponentSnapFacings(folderPath) {
+  const file = '.' + folderPath.replace(/_data$/, '') + '.xml';
+  if (!fs.existsSync(file)) return null;
+  const xml = fs.readFileSync(file, 'utf8');
+  const facings = new Map();
+  const connectionRe = /<connection name="([^"]+)"[^>]*tags="[^"]*\bsnap\b[^"]*"[^>]*>([\s\S]*?)<\/connection>/g;
+  for (const [, name, body] of xml.matchAll(connectionRe)) {
+    const q = body.match(/<quaternion qx="([-\d.Ee]+)" qy="([-\d.Ee]+)" qz="([-\d.Ee]+)" qw="([-\d.Ee]+)"/);
+    const [x, y, z, w] = q ? q.slice(1).map(Number) : [0, 0, 0, 1];
+    facings.set(name, [2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)]);
+  }
+  return facings;
+}
+
+let facingFromGame = 0;
+let facingFallback = 0;
+
 // Load component part_main offsets
 let partMainOffsets = {};
 if (fs.existsSync('src/part-main-offsets.json')) {
@@ -43,6 +66,7 @@ for (const macro of allMacros) {
 
   const snaps = getModuleSnapPoints(macro);
   if (!snaps || snaps.length === 0) continue;
+  const snapFacings = readComponentSnapFacings(entry.folder_path);
 
   auditedModules++;
   const category = getModuleCategory(macro);
@@ -129,22 +153,26 @@ for (const macro of allMacros) {
         (cMinZ + cMaxZ) / 2
       ];
 
-      // Measure transverse centering perpendicular to the connection axis:
-      const absX = Math.abs(dotX);
-      const absY = Math.abs(dotY);
-      const absZ = Math.abs(dotZ);
-
-      let transverseOffset = 0;
-      if (absX >= absY && absX >= absZ) {
-        // Normal along X: check centering in YZ plane
-        transverseOffset = Math.hypot(collarCenter[1] - dotY, collarCenter[2] - dotZ);
-      } else if (absY >= absX && absY >= absZ) {
-        // Normal along Y: check centering in XZ plane
-        transverseOffset = Math.hypot(collarCenter[0] - dotX, collarCenter[2] - dotZ);
+      // Connection axis: the snap's real facing from the game component file, mapped into the
+      // viewer frame like positions are (-x, y, z). Without component data (e.g. Terran modules
+      // whose XML is not extracted), fall back to the snap position's dominant coordinate.
+      const gameFacing = snapFacings?.get(snap.name);
+      let axis;
+      if (gameFacing) {
+        axis = [-gameFacing[0], gameFacing[1], gameFacing[2]];
+        facingFromGame++;
       } else {
-        // Normal along Z: check centering in XY plane
-        transverseOffset = Math.hypot(collarCenter[0] - dotX, collarCenter[1] - dotY);
+        const abs = [Math.abs(dotX), Math.abs(dotY), Math.abs(dotZ)];
+        const dominant = abs.indexOf(Math.max(...abs));
+        axis = [0, 0, 0];
+        axis[dominant] = 1;
+        facingFallback++;
       }
+
+      // Transverse centering: distance from the collar centre to the line through the snap along its axis
+      const rel = [collarCenter[0] - dotX, collarCenter[1] - dotY, collarCenter[2] - dotZ];
+      const along = rel[0] * axis[0] + rel[1] * axis[1] + rel[2] * axis[2];
+      const transverseOffset = Math.hypot(rel[0] - along * axis[0], rel[1] - along * axis[1], rel[2] - along * axis[2]);
 
       collarOffsetFromSnap = transverseOffset;
 
@@ -202,6 +230,7 @@ console.log(`Total Snap Points Tested:      ${totalSnapsAudited}`);
 console.log(`Snap Points on Outside Hull:   ${totalSnapsAudited - outsideHullIssues.length} / ${totalSnapsAudited} (${((totalSnapsAudited - outsideHullIssues.length) / totalSnapsAudited * 100).toFixed(1)}%)`);
 console.log(`Collar Connections Tested:     ${results.filter(r => r.isNearCollar).length}`);
 console.log(`Centered Collar Connections:   ${results.filter(r => r.isNearCollar && r.isCentered).length} / ${results.filter(r => r.isNearCollar).length} (${(results.filter(r => r.isNearCollar && r.isCentered).length / results.filter(r => r.isNearCollar).length * 100).toFixed(1)}%)`);
+console.log(`Collar Axis From Game Data:    ${facingFromGame} / ${facingFromGame + facingFallback} (rest: dominant-coordinate fallback, no component XML)`);
 
 console.log(`\n--- BREAKDOWN BY CATEGORY ---`);
 for (const [cat, s] of Object.entries(categoryStats)) {
