@@ -20,6 +20,7 @@ const viewerCode = [
   'src/viewer.js',
   'packages/adapter-three/src/models/binary-model-loader.js',
   'packages/adapter-three/src/models/collada-model-loader.js',
+  'packages/adapter-three/src/models/module-mesh-loader.js',
   'packages/adapter-three/src/textures/texture-resolver.js',
   'packages/adapter-three/src/materials/mesh-group-materials.js'
 ].map(f => fs.readFileSync(f, 'utf8')).join('\n');

@@ -7,3 +7,4 @@ export * from './modules-cost-db.js';
 export * from './modules.js';
 export * from './module-bounds-hashtable.js';
 export * from './snap-points-db.js';
+export * from './dae-asset-index.js';

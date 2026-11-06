@@ -11,7 +11,8 @@ const viewerSrc = [
   'src/viewer.js',
   'packages/adapter-three/src/materials/mesh-group-materials.js',
   'packages/adapter-three/src/models/binary-model-loader.js',
-  'packages/adapter-three/src/models/collada-model-loader.js'
+  'packages/adapter-three/src/models/collada-model-loader.js',
+  'packages/adapter-three/src/models/module-mesh-loader.js'
 ].map(f => fs.readFileSync(f, 'utf8')).join(String.fromCharCode(10));
 
 // 1. Verify DAE fast-path includes fx*

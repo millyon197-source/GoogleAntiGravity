@@ -16,7 +16,7 @@ globalThis.localStorage ??= { getItem: () => null, setItem() {}, removeItem() {}
 const THREE = await import('three');
 const { ColladaLoader } = await import('three/addons/loaders/ColladaLoader.js');
 const {
-  loadDdsTexture, loadBinaryModel, loadColladaModel, getRaceGlowColor, getRaceHullColor, applyTexturesToMeshGroup
+  loadDdsTexture, loadBinaryModel, loadColladaModel, getRaceGlowColor, getRaceHullColor, applyTexturesToMeshGroup, loadModuleMesh
 } = await import('@x4/adapter-three');
 const { StationViewer } = await import('../src/viewer.js');
 
@@ -145,6 +145,35 @@ function binaryHost() {
   assert.ok(light, 'forcefield adds a point light');
   assert.deepStrictEqual(host.animatedTextures.map(a => [a.speedX, a.speedY]), [[0.04, 0.015]], 'forcefield UV scroll registered on host');
   console.log('  ✓ applyTexturesToMeshGroup: forcefield materials, light and UV scroll via plain host');
+}
+
+// ---------------------------------------------------------------- loadModuleMesh
+{
+  const calls = { bin: [], dae: [], apply: [], log: [] };
+  const fakeScene = (name) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial()); m.name = name; g.add(m); return g; };
+  const host = {
+    glowingEmissiveIntensity: 2.2, animatedParts: [],
+    resolveModuleAssetEntry: (macro) => (macro === 'test_mod_macro'
+      ? { baseName: 'test_mod', folderPath: '/x/test_mod_data', defaultFiles: ['part_main-lod0.dae', 'anim_door-lod0.dae'] }
+      : { baseName: 'none', folderPath: null, defaultFiles: [] }),
+    getModuleActiveComponentFiles: (index, macro) => host.resolveModuleAssetEntry(macro).defaultFiles,
+    loadBinaryModel: async (binUrl) => { calls.bin.push(binUrl); return fakeScene('bin_part'); },
+    loadColladaModel: async (url) => { calls.dae.push(url); return fakeScene('dae_part'); },
+    applyTexturesToMeshGroup: async (group, url, idx) => { calls.apply.push([url.split('/').pop(), idx]); }
+  };
+  const options = { componentOffsets: { test_mod: { anim_door: [1, 2, 3] } }, log: (msg) => calls.log.push(msg) };
+  const root = await loadModuleMesh(host, { macro: 'test_mod_macro', index: 4 }, options);
+  assert.ok(root && root.isGroup, 'returns a module root group');
+  assert.ok(root.getObjectByName('module_mesh_group'), 'root contains module_mesh_group');
+  assert.deepStrictEqual(calls.bin, ['/x/test_mod_data/part_main-lod0.bin'], 'plain hull part uses the binary fast path');
+  assert.deepStrictEqual(calls.dae, ['/x/test_mod_data/anim_door-lod0.dae'], 'anim_* part is routed to the Collada loader');
+  assert.ok(calls.log.some(m => m.includes('Falling back to ColladaLoader') && m.includes('anim_door')), 'fallback logged through options.log');
+  assert.deepStrictEqual(calls.apply.map(c => c[1]), [4, 4], 'materials applied per component with the module index');
+  let door = null; root.traverse(o => { if (o.name === 'dae_part') door = o; });
+  assert.ok(door, 'Collada component present in the assembled module');
+  assert.ok(door.parent.position.equals(new THREE.Vector3(1, 2, 3)), 'componentOffsets applied to the component');
+  assert.strictEqual(await loadModuleMesh(host, { macro: 'unknown_macro', index: 0 }), null, 'module without assets returns null (default options)');
+  console.log('  ✓ loadModuleMesh: binary/Collada routing, offsets, logging and material application via plain host');
 }
 
 // ---------------------------------------------------------------- viewer delegates

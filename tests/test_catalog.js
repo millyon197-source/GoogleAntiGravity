@@ -4,6 +4,7 @@
  * same bindings.
  */
 import assert from 'assert';
+import fs from 'fs';
 import * as catalog from '@x4/catalog';
 import * as adapterThree from '@x4/adapter-three';
 import * as legacyModules from '../src/modules.js';
@@ -62,5 +63,31 @@ assert.ok(seen[0].href.endsWith('/packages/adapter-three/src/mesh/mesh-worker.js
 new adapterThree.MeshLoader('./custom-worker.js');
 assert.strictEqual(seen[1], './custom-worker.js', 'explicit worker path override is honoured');
 console.log('  ✓ adapter-three exposes rotation math, MeshLoader (co-located worker), ThreeCoordinator');
+
+// DAE asset index: injected table, murmur3 bucketing, faction -> gen/arg fallback
+{
+  const BUCKETS = 7;
+  const table = {};
+  const put = (key, folder, files) => {
+    const b = catalog.murmur3_32(key) % BUCKETS;
+    (table[b] ||= []).push({ key, folder_path: folder, files });
+  };
+  put('prod_gen_widgets', '/a/prod_gen_widgets_data', ['part_main-lod0.dae', 'fx_glow-lod0.dae']);
+  put('buildmodule_arg_equip_l', '/a/bm_arg_equip_l_data', ['part_main-lod0.dae']);
+  const idx = catalog.createDaeAssetIndex(table, { bucketCount: BUCKETS });
+
+  assert.deepStrictEqual(idx.lookupDaeUrls('prod_gen_widgets'),
+    ['/a/prod_gen_widgets_data/part_main-lod0.dae', '/a/prod_gen_widgets_data/fx_glow-lod0.dae']);
+  assert.deepStrictEqual(idx.lookupDaeUrls('missing'), []);
+  assert.deepStrictEqual(idx.resolveModuleAssetEntry('prod_gen_widgets_macro'),
+    { baseName: 'prod_gen_widgets', folderPath: '/a/prod_gen_widgets_data', defaultFiles: ['part_main-lod0.dae', 'fx_glow-lod0.dae'] });
+  assert.strictEqual(idx.resolveModuleAssetEntry('prod_tel_widgets_macro').baseName, 'prod_gen_widgets', 'faction falls back to gen');
+  assert.strictEqual(idx.resolveModuleAssetEntry('buildmodule_gen_equip_l_macro').baseName, 'buildmodule_arg_equip_l', 'gen equip maps to arg');
+  assert.deepStrictEqual(idx.resolveModuleAssetEntry('nothing_macro'), { baseName: 'nothing', folderPath: null, defaultFiles: [] });
+
+  const real = catalog.createDaeAssetIndex(JSON.parse(fs.readFileSync('dae_hash_table.json', 'utf8')));
+  assert.ok(real.resolveModuleAssetEntry('struct_arg_cross_01_macro').defaultFiles.length > 0, 'real table resolves a known module');
+  console.log('  ✓ createDaeAssetIndex: lookup, gen/arg fallbacks, real dae_hash_table');
+}
 
 console.log('\n[PASS] test_catalog');
