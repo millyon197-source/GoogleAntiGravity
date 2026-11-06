@@ -460,12 +460,27 @@ try {
   const resp = await fetch(serverUrl, { method: 'HEAD', signal: AbortSignal.timeout(1000) });
   if (!resp.ok) throw new Error('Not responding');
 } catch {
+  // Vite's dependency cache is keyed on NODE_ENV (tests/run-all.js sets it to 'test'), and sharing
+  // node_modules/.vite with dev servers made every switch re-optimize for ~40s, sometimes mid-test.
+  // Use a dedicated cache and a fixed NODE_ENV so this server's cache stays warm.
+  // open: false - vite.config.js sets open: true, which opened a tab in the user's browser on every
+  // run; those tabs then reconnected and reloaded the whole app whenever this server came up again.
+  // A fresh free port each run keeps any such stale tabs away from this server.
+  process.env.NODE_ENV = 'development';
+  const net = await import('node:net');
+  const freePort = await new Promise((resolve, reject) => {
+    const probe = net.createServer().once('error', reject).listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
   const { createServer } = await import('vite');
   server = await createServer({
-    server: { port: 3099 }
+    cacheDir: 'node_modules/.vite-billboard-test',
+    server: { port: freePort, open: false }
   });
   await server.listen();
-  serverUrl = 'http://localhost:3099';
+  serverUrl = server.resolvedUrls.local[0].replace(/\/$/, '');
 }
 
 const puppeteer = (await import('puppeteer')).default;
@@ -482,13 +497,22 @@ const browser = await puppeteer.launch(launchOptions);
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
-  await page.goto(serverUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-  await new Promise(r => setTimeout(r, 1500));
+  // Generous timeouts: a cold Vite dependency cache takes ~45s to build on first use
+  await page.goto(serverUrl, { waitUntil: 'networkidle2', timeout: 120000 });
+  // main.js shows "Loading..." in #plan-name from the start of a plan load until the viewer has
+  // finished it (camera fit, filters reset). Wait for the startup sample so the switch below does
+  // not overlap a load that is still running.
+  const planLoaded = () => window.viewer?.modulesGroup?.children.length > 0 &&
+    document.getElementById('sample-selector') &&
+    document.getElementById('plan-name')?.textContent !== 'Loading...';
+  await page.waitForFunction(planLoaded, { timeout: 90000, polling: 250 });
 
   await page.evaluate(async () => {
     const v = window.viewer;
     if (!v) return;
     v.setColorized(false);
+    // Tag modules from the startup sample so the wait below only accepts freshly loaded ones
+    v.modulesGroup.children.forEach(m => { m.userData.__beforeSampleSwitch = true; });
     const sel = document.getElementById('sample-selector');
     if (sel) {
       sel.value = 'defenseFortress';
@@ -496,12 +520,24 @@ try {
     }
   });
 
-  await new Promise(r => setTimeout(r, 3500));
+  // Wait until the whole defenseFortress plan has finished loading (it re-fits the camera and resets
+  // visibility at the end, which would undo the framing below) and Argon Cross 01 has its billboard mesh.
+  try {
+    await page.waitForFunction(() => {
+      if (document.getElementById('plan-name')?.textContent === 'Loading...') return false;
+      const mod = window.viewer?.modulesGroup?.children.find(m => m.userData?.macro === 'struct_arg_cross_01_macro' && !m.userData.__beforeSampleSwitch);
+      let ready = false;
+      mod?.traverse(c => { if (c.isMesh && c.name.includes('anim_arrows') && c.userData?.setBillboardState) ready = true; });
+      return ready;
+    }, { timeout: 90000, polling: 250 });
+  } catch (err) {
+    throw new Error(`struct_arg_cross_01 with its anim_arrows billboard did not load in the defenseFortress sample: ${err.message}`);
+  }
 
-  await page.evaluate(async () => {
+  const framed = await page.evaluate(async () => {
     const v = window.viewer;
     let mod = v.modulesGroup.children.find(m => m.userData?.macro === 'struct_arg_cross_01_macro');
-    if (!mod) return;
+    if (!mod) return false;
 
     v.setColorized(false);
 
@@ -557,9 +593,12 @@ try {
       }
     }
     v.renderScene();
+    return !!s1;
   });
+  assert.ok(framed, 'Camera must be framed on the struct_arg_cross_01 billboard_cross sign');
 
-  await new Promise(r => setTimeout(r, 800));
+  // Let the renderer present a couple of frames before capturing
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 
   const buf = await page.screenshot({ type: 'png' });
   const localPngPath = path.resolve('tests/test_struct_arg_cross_01_billboards.png');

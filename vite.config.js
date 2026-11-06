@@ -124,6 +124,8 @@ export default defineConfig({
     watch: {
       ignored: [
         '**/assets/**',
+        // ~32k extracted game files; watching them blocked server startup for ~40s
+        '**/assets1/**',
         '**/packages/catalog/src/custom-snap-points.json',
         '**/custom-snap-points.json',
         '**/src/part-main-offsets.json'
