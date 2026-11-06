@@ -23,6 +23,10 @@ for (const r of races) {
   }
 
   const snaps = SNAP_POINTS_DB[macro] || SNAP_POINTS_DB[macro + '_macro'];
+  if (!snaps) {
+    console.log(`\n=== ${macro} === no snap points in SNAP_POINTS_DB; skipped`);
+    continue;
+  }
   const snap004 = snaps.find(s => s.name.toLowerCase() === 'connectionsnap004' || s.name.toLowerCase() === 'con_snap_01');
 
   console.log(`\n=== ${macro} ===`);

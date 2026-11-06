@@ -56,5 +56,13 @@ for (const file of xmlFiles) {
 }
 
 console.log('Modules with non-zero part_main offsets:', Object.keys(partMainOffsets).length);
-fs.writeFileSync('src/part-main-offsets.json', JSON.stringify(partMainOffsets, null, 2), 'utf8');
-console.log('Wrote src/part-main-offsets.json');
+
+// This scan only covers the base-game assets. Entries for DLC modules (Split, Terran, ...) were merged
+// in from the extensions folder (see merge_offsets.js, which only prints), so keep every existing entry
+// and overwrite just the ones regenerated here; otherwise rerunning this would silently drop them.
+const outPath = 'src/part-main-offsets.json';
+const existing = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8')) : {};
+const merged = { ...existing, ...partMainOffsets };
+const kept = Object.keys(existing).filter(k => !(k in partMainOffsets)).length;
+fs.writeFileSync(outPath, JSON.stringify(merged, null, 2), 'utf8');
+console.log(`Wrote ${outPath} (${Object.keys(merged).length} entries; ${kept} kept from the existing file)`);
