@@ -17,32 +17,6 @@
       ]
     }
   ],
-  "prod_gen_missilecomponents_macro": [
-    {
-      "name": "ConnectionSnap001",
-      "pos": [
-        218.23,
-        -194.14,
-        -6.5
-      ]
-    },
-    {
-      "name": "ConnectionSnap002",
-      "pos": [
-        224.3,
-        -170.2,
-        392.49
-      ]
-    },
-    {
-      "name": "ConnectionSnap003",
-      "pos": [
-        200,
-        0,
-        -400
-      ]
-    }
-  ],
   "prod_gen_microchips_macro": [
     {
       "name": "ConnectionSnap001",
