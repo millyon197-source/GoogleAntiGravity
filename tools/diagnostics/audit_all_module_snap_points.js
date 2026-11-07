@@ -2,6 +2,7 @@ import fs from 'fs';
 import { SNAP_POINTS_DB, getModuleSnapPoints } from '../../src/snap-points-db.js';
 import { getModuleCategory } from '../../src/modules.js';
 import { createDaeAssetIndex } from '../../packages/catalog/src/index.js';
+import { readComponentSnaps, compareSnapTableWithGame } from '../snap-game-data.js';
 import DAE_HASH_TABLE from '../../dae_hash_table.json' with { type: 'json' };
 
 // Usage: node tools/diagnostics/audit_all_module_snap_points.js [--part-main-only]
@@ -77,31 +78,8 @@ function loadHullVertices(macro) {
 let hullPartsUsed = 0;
 let hullPartsWithoutGeometry = 0;
 
-/**
- * Reads snap connections from the module's game component file (<folder>/<name>.xml next to
- * <name>_data). A connection faces along its local +Z rotated by its offset quaternion (identity
- * when the quaternion is omitted). Tags are a space-separated list: "snap" marks a module docking
- * snap; "room_snap" marks where a room (e.g. room_gen_venturerroom_01) attaches inside another
- * structure, which has no docking collar.
- * Returns Map<connectionName, { facing: [x, y, z], isRoomSnap: boolean }> in X4 component space,
- * or null if the file is missing.
- */
-function readComponentSnapFacings(folderPath) {
-  const file = '.' + folderPath.replace(/_data$/, '') + '.xml';
-  if (!fs.existsSync(file)) return null;
-  const xml = fs.readFileSync(file, 'utf8');
-  const snaps = new Map();
-  for (const [, name, attrs, body] of xml.matchAll(/<connection name="([^"]+)"([^>]*)>([\s\S]*?)<\/connection>/g)) {
-    const tags = ((attrs.match(/tags="([^"]*)"/) || [])[1] || '').split(/\s+/);
-    const isSnap = tags.includes('snap');
-    const isRoomSnap = tags.includes('room_snap') && !isSnap;
-    if (!isSnap && !isRoomSnap) continue;
-    const q = body.match(/<quaternion qx="([-\d.Ee]+)" qy="([-\d.Ee]+)" qz="([-\d.Ee]+)" qw="([-\d.Ee]+)"/);
-    const [x, y, z, w] = q ? q.slice(1).map(Number) : [0, 0, 0, 1];
-    snaps.set(name, { facing: [2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)], isRoomSnap });
-  }
-  return snaps;
-}
+/** Snap connections of the component file next to a mesh folder (<folder>/<name>.xml beside <name>_data). */
+const readComponentSnapFacings = (folderPath) => readComponentSnaps('.' + folderPath.replace(/_data$/, '') + '.xml');
 
 let roomSnaps = 0;
 
@@ -322,6 +300,21 @@ if (offCenterIssues.length > 0) {
   offCenterIssues.slice(0, 10).forEach(issue => {
     console.log(`  - ${issue.macro} [${issue.snapName}]: DB=[${issue.posInDB}], collarOffset=${issue.collarOffsetFromSnap.toFixed(1)}m`);
   });
+}
+
+// Game data: does every table entry match the game component file?
+const gameCheck = compareSnapTableWithGame(allMacros, getModuleSnapPoints);
+const checkedTotal = gameCheck.own + gameCheck.referenced;
+console.log(`\n--- SNAP TABLE vs GAME COMPONENT FILES ---`);
+console.log(`  Modules matching their game file: ${checkedTotal - gameCheck.mismatches.length} / ${checkedTotal}` +
+  ` (${gameCheck.own} with their own component, ${gameCheck.referenced} built on another module's component)`);
+console.log(`  Modules without a game file:      ${gameCheck.noFile.length}${gameCheck.noFile.length ? ' (' + gameCheck.noFile.join(', ') + ')' : ''}`);
+if (gameCheck.mismatches.length > 0) {
+  console.log(`\n[!] Modules that differ from the game file (${gameCheck.mismatches.length}):`);
+  for (const m of gameCheck.mismatches) {
+    console.log(`  - ${m.module}${m.source === 'own' ? '' : ` (uses ${m.source})`}:`);
+    for (const p of m.problems) console.log(`      ${p}`);
+  }
 }
 
 console.log(`\n==================================================\n`);
