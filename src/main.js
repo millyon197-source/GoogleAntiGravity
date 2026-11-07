@@ -20,6 +20,7 @@ import { getResourceMetadata } from './app/resource-metadata.js';
 import { setPanelCollapsed, setupStructureAnalysisCollapseHandlers } from './app/panel-collapse.js';
 import { initCenterModulesModal, setupCenterModulesModalEvents } from './app/center-modules-modal.js';
 import { clearBuildAnimator, initBuildAnimator, resetAnimator, setupBuildAnimatorControls } from './app/build-animator.js';
+import { warnIfGameAssetsMissing } from './app/game-assets-check.js';
 export { exportCurrentPlanAsBlueprint } from './app/blueprint-export.js';
 export { historyManager, undoList, collapseUndoHistory, recordMove, updateUndoButtonUI, performUndo } from './app/undo-history.js';
 
@@ -95,6 +96,9 @@ function initApp() {
   });
   compositionRoot.setViewer(viewer);
   window.viewer = viewer;
+
+  // The X4 game assets are not distributed with the app; explain if they are missing
+  warnIfGameAssetsMissing().catch((err) => console.warn('[!] Game asset check failed:', err));
 
   // Handle real-time continuous movement from 3D axis translation arrows
   viewer.onModuleMoved = (index, pos, isFinal) => {

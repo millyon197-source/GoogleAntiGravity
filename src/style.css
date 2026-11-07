@@ -1796,6 +1796,14 @@ select:hover, select:focus {
   margin-bottom: 12px;
 }
 
+/* Technical detail line in the "X4 game assets not found" pop-up */
+.missing-assets-detail {
+  font-family: monospace;
+  font-size: 0.68rem;
+  opacity: 0.75;
+  overflow-wrap: anywhere;
+}
+
 #xml-paste-text {
   width: 100%;
   height: 240px;
