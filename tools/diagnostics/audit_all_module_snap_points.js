@@ -7,24 +7,32 @@ const daeEntries = DAE_HASH_TABLE.flat();
 const allMacros = Object.keys(SNAP_POINTS_DB);
 
 /**
- * Reads snap connection facings from the module's game component file
- * (<folder>/<name>.xml next to <name>_data). A connection faces along its local +Z
- * rotated by its offset quaternion (identity when the quaternion is omitted).
- * Returns Map<connectionName, [x, y, z]> in X4 component space, or null if the file is missing.
+ * Reads snap connections from the module's game component file (<folder>/<name>.xml next to
+ * <name>_data). A connection faces along its local +Z rotated by its offset quaternion (identity
+ * when the quaternion is omitted). Tags are a space-separated list: "snap" marks a module docking
+ * snap; "room_snap" marks where a room (e.g. room_gen_venturerroom_01) attaches inside another
+ * structure, which has no docking collar.
+ * Returns Map<connectionName, { facing: [x, y, z], isRoomSnap: boolean }> in X4 component space,
+ * or null if the file is missing.
  */
 function readComponentSnapFacings(folderPath) {
   const file = '.' + folderPath.replace(/_data$/, '') + '.xml';
   if (!fs.existsSync(file)) return null;
   const xml = fs.readFileSync(file, 'utf8');
-  const facings = new Map();
-  const connectionRe = /<connection name="([^"]+)"[^>]*tags="[^"]*\bsnap\b[^"]*"[^>]*>([\s\S]*?)<\/connection>/g;
-  for (const [, name, body] of xml.matchAll(connectionRe)) {
+  const snaps = new Map();
+  for (const [, name, attrs, body] of xml.matchAll(/<connection name="([^"]+)"([^>]*)>([\s\S]*?)<\/connection>/g)) {
+    const tags = ((attrs.match(/tags="([^"]*)"/) || [])[1] || '').split(/\s+/);
+    const isSnap = tags.includes('snap');
+    const isRoomSnap = tags.includes('room_snap') && !isSnap;
+    if (!isSnap && !isRoomSnap) continue;
     const q = body.match(/<quaternion qx="([-\d.Ee]+)" qy="([-\d.Ee]+)" qz="([-\d.Ee]+)" qw="([-\d.Ee]+)"/);
     const [x, y, z, w] = q ? q.slice(1).map(Number) : [0, 0, 0, 1];
-    facings.set(name, [2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)]);
+    snaps.set(name, { facing: [2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)], isRoomSnap });
   }
-  return facings;
+  return snaps;
 }
+
+let roomSnaps = 0;
 
 let facingFromGame = 0;
 let facingFallback = 0;
@@ -130,8 +138,12 @@ for (const macro of allMacros) {
       }
     }
 
-    // A collar connection has a circular or polygonal flange of vertices
-    const isNearCollar = collarVerts.length >= 16;
+    // A collar connection has a circular or polygonal flange of vertices.
+    // Room attachment points ("room_snap") are not docking collars, so they skip the collar check.
+    const gameSnap = snapFacings?.get(snap.name);
+    const isRoomSnap = !!gameSnap?.isRoomSnap;
+    if (isRoomSnap) roomSnaps++;
+    const isNearCollar = !isRoomSnap && collarVerts.length >= 16;
     let collarCenter = null;
     let collarOffsetFromSnap = null;
     let isCentered = true;
@@ -156,7 +168,7 @@ for (const macro of allMacros) {
       // Connection axis: the snap's real facing from the game component file, mapped into the
       // viewer frame like positions are (-x, y, z). Without component data (e.g. Terran modules
       // whose XML is not extracted), fall back to the snap position's dominant coordinate.
-      const gameFacing = snapFacings?.get(snap.name);
+      const gameFacing = gameSnap?.facing;
       let axis;
       if (gameFacing) {
         axis = [-gameFacing[0], gameFacing[1], gameFacing[2]];
@@ -211,7 +223,8 @@ for (const macro of allMacros) {
       collarCenter,
       collarOffsetFromSnap,
       isCentered,
-      isOnOutsideHull
+      isOnOutsideHull,
+      isRoomSnap
     });
   }
 }
@@ -231,6 +244,7 @@ console.log(`Snap Points on Outside Hull:   ${totalSnapsAudited - outsideHullIss
 console.log(`Collar Connections Tested:     ${results.filter(r => r.isNearCollar).length}`);
 console.log(`Centered Collar Connections:   ${results.filter(r => r.isNearCollar && r.isCentered).length} / ${results.filter(r => r.isNearCollar).length} (${(results.filter(r => r.isNearCollar && r.isCentered).length / results.filter(r => r.isNearCollar).length * 100).toFixed(1)}%)`);
 console.log(`Collar Axis From Game Data:    ${facingFromGame} / ${facingFromGame + facingFallback} (rest: dominant-coordinate fallback, no component XML)`);
+console.log(`Room Attachment Snaps:         ${roomSnaps} (tagged room_snap; attach rooms inside structures, no collar check)`);
 
 console.log(`\n--- BREAKDOWN BY CATEGORY ---`);
 for (const [cat, s] of Object.entries(categoryStats)) {
