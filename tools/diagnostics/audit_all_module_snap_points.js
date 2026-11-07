@@ -1,10 +1,81 @@
 import fs from 'fs';
 import { SNAP_POINTS_DB, getModuleSnapPoints } from '../../src/snap-points-db.js';
 import { getModuleCategory } from '../../src/modules.js';
+import { createDaeAssetIndex } from '../../packages/catalog/src/index.js';
 import DAE_HASH_TABLE from '../../dae_hash_table.json' with { type: 'json' };
 
-const daeEntries = DAE_HASH_TABLE.flat();
+// Usage: node tools/diagnostics/audit_all_module_snap_points.js [--part-main-only]
+//   --part-main-only  measure against part_main alone (the audit's behaviour before all hull parts were loaded)
+const PART_MAIN_ONLY = process.argv.includes('--part-main-only');
+
+const assetIndex = createDaeAssetIndex(DAE_HASH_TABLE);
 const allMacros = Object.keys(SNAP_POINTS_DB);
+const componentOffsets = JSON.parse(fs.readFileSync('src/component-offsets.json', 'utf8'));
+
+// Parts that are not solid hull: effects, animated pieces, lights, decals, signs, shadow casters and
+// invisible helpers (trigger zones, bounding boxes, character dummies, collision meshes).
+const NON_HULL_PART = /^(fx|anim)|decal|light|billboard|^ads|sign|shadow|trigger|bounding|dummy|collision/;
+
+/**
+ * Hull vertices of a module in the viewer's module frame, placed the way adapter-three's
+ * loadModuleMesh places them: each default part at its component-offsets.json position/rotation,
+ * all inside a group at (-x, y, z) of the part_main offset. Uses the pre-converted <part>-lod0.bin
+ * geometry; parts without it are listed in `skipped`. Returns null when part_main is unavailable.
+ */
+function loadHullVertices(macro) {
+  const { baseName, folderPath, defaultFiles } = assetIndex.resolveModuleAssetEntry(macro);
+  if (!folderPath) return null;
+  const [ox, oy, oz] = partMainOffsets[baseName] || [0, 0, 0];
+  const files = PART_MAIN_ONLY ? ['part_main-lod0.dae'] : defaultFiles;
+  const chunks = [];
+  const used = [];
+  const skipped = [];
+  for (const file of files) {
+    const partBase = file.replace(/-lod\d+\.dae$/i, '').toLowerCase();
+    if (partBase !== 'part_main' && NON_HULL_PART.test(partBase)) continue;
+    const jsonPath = `.${folderPath}/${file.replace(/\.dae$/i, '.json')}`;
+    const binPath = jsonPath.replace(/\.json$/, '.bin');
+    if (!fs.existsSync(jsonPath) || !fs.existsSync(binPath)) { skipped.push(partBase); continue; }
+    const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const buf = fs.readFileSync(binPath);
+    const stride = meta.vertexStrideBytes / 4;
+    const floats = new Float32Array(buf.buffer, buf.byteOffset, meta.vertexCount * stride);
+
+    // Same lookup as loadModuleMesh (including its hab_arg_l_01 fallback)
+    let off = componentOffsets[baseName]?.[partBase];
+    if (!off && folderPath.toLowerCase().includes('hab_arg_l_01')) off = componentOffsets.hab_arg_l_01?.[partBase];
+    const pos = Array.isArray(off) ? off.slice(0, 3) : off?.position || [0, 0, 0];
+    const quat = Array.isArray(off) ? (off.length >= 7 ? off.slice(3, 7) : [0, 0, 0, 1]) : off?.quaternion || [0, 0, 0, 1];
+    const [qx, qy, qz, qw] = quat;
+
+    const out = new Float64Array(meta.vertexCount * 3);
+    for (let i = 0; i < meta.vertexCount; i++) {
+      const vx = floats[i * stride], vy = floats[i * stride + 1], vz = floats[i * stride + 2];
+      // rotate by the quaternion: v + 2w(q x v) + 2 q x (q x v)
+      const tx = 2 * (qy * vz - qz * vy), ty = 2 * (qz * vx - qx * vz), tz = 2 * (qx * vy - qy * vx);
+      out[i * 3] = vx + qw * tx + (qy * tz - qz * ty) + pos[0] - ox;
+      out[i * 3 + 1] = vy + qw * ty + (qz * tx - qx * tz) + pos[1] + oy;
+      out[i * 3 + 2] = vz + qw * tz + (qx * ty - qy * tx) + pos[2] + oz;
+    }
+    chunks.push({ out, structural: partBase === 'part_main' });
+    used.push(partBase);
+  }
+  if (!used.includes('part_main')) return null;
+  const total = chunks.reduce((n, c) => n + c.out.length, 0);
+  const pts = new Float64Array(total);
+  // 1 for part_main vertices (used for the collar sample), 0 for every other hull part
+  const structural = new Uint8Array(total / 3);
+  let at = 0;
+  for (const c of chunks) {
+    pts.set(c.out, at);
+    if (c.structural) structural.fill(1, at / 3, (at + c.out.length) / 3);
+    at += c.out.length;
+  }
+  return { pts, structural, folderPath, used, skipped };
+}
+
+let hullPartsUsed = 0;
+let hullPartsWithoutGeometry = 0;
 
 /**
  * Reads snap connections from the module's game component file (<folder>/<name>.xml next to
@@ -53,28 +124,19 @@ let results = [];
 const categoryStats = {};
 
 for (const macro of allMacros) {
-  const baseKey = macro.replace('_macro', '');
-  const entry = daeEntries.find(e => e.key === baseKey || e.key === macro);
-  if (!entry) {
+  const hull = loadHullVertices(macro);
+  if (!hull) {
     noMeshCount++;
     continue;
   }
-  const folder = '.' + entry.folder_path;
-  const jsonPath = folder + '/part_main-lod0.json';
-  const binPath = folder + '/part_main-lod0.bin';
-  if (!fs.existsSync(jsonPath) || !fs.existsSync(binPath)) {
-    noMeshCount++;
-    continue;
-  }
-
-  const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-  const buf = fs.readFileSync(binPath);
-  const floats = new Float32Array(buf.buffer, buf.byteOffset, meta.vertexCount * (meta.vertexStrideBytes / 4));
-  const stride = meta.vertexStrideBytes / 4;
+  const { pts, structural } = hull;
+  const vertexCount = pts.length / 3;
 
   const snaps = getModuleSnapPoints(macro);
   if (!snaps || snaps.length === 0) continue;
-  const snapFacings = readComponentSnapFacings(entry.folder_path);
+  const snapFacings = readComponentSnapFacings(hull.folderPath);
+  hullPartsUsed += hull.used.length;
+  hullPartsWithoutGeometry += hull.skipped.length;
 
   auditedModules++;
   const category = getModuleCategory(macro);
@@ -83,26 +145,18 @@ for (const macro of allMacros) {
   }
   categoryStats[category].modules++;
 
-  // part_main offset from part-main-offsets.json (1-dock harbor_02 piers have their own entries there;
-  // the former getOneDockPierMeshOffset special case never existed in src/ and is not used by the renderer)
-  const xmlOffset = partMainOffsets[baseKey] || [0, 0, 0];
+  // Hull vertices are already in the viewer's module frame (see loadHullVertices); snap dots are
+  // placed at (-x, y, z) of their DB position, as viewer.buildModuleSnapPoints does.
 
-  // Work in the renderer's module-local frame (adapter-three loadModuleMesh + viewer.buildModuleSnapPoints):
-  // part_main vertices are used as-is inside a group placed at (-x, y, z) of the part_main offset,
-  // and snap dots are placed at (-x, y, z) of their DB position.
-  const offsetX = -xmlOffset[0];
-  const offsetY = xmlOffset[1];
-  const offsetZ = xmlOffset[2];
-
-  // Compute mesh bounds in component space
+  // Compute mesh bounds in the module frame
   let minX = Infinity, maxX = -Infinity;
   let minY = Infinity, maxY = -Infinity;
   let minZ = Infinity, maxZ = -Infinity;
 
-  for (let i = 0; i < meta.vertexCount; i++) {
-    const vx = floats[i * stride] + offsetX;
-    const vy = floats[i * stride + 1] + offsetY;
-    const vz = floats[i * stride + 2] + offsetZ;
+  for (let i = 0; i < vertexCount; i++) {
+    const vx = pts[i * 3];
+    const vy = pts[i * 3 + 1];
+    const vz = pts[i * 3 + 2];
     minX = Math.min(minX, vx); maxX = Math.max(maxX, vx);
     minY = Math.min(minY, vy); maxY = Math.max(maxY, vy);
     minZ = Math.min(minZ, vz); maxZ = Math.max(maxZ, vz);
@@ -117,20 +171,20 @@ for (const macro of allMacros) {
     const dotY = snap.pos[1];
     const dotZ = snap.pos[2];
     let closestDist = Infinity;
-    for (let i = 0; i < meta.vertexCount; i++) {
-      const vx = floats[i * stride] + offsetX;
-      const vy = floats[i * stride + 1] + offsetY;
-      const vz = floats[i * stride + 2] + offsetZ;
-      const d = Math.hypot(vx - dotX, vy - dotY, vz - dotZ);
+    for (let i = 0; i < vertexCount; i++) {
+      const d = Math.hypot(pts[i * 3] - dotX, pts[i * 3 + 1] - dotY, pts[i * 3 + 2] - dotZ);
       if (d < closestDist) closestDist = d;
     }
 
-    // Identify collar vertices in a sphere of radius 60m around the snap point
+    // Identify collar vertices in a sphere of radius 60m around the snap point. Only part_main
+    // counts: adding the other hull parts (detail_* add-ons, part_main_techcubes, ...) skews the
+    // sample's centre and flagged 14 well-placed collars. The hull check above uses every part.
     let collarVerts = [];
-    for (let i = 0; i < meta.vertexCount; i++) {
-      const vx = floats[i * stride] + offsetX;
-      const vy = floats[i * stride + 1] + offsetY;
-      const vz = floats[i * stride + 2] + offsetZ;
+    for (let i = 0; i < vertexCount; i++) {
+      if (!structural[i]) continue;
+      const vx = pts[i * 3];
+      const vy = pts[i * 3 + 1];
+      const vz = pts[i * 3 + 2];
 
       const dist = Math.hypot(vx - dotX, vy - dotY, vz - dotZ);
       if (dist <= 60) {
@@ -245,6 +299,9 @@ console.log(`Collar Connections Tested:     ${results.filter(r => r.isNearCollar
 console.log(`Centered Collar Connections:   ${results.filter(r => r.isNearCollar && r.isCentered).length} / ${results.filter(r => r.isNearCollar).length} (${(results.filter(r => r.isNearCollar && r.isCentered).length / results.filter(r => r.isNearCollar).length * 100).toFixed(1)}%)`);
 console.log(`Collar Axis From Game Data:    ${facingFromGame} / ${facingFromGame + facingFallback} (rest: dominant-coordinate fallback, no component XML)`);
 console.log(`Room Attachment Snaps:         ${roomSnaps} (tagged room_snap; attach rooms inside structures, no collar check)`);
+console.log(PART_MAIN_ONLY
+  ? 'Hull Geometry:                 part_main only (--part-main-only)'
+  : `Hull Geometry:                 ${hullPartsUsed} hull parts measured; ${hullPartsWithoutGeometry} skipped (no converted .bin geometry)`);
 
 console.log(`\n--- BREAKDOWN BY CATEGORY ---`);
 for (const [cat, s] of Object.entries(categoryStats)) {
