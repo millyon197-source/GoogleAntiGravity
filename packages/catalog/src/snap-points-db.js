@@ -5649,6 +5649,123 @@ Object.assign(SNAP_POINTS_DB, {
   ]
 });
 
+// Official Split DLC Snap Points (from the ego_dlc_split component files)
+Object.assign(SNAP_POINTS_DB, {
+  "struct_spl_base_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 200] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -200] }
+  ],
+  "struct_spl_base_02_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] }
+  ],
+  "struct_spl_base_03_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 800] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -800] },
+    { "name": "ConnectionSnap003", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap004", "pos": [0, 200, 0] }
+  ],
+  "struct_spl_cross_01_macro": [
+    { "name": "ConnectionSnap002", "pos": [0, 0, -200] },
+    { "name": "ConnectionSnap003", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap004", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap005", "pos": [-173.21, 0, 100] },
+    { "name": "ConnectionSnap001", "pos": [173.21, 0, 100] }
+  ],
+  "struct_spl_vertical_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, -200, 0] }
+  ],
+  "struct_spl_vertical_02_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, -400, 0] }
+  ],
+  "defence_spl_claim_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [800, 0, 0] },
+    { "name": "ConnectionSnap002", "pos": [-400, 0, 692.82] },
+    { "name": "ConnectionSnap003", "pos": [-400, 0, -692.82] }
+  ],
+  "defence_spl_disc_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, -300] },
+    { "name": "ConnectionSnap002", "pos": [-259.81, 0, 150] },
+    { "name": "ConnectionSnap003", "pos": [259.81, 0, 150] }
+  ],
+  "defence_spl_tube_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, -200] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, 200] }
+  ],
+  "pier_spl_harbor_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [600, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap008", "pos": [0, -200, 0] }
+  ],
+  "pier_spl_harbor_02_macro": [
+    { "name": "ConnectionSnap001", "pos": [200, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap008", "pos": [0, -200, 0] }
+  ],
+  "pier_spl_harbor_03_macro": [
+    { "name": "ConnectionSnap001", "pos": [200, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap008", "pos": [0, -200, 0] }
+  ],
+  "hab_spl_l_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 800, 0] }
+  ],
+  "hab_spl_m_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "hab_spl_s_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "prod_spl_cheltmeat_macro": [
+    { "name": "ConnectionSnap001", "pos": [-400, 0, 0] },
+    { "name": "ConnectionSnap002", "pos": [400, 0, 0] }
+  ],
+  "prod_spl_scruffinfruit_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 1000] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -1000] },
+    { "name": "ConnectionSnap003", "pos": [-600, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [600, 0, 0] }
+  ],
+  "storage_spl_l_container_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 800, 0] }
+  ],
+  "storage_spl_l_liquid_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 800, 0] }
+  ],
+  "storage_spl_l_solid_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 800, 0] }
+  ],
+  "storage_spl_m_container_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "storage_spl_m_liquid_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "storage_spl_m_solid_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -400, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "storage_spl_s_container_01_macro": [
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "storage_spl_s_liquid_01_macro": [
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ],
+  "storage_spl_s_solid_01_macro": [
+    { "name": "ConnectionSnap002", "pos": [0, 400, 0] }
+  ]
+});
+
 /**
  * Retrieve snap points for a given macro name, with fallback to local bounding face centers if needed.
  *
