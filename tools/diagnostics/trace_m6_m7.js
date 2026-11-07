@@ -15,5 +15,5 @@ const m7 = modMap.get(7);
 console.log('M6:', m6);
 console.log('M7:', m7);
 
-console.log('M6 snaps:', SNAP_POINTS_DB['struct_arg_cross_01']);
-console.log('M7 snaps:', SNAP_POINTS_DB['hab_arg_l_01']);
+console.log('M6 snaps:', SNAP_POINTS_DB['struct_arg_cross_01_macro']);
+console.log('M7 snaps:', SNAP_POINTS_DB['hab_arg_l_01_macro']);

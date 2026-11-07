@@ -14,5 +14,5 @@ console.log('M1:', m1);
 console.log('M2:', m2);
 console.log('M3:', m3);
 
-console.log('M1 snaps:', SNAP_POINTS_DB['defence_arg_claim_01']);
-console.log('M2 snaps:', SNAP_POINTS_DB['dockarea_arg_m_station_02_hightech']);
+console.log('M1 snaps:', SNAP_POINTS_DB['defence_arg_claim_01_macro']);
+console.log('M2 snaps:', SNAP_POINTS_DB['dockarea_arg_m_station_02_hightech_macro']);
