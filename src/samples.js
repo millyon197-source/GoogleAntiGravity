@@ -47,81 +47,125 @@ export const SAMPLES = {
   defenseFortress: `<?xml version="1.0" encoding="UTF-8"?>
 <plans>
   <plan id="defense_fort_xenon_border" name="Xenon Border Defense Citadel" description="Heavy military fortress designed to secure gate choke-points. Features 1 Admin Center, 6 Defense discs with gun turrets, 1 Docking pier, storage for ammunition, and structural towers.">
-    <!-- Administration Center -->
-    <entry index="1" macro="struct_arg_base_01_macro">
-      <position x="0" y="0" z="0"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Cross hub -->
+    <entry index="1" macro="struct_arg_cross_01_macro">
+      <offset>
+        <position x="0" y="0" z="0"/>
+      </offset>
     </entry>
-    
-    <!-- Dock Area -->
-    <entry index="2" macro="dockarea_arg_m_station_01_macro">
-      <position x="0" y="0" z="-140"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Administration centre -->
+    <entry index="2" macro="struct_arg_base_01_macro" connection="connectionsnap001">
+      <predecessor index="1" connection="connectionsnap002"/>
+      <offset>
+        <position x="0" y="0" z="-400"/>
+      </offset>
     </entry>
-
-    <!-- Cross Hub and Ammo Storage -->
-    <entry index="3" macro="struct_arg_cross_01_macro">
-      <position x="0" y="0" z="120"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Dock area -->
+    <entry index="3" macro="dockarea_arg_m_station_01_macro" connection="connectionsnap001">
+      <predecessor index="2" connection="connectionsnap002"/>
+      <offset>
+        <position x="0" y="0" z="-800"/>
+      </offset>
     </entry>
-    <entry index="4" macro="storage_arg_m_container_01_macro">
-      <position x="0" y="100" z="120"/>
-      <rotation yaw="0" pitch="90" roll="0"/>
+    <!-- Ammunition storage -->
+    <entry index="4" macro="storage_arg_m_container_01_macro" connection="connectionsnap002">
+      <predecessor index="1" connection="connectionsnap001"/>
+      <offset>
+        <position x="0" y="0" z="600"/>
+      </offset>
     </entry>
-
-    <!-- East Wing (Defense Tower 1) -->
-    <entry index="5" macro="struct_arg_vertical_02_macro">
-      <position x="100" y="0" z="120"/>
-      <rotation yaw="-90" pitch="0" roll="0"/>
+    <!-- Hub arm (starboard) -->
+    <entry index="5" macro="struct_arg_vertical_02_macro" connection="connectionsnap002">
+      <predecessor index="1" connection="connectionsnap004"/>
+      <offset>
+        <position x="600" y="0" z="0"/>
+        <rotation roll="90"/>
+      </offset>
     </entry>
-    <entry index="6" macro="struct_arg_vertical_01_macro">
-      <position x="200" y="0" z="120"/>
-      <rotation yaw="-90" pitch="0" roll="0"/>
+    <!-- Defence disc (hub starboard) -->
+    <entry index="6" macro="defence_arg_disc_01_macro" connection="connectionsnap004">
+      <predecessor index="5" connection="connectionsnap001"/>
+      <offset>
+        <position x="1200" y="0" z="0"/>
+      </offset>
     </entry>
-    <entry index="7" macro="defence_arg_disc_01_macro">
-      <position x="320" y="0" z="120"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Hub arm (port) -->
+    <entry index="7" macro="struct_arg_vertical_02_macro" connection="connectionsnap002">
+      <predecessor index="1" connection="connectionsnap003"/>
+      <offset>
+        <position x="-600" y="0" z="0"/>
+        <rotation roll="-90"/>
+      </offset>
     </entry>
-    <entry index="8" macro="defence_arg_disc_01_macro">
-      <position x="200" y="0" z="240"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Defence disc (hub port) -->
+    <entry index="8" macro="defence_arg_disc_01_macro" connection="connectionsnap004">
+      <predecessor index="7" connection="connectionsnap001"/>
+      <offset>
+        <position x="-1200" y="0" z="0"/>
+        <rotation yaw="180"/>
+      </offset>
     </entry>
-
-    <!-- West Wing (Defense Tower 2) -->
-    <entry index="9" macro="struct_arg_vertical_02_macro">
-      <position x="-100" y="0" z="120"/>
-      <rotation yaw="90" pitch="0" roll="0"/>
+    <!-- Tower (top) -->
+    <entry index="9" macro="struct_arg_vertical_01_macro" connection="connectionsnap002">
+      <predecessor index="1" connection="connectionsnap006"/>
+      <offset>
+        <position x="0" y="400" z="0"/>
+      </offset>
     </entry>
-    <entry index="10" macro="struct_arg_vertical_01_macro">
-      <position x="-200" y="0" z="120"/>
-      <rotation yaw="90" pitch="0" roll="0"/>
+    <!-- Defence disc (top) -->
+    <entry index="10" macro="defence_arg_disc_01_macro" connection="connectionsnap002">
+      <predecessor index="9" connection="connectionsnap001"/>
+      <offset>
+        <position x="0" y="800" z="0"/>
+        <rotation pitch="90"/>
+      </offset>
     </entry>
-    <entry index="11" macro="defence_arg_disc_01_macro">
-      <position x="-320" y="0" z="120"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Tower (bottom) -->
+    <entry index="11" macro="struct_arg_vertical_01_macro" connection="connectionsnap002">
+      <predecessor index="1" connection="connectionsnap005"/>
+      <offset>
+        <position x="0" y="-400" z="0"/>
+        <rotation roll="180"/>
+      </offset>
     </entry>
-    <entry index="12" macro="defence_arg_disc_01_macro">
-      <position x="-200" y="0" z="240"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Defence disc (bottom) -->
+    <entry index="12" macro="defence_arg_disc_01_macro" connection="connectionsnap002">
+      <predecessor index="11" connection="connectionsnap001"/>
+      <offset>
+        <position x="0" y="-800" z="0"/>
+        <rotation pitch="-90"/>
+      </offset>
     </entry>
-
-    <!-- Top and Bottom Outer Defense Rings -->
-    <entry index="13" macro="struct_arg_vertical_01_macro">
-      <position x="0" y="200" z="120"/>
-      <rotation yaw="0" pitch="0" roll="90"/>
+    <!-- Dock flank (starboard) -->
+    <entry index="13" macro="struct_arg_vertical_01_macro" connection="connectionsnap002">
+      <predecessor index="3" connection="connectionsnap003"/>
+      <offset>
+        <position x="400.04" y="0" z="-800.04"/>
+        <rotation roll="90"/>
+      </offset>
     </entry>
-    <entry index="14" macro="defence_arg_disc_01_macro">
-      <position x="0" y="320" z="120"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Defence disc (dock starboard) -->
+    <entry index="14" macro="defence_arg_disc_01_macro" connection="connectionsnap004">
+      <predecessor index="13" connection="connectionsnap001"/>
+      <offset>
+        <position x="800.04" y="0" z="-800.04"/>
+      </offset>
     </entry>
-    
-    <entry index="15" macro="struct_arg_vertical_01_macro">
-      <position x="0" y="-200" z="120"/>
-      <rotation yaw="0" pitch="0" roll="-90"/>
+    <!-- Dock flank (port) -->
+    <entry index="15" macro="struct_arg_vertical_01_macro" connection="connectionsnap002">
+      <predecessor index="3" connection="connectionsnap004"/>
+      <offset>
+        <position x="-399.96" y="0" z="-799.96"/>
+        <rotation roll="-90"/>
+      </offset>
     </entry>
-    <entry index="16" macro="defence_arg_disc_01_macro">
-      <position x="0" y="-320" z="120"/>
-      <rotation yaw="0" pitch="0" roll="0"/>
+    <!-- Defence disc (dock port) -->
+    <entry index="16" macro="defence_arg_disc_01_macro" connection="connectionsnap004">
+      <predecessor index="15" connection="connectionsnap001"/>
+      <offset>
+        <position x="-799.96" y="0" z="-799.96"/>
+        <rotation yaw="180"/>
+      </offset>
     </entry>
   </plan>
 </plans>`,
