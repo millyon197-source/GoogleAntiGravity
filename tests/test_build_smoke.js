@@ -72,11 +72,7 @@ try {
   const consoleErrors = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
   page.on('console', (msg) => {
-    if (msg.type() !== 'error') return;
-    const where = msg.location()?.url || '';
-    // The app has no favicon; Chrome's automatic /favicon.ico request 404s in dev and build alike
-    if (/\/favicon\.ico$/.test(where)) return;
-    consoleErrors.push(`${msg.text()} ${where}`.trim());
+    if (msg.type() === 'error') consoleErrors.push(`${msg.text()} ${msg.location()?.url || ''}`.trim());
   });
 
   await page.goto(url, { waitUntil: 'load', timeout: 60000 });
@@ -95,6 +91,13 @@ try {
   assert.deepStrictEqual(pageErrors, [], `uncaught errors in the built app: ${pageErrors.join(' | ')}`);
   assert.deepStrictEqual(consoleErrors, [], `console errors in the built app: ${consoleErrors.join(' | ')}`);
   assert.ok(state2.modules > 0, 'default plan has modules');
+  const icon = await page.evaluate(async () => {
+    const href = document.querySelector('link[rel="icon"]')?.href;
+    if (!href) return { href: null };
+    const r = await fetch(href);
+    return { href, status: r.status, type: r.headers.get('content-type') };
+  });
+  assert.ok(icon.href && icon.status === 200 && /svg/.test(icon.type || ''), `favicon served from the build: ${JSON.stringify(icon)}`);
   assert.strictEqual(state2.popup, true, 'missing-assets pop-up shown (a build has no game assets)');
   assert.strictEqual(state2.assetsMissing, true, 'viewer knows the assets are missing');
   console.log(`  ✓ built app starts without errors and loads "${state2.plan}" (${state2.modules} placeholder modules)`);
