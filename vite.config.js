@@ -114,8 +114,10 @@ export default defineConfig({
             { name: 'three-addons', test: /node_modules[\\/]three[\\/]examples[\\/]/, priority: 30 },
             { name: 'three-core', test: /node_modules[\\/]three[\\/]/, priority: 20 },
             { name: 'x4-databases', test: /snap-points-db|modules-cost-db|dae_hash_table|module-bounds-hashtable/, priority: 10 },
-            { name: 'x4-samples', test: /[\\/]samples\.js$/, priority: 10 },
-            { name: 'blueprint-exporter', test: /blueprint-exporter\.js$/, priority: 10 }
+            { name: 'x4-samples', test: /[\\/]samples\.js$/, priority: 10 }
+            // No group for blueprint-exporter.js: the main chunk imports it statically and it extends
+            // a class from the main chunk, so a separate chunk formed an import cycle and the built
+            // app failed at start-up ("Class extends value undefined").
           ]
         }
       }
