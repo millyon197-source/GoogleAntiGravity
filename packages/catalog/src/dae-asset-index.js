@@ -1,4 +1,6 @@
 import { murmur3_32 } from './module-bounds-hashtable.js';
+// Macros built on a differently named game component (generated: npm run generate:macro-refs)
+import MACRO_COMPONENT_REFS from './macro-component-refs.json' with { type: 'json' };
 
 /**
  * Index over the generated DAE hash table (dae_hash_table.json): maps a module base name
@@ -9,9 +11,11 @@ import { murmur3_32 } from './module-bounds-hashtable.js';
  *
  * @param {Record<string, Array<{key: string, folder_path: string, files: string[]}>>} table
  *   Bucketed table keyed by bucket index (murmur3_32(key) % bucketCount).
- * @param {{ bucketCount?: number }} [options]
+ * @param {{ bucketCount?: number, componentRefs?: Record<string, string> }} [options]
+ *   componentRefs: module base name -> the game component it is built on, when the names differ
+ *   (defaults to macro-component-refs.json, read from the game's macro files)
  */
-export function createDaeAssetIndex(table, { bucketCount = 1223 } = {}) {
+export function createDaeAssetIndex(table, { bucketCount = 1223, componentRefs = MACRO_COMPONENT_REFS } = {}) {
   /**
    * @param {string} key Module base name (macro without `_macro`, lower case).
    * @returns {string[]} Component URLs (`folder/file.dae`), or [] when unknown.
@@ -40,6 +44,17 @@ export function createDaeAssetIndex(table, { bucketCount = 1223 } = {}) {
     }
 
     let urls = lookupDaeUrls(baseName);
+
+    // The game's own mapping: some modules are built on another module's component
+    // (e.g. dockarea_tel_m_station_01 on dockarea_arg_m_station_01)
+    const ref = componentRefs[baseName];
+    if (urls.length === 0 && ref) {
+      const refUrls = lookupDaeUrls(ref);
+      if (refUrls.length > 0) {
+        baseName = ref;
+        urls = refUrls;
+      }
+    }
 
     if (urls.length === 0) {
       const prefixes = ['prod_', 'buildmodule_', 'landmarks_'];
