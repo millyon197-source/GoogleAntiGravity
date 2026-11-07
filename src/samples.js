@@ -54,7 +54,7 @@ export const SAMPLES = {
     </entry>
     
     <!-- Dock Area -->
-    <entry index="2" macro="dockarea_arg_l_station_01_macro">
+    <entry index="2" macro="dockarea_arg_m_station_01_macro">
       <position x="0" y="0" z="-140"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
@@ -70,56 +70,56 @@ export const SAMPLES = {
     </entry>
 
     <!-- East Wing (Defense Tower 1) -->
-    <entry index="5" macro="struct_arg_straight_02_macro">
+    <entry index="5" macro="struct_arg_vertical_02_macro">
       <position x="100" y="0" z="120"/>
       <rotation yaw="-90" pitch="0" roll="0"/>
     </entry>
-    <entry index="6" macro="struct_arg_tower_01_macro">
+    <entry index="6" macro="struct_arg_vertical_01_macro">
       <position x="200" y="0" z="120"/>
       <rotation yaw="-90" pitch="0" roll="0"/>
     </entry>
-    <entry index="7" macro="defense_arg_disc_01_macro">
+    <entry index="7" macro="defence_arg_disc_01_macro">
       <position x="320" y="0" z="120"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
-    <entry index="8" macro="defense_arg_disc_01_macro">
+    <entry index="8" macro="defence_arg_disc_01_macro">
       <position x="200" y="0" z="240"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
 
     <!-- West Wing (Defense Tower 2) -->
-    <entry index="9" macro="struct_arg_straight_02_macro">
+    <entry index="9" macro="struct_arg_vertical_02_macro">
       <position x="-100" y="0" z="120"/>
       <rotation yaw="90" pitch="0" roll="0"/>
     </entry>
-    <entry index="10" macro="struct_arg_tower_01_macro">
+    <entry index="10" macro="struct_arg_vertical_01_macro">
       <position x="-200" y="0" z="120"/>
       <rotation yaw="90" pitch="0" roll="0"/>
     </entry>
-    <entry index="11" macro="defense_arg_disc_01_macro">
+    <entry index="11" macro="defence_arg_disc_01_macro">
       <position x="-320" y="0" z="120"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
-    <entry index="12" macro="defense_arg_disc_01_macro">
+    <entry index="12" macro="defence_arg_disc_01_macro">
       <position x="-200" y="0" z="240"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
 
     <!-- Top and Bottom Outer Defense Rings -->
-    <entry index="13" macro="struct_arg_tower_01_macro">
+    <entry index="13" macro="struct_arg_vertical_01_macro">
       <position x="0" y="200" z="120"/>
       <rotation yaw="0" pitch="0" roll="90"/>
     </entry>
-    <entry index="14" macro="defense_arg_disc_01_macro">
+    <entry index="14" macro="defence_arg_disc_01_macro">
       <position x="0" y="320" z="120"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
     
-    <entry index="15" macro="struct_arg_tower_01_macro">
+    <entry index="15" macro="struct_arg_vertical_01_macro">
       <position x="0" y="-200" z="120"/>
       <rotation yaw="0" pitch="0" roll="-90"/>
     </entry>
-    <entry index="16" macro="defense_arg_disc_01_macro">
+    <entry index="16" macro="defence_arg_disc_01_macro">
       <position x="0" y="-320" z="120"/>
       <rotation yaw="0" pitch="0" roll="0"/>
     </entry>
