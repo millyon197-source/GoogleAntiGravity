@@ -97,8 +97,11 @@ function initApp() {
   compositionRoot.setViewer(viewer);
   window.viewer = viewer;
 
-  // The X4 game assets are not distributed with the app; explain if they are missing
-  warnIfGameAssetsMissing().catch((err) => console.warn('[!] Game asset check failed:', err));
+  // The X4 game assets are not distributed with the app; explain if they are missing, and draw
+  // placeholders without trying to download models in that case
+  const assetCheck = warnIfGameAssetsMissing();
+  viewer.setGameAssetsAvailability(assetCheck.then((result) => result.available));
+  assetCheck.catch((err) => console.warn('[!] Game asset check failed:', err));
 
   // Handle real-time continuous movement from 3D axis translation arrows
   viewer.onModuleMoved = (index, pos, isFinal) => {

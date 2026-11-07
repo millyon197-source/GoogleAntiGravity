@@ -1092,7 +1092,10 @@ export class StationViewer {
       let moduleGroup = await this.loadModuleMesh(mod);
       let isDae = false;
       if (!moduleGroup) {
-        sendLogToVSC(`[!]Loading: ${friendlyName} DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
+        // Without the game assets every module is a placeholder; the missing-assets pop-up explains that once
+        if (!this.gameAssetsMissing) {
+          sendLogToVSC(`[!]Loading: ${friendlyName} DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
+        }
         moduleGroup = createProceduralModule(mod.macro, THREE);
         const baseFriendlyName = MACRO_TO_NAME_DB[mod.macro] || friendlyName;
         if (!baseFriendlyName.endsWith(' (Procedural)')) {
@@ -1387,7 +1390,22 @@ export class StationViewer {
     return hasBillboards;
   }
 
+  /**
+   * Tells the viewer whether the X4 game assets are available, as a promise of a boolean (see
+   * src/app/game-assets-check.js). Model loads wait for it; when it resolves to false they return
+   * null without downloading anything, so modules are drawn as placeholders. A rejected check
+   * counts as available, i.e. loading behaves as if no check had been made.
+   * @param {Promise<boolean>|boolean} availability
+   */
+  setGameAssetsAvailability(availability) {
+    this.gameAssetsAvailable = Promise.resolve(availability).then(
+      (available) => { this.gameAssetsMissing = !available; return !!available; },
+      () => true
+    );
+  }
+
   async loadModuleMesh(mod) {
+    if (this.gameAssetsAvailable && !(await this.gameAssetsAvailable)) return null;
     return loadModuleMesh(this, mod, {
       partMainOffsets: PART_MAIN_OFFSETS,
       componentOffsets: COMPONENT_OFFSETS,
