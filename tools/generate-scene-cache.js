@@ -1,8 +1,11 @@
 /**
- * Builds the binary scene cache: for every .dae part the viewer loads through ColladaLoader
- * (effect, detail and production part_main parts; see isSceneCacheCandidate), runs the viewer's own
- * loadColladaModel on it and saves the resulting scene next to it as <part>.x4scene. The viewer then
- * loads those instead of parsing the Collada XML, which is the slow part of opening a large plan.
+ * Builds the binary scene cache: for every .dae part the viewer loads through ColladaLoader, runs the
+ * viewer's own loadColladaModel on it and saves the resulting scene next to it as <part>.x4scene. The
+ * viewer then loads those instead of parsing the Collada XML, the slow part of opening a large plan.
+ *
+ * Those parts are the ones the viewer always loads from .dae (effect, animated, billboard, detail and
+ * production part_main parts; see isSceneCacheCandidate) and every part listed in the asset index
+ * (dae_hash_table.json) that has no .bin file next to it, which would otherwise fall back to the .dae.
  *
  * Also writes assets1/scene-cache-manifest.json listing every cached part with its .dae size and
  * modification time, so the viewer only requests cache files that exist and are current.
@@ -70,7 +73,19 @@ const saveManifest = () => {
   fs.renameSync(manifestFile + '.tmp', manifestFile);
 };
 
-const all = listDae('assets1').filter(isSceneCacheCandidate);
+// Parts in the asset index without a .bin: the viewer would fall back to their .dae
+const indexedWithoutBin = new Set();
+if (fs.existsSync('dae_hash_table.json')) {
+  for (const bucket of JSON.parse(fs.readFileSync('dae_hash_table.json', 'utf8'))) {
+    for (const entry of bucket || []) {
+      for (const file of entry.files || []) {
+        const url = `${entry.folder_path}/${file}`;
+        if (url.toLowerCase().endsWith('-lod0.dae') && !fs.existsSync('.' + url.replace(/\.dae$/i, '.bin'))) indexedWithoutBin.add(url);
+      }
+    }
+  }
+}
+const all = listDae('assets1').filter(url => isSceneCacheCandidate(url) || indexedWithoutBin.has(url));
 // Drop entries for parts that no longer exist
 for (const url of Object.keys(manifest.files)) if (!all.includes(url)) delete manifest.files[url];
 const targets = all.filter(url => !filter || url.toLowerCase().includes(filter));

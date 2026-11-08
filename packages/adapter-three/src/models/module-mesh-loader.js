@@ -69,12 +69,17 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           uLower.includes('simon') ||
           (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production')));
 
-      if (needsCollada) {
+      // The prebuilt scene cache (tools/generate-scene-cache.js) covers every part that would otherwise be
+      // parsed from its .dae: the ones below that always need the .dae, and parts that have no .bin.
+      // Parts it does not list cost only a manifest lookup.
+      sceneTemplate = host.loadCachedScene ? await host.loadCachedScene(url) : null;
+      if (sceneTemplate) {
+        // from the cache
+      } else if (needsCollada) {
         // fx*, anim*, billboards/signs, detail_m/l/s_main, simon and production part_main components have
         // distinct subnodes (hull, fx, alpha, lightcones, foliage) and authored colour/UV channels that the
-        // .bin format does not keep, so they always come from the .dae: from the prebuilt scene cache
-        // when there is one, otherwise parsed by ColladaLoader.
-        sceneTemplate = (host.loadCachedScene ? await host.loadCachedScene(url) : null) || await host.loadColladaModel(url);
+        // .bin format does not keep, so they always come from the .dae.
+        sceneTemplate = await host.loadColladaModel(url);
       } else {
         try {
           // Fast path: Vulkan-aligned binary blob
