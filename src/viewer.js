@@ -13,6 +13,8 @@ import {
   getTransformControlsHelper,
   resolveTextureForModel,
   loadModuleMesh,
+  disposeModuleGeometry,
+  releaseUnusedTemplates,
   applyTexturesToMeshGroup,
   getRaceGlowColor,
   getRaceHullColor,
@@ -1127,8 +1129,14 @@ export class StationViewer {
   async loadStationPlan(planData) {
     this.planLoading = true;
     this.renderSkippedWhileLoading = false;
+    // Part templates this plan's modules are cloned from (filled by loadModuleMesh); once the plan is in,
+    // cached templates it does not use are released (releaseUnusedTemplates)
+    const templatesInUse = new Set();
+    this.templatesInUse = templatesInUse;
     try {
-      return await this.loadStationPlanContents(planData);
+      const result = await this.loadStationPlanContents(planData);
+      if (this.templatesInUse === templatesInUse) await releaseUnusedTemplates(this, templatesInUse);
+      return result;
     } finally {
       this.planLoading = false;
       if (this.renderSkippedWhileLoading) {
@@ -1408,6 +1416,7 @@ export class StationViewer {
         });
       }
       targetModule.remove(oldMeshGroup);
+      disposeModuleGeometry(oldMeshGroup);
     }
     targetModule.add(newMeshGroup);
 
@@ -1590,6 +1599,7 @@ export class StationViewer {
     while (this.modulesGroup.children.length > 0) {
       const child = this.modulesGroup.children[0];
       this.modulesGroup.remove(child);
+      disposeModuleGeometry(child); // release geometry made for this module (templates stay cached)
     }
     this.snapDots = [];
     this.animatedTextures = [];

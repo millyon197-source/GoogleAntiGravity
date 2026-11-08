@@ -23,6 +23,77 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  * @property {(msg: string, type?: 'log'|'warn'|'error') => void} [log] Diagnostic logger.
  */
 
+// Geometries of cached part templates: placed parts share them, and they stay cached for reuse
+const templateGeometries = new WeakSet();
+
+/**
+ * Releases the geometry of a module that is being discarded (a plan replaced, components swapped).
+ * three keeps every drawn geometry's attributes (and GPU buffers) in its vertex-array cache until
+ * geometry.dispose() is called, so geometry made for the module itself, such as the sign and background
+ * panels the texturing code builds, piled up with every load. Geometry shared with cached part
+ * templates is left alone; meshes kept only in userData (isolatedBillboards, physicalSigns, ...) are
+ * found too. Disposing only releases three's buffers: a disposed geometry drawn again is re-uploaded.
+ * @param {THREE.Object3D} root
+ * @returns {number} How many geometries were disposed
+ */
+export function disposeModuleGeometry(root) {
+  const disposed = new Set();
+  const seen = new Set();
+  const visitObject = (object) => {
+    if (!object || seen.has(object)) return;
+    seen.add(object);
+    if (object.isObject3D) {
+      const geometry = object.geometry;
+      if (geometry && geometry.isBufferGeometry && !templateGeometries.has(geometry) && !disposed.has(geometry)) {
+        geometry.dispose();
+        disposed.add(geometry);
+      }
+      if (object.userData) visitData(object.userData, 0);
+      for (const child of object.children) visitObject(child);
+    }
+  };
+  const visitData = (value, depth) => {
+    if (!value || typeof value !== 'object' || depth > 4 || ArrayBuffer.isView(value)) return;
+    if (value.isObject3D) return visitObject(value);
+    if (value.isBufferGeometry || value.isMaterial || value.isTexture) return;
+    if (seen.has(value)) return;
+    seen.add(value);
+    for (const item of Array.isArray(value) ? value : Object.values(value)) visitData(item, depth + 1);
+  };
+  visitObject(root);
+  return disposed.size;
+}
+
+/**
+ * Drops cached part templates that the current plan does not use and releases their geometry. The
+ * template caches (host.colladaCache for .dae and .bin parts, host.sceneCacheCache for scene cache
+ * files) otherwise keep every part a session has loaded: after switching from a 585-module plan to a
+ * small one, about 1 GB stayed in use. Loading those parts again reads their cache files, which is fast.
+ * @param {{ colladaCache?: Map<string, Promise<THREE.Object3D>>, sceneCacheCache?: Map<string, Promise<THREE.Object3D>> }} host
+ * @param {Set<THREE.Object3D>} inUse Templates the current plan's modules were cloned from
+ * @returns {Promise<number>} How many templates were released
+ */
+export async function releaseUnusedTemplates(host, inUse) {
+  let released = 0;
+  for (const cache of [host.colladaCache, host.sceneCacheCache]) {
+    if (!cache) continue;
+    for (const [key, pending] of [...cache.entries()]) {
+      const template = await Promise.resolve(pending).catch(() => null);
+      if (!template || inUse.has(template) || cache.get(key) !== pending) continue;
+      cache.delete(key);
+      const disposed = new Set();
+      template.traverse(o => {
+        if (o.geometry && o.geometry.isBufferGeometry && !disposed.has(o.geometry)) {
+          disposed.add(o.geometry);
+          o.geometry.dispose();
+        }
+      });
+      released++;
+    }
+  }
+  return released;
+}
+
 /**
  * Clones a part template for placement in a module, sharing each node's userData.rawUvs with the
  * template instead of copying it. three's Object3D.clone copies userData through JSON, which turned
@@ -35,6 +106,7 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
 export function cloneSharingRawUvs(template) {
   const rawUvs = [];
   template.traverse(o => {
+    if (o.geometry) templateGeometries.add(o.geometry);
     const r = o.userData ? o.userData.rawUvs : undefined;
     rawUvs.push(r);
     if (r !== undefined) delete o.userData.rawUvs;
@@ -121,6 +193,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       }
 
       if (sceneTemplate) {
+        if (host.templatesInUse) host.templatesInUse.add(sceneTemplate); // see releaseUnusedTemplates
         const scene = cloneSharingRawUvs(sceneTemplate);
         scene.traverse(child => {
           if (child.userData) {
