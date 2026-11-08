@@ -728,11 +728,43 @@ export class StationViewer {
   }
 
   renderScene() {
+    // Held while a plan load compiles shaders for a newly added module (see precompileShaders): a frame
+    // drawn now would compile them synchronously, one after another, and freeze the page
+    if (this.renderHeld) return;
     if (this.composer && this.bloomEnabled !== false) {
       this.composer.render();
     } else if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }
+  }
+
+  /**
+   * Compiles the shader programs `object` needs, in parallel and without blocking the page
+   * (KHR_parallel_shader_compile), before it is first drawn. Drawing compiles any missing program
+   * synchronously, one after another: a cold first load spent over 12 s in one frame that way.
+   * Programs are keyed on the render target, so they are compiled for the bloom composer's target
+   * when frames go through it. For an object not yet in the scene, the scene's lights plus the
+   * object's own are used, as when it is added.
+   * @param {THREE.Object3D} [object] Defaults to the whole scene.
+   * @returns {Promise<void>} Resolves when the programs are ready (immediately without WebGL).
+   */
+  precompileShaders(object = this.scene) {
+    const renderer = this.renderer;
+    if (!renderer || typeof renderer.compileAsync !== 'function' || !this.scene || !this.camera || !object) {
+      return Promise.resolve();
+    }
+    const target = this.composer && this.bloomEnabled !== false ? this.composer.readBuffer : null;
+    const previous = renderer.getRenderTarget();
+    let pending;
+    try {
+      renderer.setRenderTarget(target || null);
+      pending = renderer.compileAsync(object, this.camera, object === this.scene ? null : this.scene);
+    } catch (e) {
+      pending = Promise.resolve();
+    } finally {
+      renderer.setRenderTarget(previous);
+    }
+    return Promise.resolve(pending).then(() => {}, () => {});
   }
 
   setupLighting() {
@@ -1109,6 +1141,7 @@ export class StationViewer {
     const layerOrder = getLayerPlacementCategoryOrder();
     const sortedModules = sortModulesByLayerCategoryOrder(planData.modules, layerOrder);
     const plotConfig = this.currentPlotConfig || getCurrentPlotConfig();
+    const deferredLights = [];
 
     for (const mod of sortedModules) {
       const friendlyName = getFriendlyName(mod.macro);
@@ -1170,6 +1203,17 @@ export class StationViewer {
         }
       });
 
+      // Compile the module's shaders in parallel before any frame draws it (precompileShaders). Every
+      // program is built for the current light count, so the lights modules bring (forcefields,
+      // glows) stay off until the whole plan is in: otherwise each one would make all programs
+      // compile again for the new count.
+      moduleGroup.traverse(child => {
+        if (child.isLight && child.visible) {
+          child.visible = false;
+          deferredLights.push(child);
+        }
+      });
+      await this.precompileShaders(moduleGroup);
       this.modulesGroup.add(moduleGroup);
       this.buildModuleSnapPoints(moduleGroup, mod.macro);
 
@@ -1183,6 +1227,18 @@ export class StationViewer {
       if (initialLoaderSubtext) {
         const typeStr = isDae ? 'DAE' : 'Procedural';
         initialLoaderSubtext.textContent = `Loaded: ${friendlyName} (${typeStr}) (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
+      }
+    }
+
+    // Switch the modules' lights on together and compile the scene once for the final light count,
+    // holding frames meanwhile so none compiles the programs synchronously
+    if (deferredLights.length > 0) {
+      this.renderHeld = true;
+      try {
+        for (const light of deferredLights) light.visible = true;
+        await this.precompileShaders();
+      } finally {
+        this.renderHeld = false;
       }
     }
 
