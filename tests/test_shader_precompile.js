@@ -33,8 +33,10 @@ function makeRenderer(events, viewer) {
       const countLights = (root) => root && root.traverseVisible(o => { if (o.isPointLight) lightsOn.push(o.name); });
       countLights(object);
       if (targetScene && targetScene !== object) countLights(targetScene);
+      const visited = [];
+      if (!object.isObject3D) object.traverse(o => { if (o.isObject3D && o.parent === viewer.modulesGroup) visited.push(o); });
       events.push({
-        type: 'compile', object, camera, targetScene, renderTarget: target,
+        type: 'compile', object, camera, targetScene, renderTarget: target, visited,
         inScene: object.parent !== null || object === viewer.scene, lightsOn: lightsOn.sort(), renderHeld: viewer.renderHeld === true
       });
       return Promise.resolve(object);
@@ -112,7 +114,7 @@ function makeRenderer(events, viewer) {
   await v.loadStationPlan(plan);
 
   const compiles = events.filter(e => e.type === 'compile');
-  const moduleCompiles = compiles.filter(e => e.object !== v.scene);
+  const moduleCompiles = compiles.filter(e => e.object.isObject3D && e.object !== v.scene);
   assert.strictEqual(moduleCompiles.length, 3, 'every module compiled');
   for (const c of moduleCompiles) {
     assert.ok(!c.inScene, 'a module is compiled before it is added');
@@ -120,18 +122,27 @@ function makeRenderer(events, viewer) {
     assert.deepStrictEqual(c.lightsOn, ['scene_light'], "...with the modules' lights still off (constant light count)");
     assert.ok(!c.renderHeld, 'frames keep drawing while modules load');
   }
-  const final = compiles.filter(e => e.object === v.scene);
-  assert.strictEqual(final.length, 1, 'the scene is compiled once at the end');
-  assert.deepStrictEqual(final[0].lightsOn, ['light_1', 'light_3', 'scene_light'], 'with every module light on');
-  assert.ok(final[0].renderHeld, 'while frames are held');
-  assert.strictEqual(compiles.indexOf(final[0]), compiles.length - 1, 'after all modules');
+  const final = compiles.filter(e => !e.object.isObject3D);
+  assert.ok(final.length >= 1, 'the modules are compiled again at the end, in batches');
+  assert.deepStrictEqual(final.flatMap(e => e.visited), [...v.modulesGroup.children], 'the batches cover every module once');
+  for (const f of final) {
+    assert.deepStrictEqual(f.lightsOn, ['light_1', 'light_3', 'scene_light'], 'with every module light on, each counted once');
+    assert.strictEqual(f.targetScene, v.scene);
+    assert.ok(f.renderHeld, 'while frames are held');
+  }
+  assert.ok(compiles.indexOf(final[0]) > compiles.indexOf(moduleCompiles[moduleCompiles.length - 1]), 'after all modules');
+  // batch size: three modules in batches of two
+  events.length = 0;
+  await v.precompileModulesInBatches(2);
+  const batches = events.filter(e => e.type === 'compile');
+  assert.deepStrictEqual(batches.map(e => e.visited.length), [2, 1], 'two batches of at most two modules');
   assert.ok(events.filter(e => e.type === 'render').every(e => !e.held), 'no frame drawn while held');
   assert.strictEqual(v.renderHeld, false, 'frames resume after the load');
   assert.strictEqual(hiddenOnPurpose.visible, false, 'a light that was off stays off');
   let on = 0; v.modulesGroup.traverse(o => { if (o.isPointLight && o.visible) on++; });
   assert.strictEqual(on, 2, 'module lights are on after the load');
   assert.strictEqual(v.modulesGroup.children.length, 3);
-  console.log("  ✓ loadStationPlan: modules compiled before being added with lights held off, then one scene compile with every light on while frames wait");
+  console.log("  ✓ loadStationPlan: modules compiled before being added with lights held off, then the modules compiled in batches with every light on while frames wait");
 }
 
 console.log('\n[PASS] test_shader_precompile');

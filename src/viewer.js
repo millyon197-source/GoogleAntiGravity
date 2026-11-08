@@ -781,6 +781,27 @@ export class StationViewer {
     return Promise.resolve(pending).then(() => {}, () => {});
   }
 
+  /**
+   * precompileShaders for every module, a batch of modules at a time, giving the page control back
+   * between batches. Working out the programs of a whole large plan in one call blocked the page for
+   * 2 s (Prod Max: about 20,000 materials). The modules are already in the scene, so each batch reports
+   * no lights of its own: the scene's lights, theirs included, are counted once.
+   * @param {number} [modulesPerBatch]
+   * @returns {Promise<void>}
+   */
+  async precompileModulesInBatches(modulesPerBatch = 40) {
+    const modules = this.modulesGroup ? [...this.modulesGroup.children] : [];
+    for (let i = 0; i < modules.length; i += modulesPerBatch) {
+      const batch = modules.slice(i, i + modulesPerBatch);
+      await this.precompileShaders({
+        traverse: (callback) => { for (const module of batch) module.traverse(callback); },
+        traverseVisible: () => {}
+      });
+      // compileAsync resolves at once when the programs already exist: yield so the page gets a turn
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+
   setupLighting() {
     // Ambient fill light (cool nebula glow) - High Ambient
     const ambientLight = new THREE.AmbientLight(0x22294A, 5.0);
@@ -1283,13 +1304,13 @@ export class StationViewer {
       }
     }
 
-    // Switch the modules' lights on together and compile the scene once for the final light count,
-    // holding frames meanwhile so none compiles the programs synchronously
+    // Switch the modules' lights on together and compile the modules once for the final light count,
+    // in batches, holding frames meanwhile so none compiles the programs synchronously
     if (deferredLights.length > 0) {
       this.renderHeld = true;
       try {
         for (const light of deferredLights) light.visible = true;
-        await this.precompileShaders();
+        await this.precompileModulesInBatches();
       } finally {
         this.renderHeld = false;
       }
