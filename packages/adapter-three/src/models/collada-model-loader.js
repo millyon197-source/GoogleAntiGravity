@@ -1,6 +1,61 @@
 import * as THREE from 'three';
 
 /**
+ * Gives the cross module's anim_arrows sign mesh its A/B sign switch: userData.setBillboardState
+ * swaps the mesh UVs between userData.billboardStateAUvs and billboardStateBUvs and shows the matching
+ * isolated sign meshes. Used by loadColladaModel and when a scene is rebuilt from the scene cache.
+ * @param {THREE.Mesh} child
+ * @param {{ renderScene?: () => void }} host
+ */
+export function attachCrossSignSwitch(child, host) {
+  child.userData.setBillboardState = (state, isManual = true) => {
+    if (state === 'auto') {
+      child.userData.manualBillboardState = null;
+      return;
+    }
+    if (isManual) {
+      child.userData.manualBillboardState = state;
+    }
+    const target = (state === 'B') ? child.userData.billboardStateBUvs : child.userData.billboardStateAUvs;
+    if (target && child.geometry && child.geometry.attributes.uv) {
+      child.geometry.attributes.uv.array.set(target);
+      child.geometry.attributes.uv.needsUpdate = true;
+    }
+    const isA = (state === 'A');
+    const isB = (state === 'B');
+    const ib = child.userData.isolatedBillboards;
+    if (ib) {
+      if (ib.billboard_cross) ib.billboard_cross.visible = isA;
+      if (ib.billboard_capsule) ib.billboard_capsule.visible = isB;
+      if (ib.billboard_info) ib.billboard_info.visible = isA;
+      if (ib.billboard_shopping_cart) ib.billboard_shopping_cart.visible = isB;
+      if (ib.billboard_food) ib.billboard_food.visible = isA;
+      if (ib.billboard_bed) ib.billboard_bed.visible = isB;
+      if (ib.billboard_tools) ib.billboard_tools.visible = isA;
+      if (ib.billboard_law) ib.billboard_law.visible = isB;
+    }
+    child.userData.currentBillboardState = state;
+    if (typeof host.renderScene === 'function') {
+      host.renderScene();
+    }
+  };
+}
+
+/**
+ * Scene-level userData.setBillboardState that forwards to every descendant with its own switch.
+ * @param {THREE.Object3D} scene
+ */
+export function attachSceneBillboardSwitch(scene) {
+  scene.userData.setBillboardState = (state) => {
+    scene.traverse(child => {
+      if (child !== scene && child.userData && typeof child.userData.setBillboardState === 'function') {
+        child.userData.setBillboardState(state);
+      }
+    });
+  };
+}
+
+/**
  * Since three r17x the ColladaLoader converts vertex colours from sRGB to linear on parse.
  * X4 materials (and the emissive `vColor` modulation in applyTexturesToMeshGroup) were tuned
  * against the authored values the older loader kept, so convert them back to keep the
@@ -282,37 +337,7 @@ export function loadColladaModel(host, url) {
                 child.userData.billboardStateAUvs = hybridA;
                 child.userData.billboardStateBUvs = hybridB;
                 child.userData.currentBillboardState = 'A';
-                child.userData.setBillboardState = (state, isManual = true) => {
-                  if (state === 'auto') {
-                    child.userData.manualBillboardState = null;
-                    return;
-                  }
-                  if (isManual) {
-                    child.userData.manualBillboardState = state;
-                  }
-                  const target = (state === 'B') ? child.userData.billboardStateBUvs : child.userData.billboardStateAUvs;
-                  if (target && child.geometry && child.geometry.attributes.uv) {
-                    child.geometry.attributes.uv.array.set(target);
-                    child.geometry.attributes.uv.needsUpdate = true;
-                  }
-                  const isA = (state === 'A');
-                  const isB = (state === 'B');
-                  const ib = child.userData.isolatedBillboards;
-                  if (ib) {
-                    if (ib.billboard_cross) ib.billboard_cross.visible = isA;
-                    if (ib.billboard_capsule) ib.billboard_capsule.visible = isB;
-                    if (ib.billboard_info) ib.billboard_info.visible = isA;
-                    if (ib.billboard_shopping_cart) ib.billboard_shopping_cart.visible = isB;
-                    if (ib.billboard_food) ib.billboard_food.visible = isA;
-                    if (ib.billboard_bed) ib.billboard_bed.visible = isB;
-                    if (ib.billboard_tools) ib.billboard_tools.visible = isA;
-                    if (ib.billboard_law) ib.billboard_law.visible = isB;
-                  }
-                  child.userData.currentBillboardState = state;
-                  if (typeof host.renderScene === 'function') {
-                    host.renderScene();
-                  }
-                };
+                attachCrossSignSwitch(child, host);
               }
               // Connection Cross modules: struct_arg_cross_01 anim_cross (22 quads = 132 verts)
               // Quads 0..9 are chevron backings on tex1; Quads 10..21 are billboard background matrix screens on tex2
@@ -330,13 +355,7 @@ export function loadColladaModel(host, url) {
               }
             }
           });
-          collada.scene.userData.setBillboardState = (state) => {
-            collada.scene.traverse(child => {
-              if (child !== collada.scene && child.userData && typeof child.userData.setBillboardState === 'function') {
-                child.userData.setBillboardState(state);
-              }
-            });
-          };
+          attachSceneBillboardSwitch(collada.scene);
           return collada.scene;
         }
       }

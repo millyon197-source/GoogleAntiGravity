@@ -33,14 +33,16 @@ for (const [url, expected] of [
   ['/assets1/structures/habitat/hab_arg_l_01_data/detail_m_main-lod0.dae', true],
   ['/assets1/structures/dock/x_data/fx_glow-lod0.dae', true],
   ['/assets1/structures/connectionmodules/struct_arg_cross_01_data/part_main-lod0.dae', false],
-  ['/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_arrows-lod0.dae', false],
-  ['/assets1/structures/habitat/hab_arg_l_01_data/anim_poslights-lod0.dae', false],
-  ['/assets1/structures/x_data/billboard_ads-lod0.dae', false],
+  ['/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_arrows-lod0.dae', true],
+  ['/assets1/structures/habitat/hab_arg_l_01_data/anim_poslights-lod0.dae', true],
+  ['/assets1/structures/x_data/billboard_ads-lod0.dae', true],
+  ['/assets1/structures/production/prod_gen_advancedelectronics_data/anim_simon_container_01_dummy_01-lod0.dae', true],
+  ['/assets1/structures/connectionmodules/struct_arg_cross_01_data/part_main_wreck-lod0.dae', false],
   ['/assets1/structures/production/prod_gen_refinedmetals_data/part_main-lod1.dae', false],
   ['/assets1/structures/production/prod_gen_refinedmetals_data/fx_decals-collision.dae', false]
 ]) assert.strictEqual(isSceneCacheCandidate(url), expected, url);
 assert.strictEqual(sceneCachePathFor('/a/b/detail_m_main-lod0.dae'), '/a/b/detail_m_main-lod0.x4scene');
-console.log('  ✓ effect, detail and production part_main parts qualify; animated and billboard parts do not');
+console.log('  ✓ every lod0 part the viewer loads from .dae qualifies (effect, animated, billboard, detail, production part_main); others and other LODs do not');
 
 // 2. Deep comparison of two scenes
 function compareScenes(a, b, path = 'root', problems = []) {
@@ -50,8 +52,24 @@ function compareScenes(a, b, path = 'root', problems = []) {
   eq('position', a.position.toArray(), b.position.toArray());
   eq('quaternion', a.quaternion.toArray(), b.quaternion.toArray());
   eq('scale', a.scale.toArray(), b.scale.toArray());
-  const plain = (u) => Object.fromEntries(Object.entries(u).filter(([k, v]) => typeof v !== 'function' && k !== 'rawUvs' && !(v && typeof v === 'object' && (v.isObject3D || v.isTexture || v.isMaterial))));
-  eq('userData', plain(a.userData), plain(b.userData));
+  // userData compared structurally: meshes the texturing code keeps there (isolatedBillboards,
+  // physicalSigns, ...) as meshes, typed arrays bit for bit, functions by presence; plain JSON would
+  // include three's random uuids
+  const deep = (x, y, where, seen = new Set()) => {
+    if (x && typeof x === 'object' && seen.has(x)) return;
+    if (x && typeof x === 'object') seen.add(x);
+    if (x && x.isObject3D && y && y.isObject3D) return void compareScenes(x, y, `${path}/${where}`, problems);
+    if (ArrayBuffer.isView(x) || ArrayBuffer.isView(y)) { if (!sameArray(x, y)) problems.push(`${path}: ${where} differs`); return; }
+    if (typeof x === 'function' || typeof y === 'function') return eq(`${where} type`, typeof x, typeof y);
+    if (x && typeof x === 'object' && !x.isTexture && !x.isMaterial && y && typeof y === 'object') {
+      eq(`${where} keys`, Object.keys(x).sort(), Object.keys(y).sort());
+      for (const k of Object.keys(x)) if (k in y) deep(x[k], y[k], `${where}.${k}`, seen);
+      return;
+    }
+    if (x && (x.isTexture || x.isMaterial)) return eq(where, texKey(x.isTexture ? x : null) ?? x.name, texKey(y?.isTexture ? y : null) ?? y?.name);
+    eq(where, x, y);
+  };
+  { const { rawUvs: _ra, ...ua } = a.userData, { rawUvs: _rb, ...ub } = b.userData; deep(ua, ub, 'userData'); }
   eq('has setBillboardState', typeof a.userData.setBillboardState, typeof b.userData.setBillboardState);
   const ra = a.userData.rawUvs, rb = b.userData.rawUvs;
   eq('rawUvs keys', ra && Object.keys(ra).sort(), rb && Object.keys(rb).sort());
@@ -101,7 +119,12 @@ const urls = [
   '/assets1/structures/landmarks/landmarks_kha_tetrahedron_02_data/detail_s_main-lod0.dae',
   '/assets1/structures/dock/dockingbay_arg_m_01_hightech_data/fx_lightcones-lod0.dae',
   '/assets1/structures/dock/dockarea_arg_m_station_02_hightech_data/fx_decals-lod0.dae',
-  '/assets1/structures/dock/dockarea_arg_m_station_02_hightech_data/fx_glow-lod0.dae'
+  '/assets1/structures/dock/dockarea_arg_m_station_02_hightech_data/fx_glow-lod0.dae',
+  '/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_arrows-lod0.dae',
+  '/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_cross-lod0.dae',
+  '/assets1/structures/connectionmodules/struct_arg_base_03_data/anim_cross-lod0.dae',
+  '/assets1/structures/habitat/hab_arg_l_01_data/anim_poslights-lod0.dae',
+  '/assets1/structures/production/prod_gen_advancedelectronics_data/anim_simon_container_01_dummy_01-lod0.dae'
 ].filter(u => fs.existsSync('.' + u));
 assert.ok(urls.length > 0, 'sample .dae parts exist in assets1');
 let checked = 0;
@@ -119,6 +142,32 @@ for (const url of urls) {
 }
 console.log(`  ✓ ${checked} parts rebuild identically to the .dae scene, before and after texturing`);
 
+// 3b. Cross signs: the rebuilt anim_arrows mesh keeps the shared UV array and switches like the original
+{
+  const url = '/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_arrows-lod0.dae';
+  if (fs.existsSync('.' + url)) {
+    host.colladaCache.delete(url);
+    const original = await quiet(loadColladaModel)(host, url);
+    let renders = 0;
+    const rebuilt = deserializeScene(serializeScene(original), { renderScene: () => { renders++; } });
+    const signMesh = (s) => { let m = null; s.traverse(o => { if (o.isMesh && typeof o.userData.setBillboardState === 'function') m = o; }); return m; };
+    const a = signMesh(original), b = signMesh(rebuilt);
+    assert.ok(a && b, 'sign mesh has its switch after rebuilding');
+    assert.strictEqual(a.geometry.attributes.uv.array === a.userData.billboardStateAUvs, b.geometry.attributes.uv.array === b.userData.billboardStateAUvs, 'uv attribute shares the state A array exactly as in the original');
+    assert.ok(b.userData.billboardStateBUvs instanceof Float32Array, 'state B UVs are a Float32Array');
+    for (const state of ['B', 'A', 'B']) {
+      original.userData.setBillboardState(state);
+      rebuilt.userData.setBillboardState(state);
+      assert.ok(sameArray(a.geometry.attributes.uv.array, b.geometry.attributes.uv.array), `UVs match after switching to ${state}`);
+      assert.strictEqual(b.userData.currentBillboardState, state);
+      assert.strictEqual(b.userData.manualBillboardState, a.userData.manualBillboardState);
+    }
+    assert.strictEqual(renders, 3, 'switching re-renders through the host given to the rebuild');
+    host.colladaCache.delete(url); // the switches above changed this cached scene
+    console.log('  ✓ cross sign mesh: shared UV array kept and A/B switching behaves as with the .dae');
+  }
+}
+
 // 4. Generated cache files and manifest, when present
 const manifestPath = '.' + SCENE_CACHE_MANIFEST_PATH;
 if (fs.existsSync(manifestPath)) {
@@ -127,6 +176,7 @@ if (fs.existsSync(manifestPath)) {
   const stale = Object.entries(manifest.files).filter(([url, info]) => !fs.existsSync('.' + url) || fs.statSync('.' + url).size !== info.daeBytes || Math.round(fs.statSync('.' + url).mtimeMs) !== info.daeMtime || !fs.existsSync('.' + sceneCachePathFor(url)));
   assert.deepStrictEqual(stale.map(([u]) => u), [], 'manifest entries whose .dae changed or whose cache file is missing (rerun npm run generate:scene-cache)');
   let fromDisk = 0;
+  host.colladaCache.clear(); // section 3's texturing changed the shared geometry of these cached scenes
   for (const url of urls) {
     if (!manifest.files[url]) continue;
     const file = fs.readFileSync('.' + sceneCachePathFor(url));

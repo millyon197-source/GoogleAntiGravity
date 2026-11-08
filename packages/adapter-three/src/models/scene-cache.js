@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { attachCrossSignSwitch, attachSceneBillboardSwitch } from './collada-model-loader.js';
 import { SCENE_CACHE_VERSION, SCENE_CACHE_MAGIC as MAGIC, ARRAY_TYPES, align4, decodeSceneBuffer } from './scene-cache-format.js';
 
 /**
@@ -8,8 +9,11 @@ import { SCENE_CACHE_VERSION, SCENE_CACHE_MAGIC as MAGIC, ARRAY_TYPES, align4, d
  * The snapshot is taken from loadColladaModel's own output (see tools/generate-scene-cache.js), so
  * everything the texturing code relies on is preserved: the node tree with names and transforms,
  * every geometry attribute, index, groups and draw range, material names and settings, and the raw
- * texture-coordinate channels (userData.rawUvs). Functions are not stored; the scene-level
- * setBillboardState that loadColladaModel adds is recreated on rebuild. ColladaLoader's texture
+ * texture-coordinate channels (userData.rawUvs). Typed arrays in userData are stored like attribute
+ * arrays, so arrays the loader shares (the cross sign UVs are also the mesh's uv attribute) stay
+ * shared. Functions are not stored: the setBillboardState switches loadColladaModel adds (scene level
+ * and the cross anim_arrows sign mesh) are recreated on rebuild with the loader's own code; any other
+ * function makes serializeScene throw, so such a part is simply left to the .dae. ColladaLoader's texture
  * slots (material.map, normalMap, ...) point at .dds files its image loader cannot decode, so they
  * never get an image; they are stored as the same empty placeholders (name, wrapping, repeat,
  * offset, colour space), which keeps materials the texturing code leaves alone exactly as before.
@@ -39,20 +43,20 @@ const MATERIAL_VALUE_KEYS = [
 ];
 
 /**
- * Whether a .dae part is a candidate for the scene cache: the parts module-mesh-loader always loads
- * from .dae (effects, detail parts, production part_main) whose scenes are plain data. Animated and
- * billboard parts are excluded because loadColladaModel attaches behaviour (functions) to them.
+ * Whether a .dae part is a candidate for the scene cache: every lod0 part module-mesh-loader always
+ * loads from .dae (effects, animated parts, billboards and signs, detail parts, simon containers and
+ * production part_main), since those are the ones whose Collada XML is parsed at load time.
  * @param {string} url
  */
 export function isSceneCacheCandidate(url) {
   const u = String(url || '').toLowerCase().replace(/\\/g, '/');
-  const part = u.split('/').pop().replace(/-lod\d+\.dae$/, '');
   if (!u.endsWith('-lod0.dae')) return false; // the viewer only loads lod0 parts
-  if (part.startsWith('anim') || u.includes('/anim_') || part.includes('billboard') || u.includes('billboard') ||
-      part.includes('ads') || part.includes('sign') || u.includes('ad_signs') || u.includes('simon')) return false;
-  return part.startsWith('fx') || u.includes('/fx_') ||
-    /detail_[msl]_main/.test(u) ||
-    (part === 'part_main' && u.includes('/production/'));
+  const part = u.split('/').pop().replace(/-lod\d+\.dae$/, '');
+  return part.startsWith('fx') || part.startsWith('anim') ||
+    part.includes('billboard') || part.includes('ads') || part.includes('sign') ||
+    u.includes('billboard') || u.includes('ad_signs') || u.includes('/fx_') || u.includes('/anim_') ||
+    /detail_[msl]_main/.test(u) || u.includes('simon') ||
+    (u.includes('part_main') && u.includes('/production/'));
 }
 
 /** Path of the scene cache file for a .dae URL or path. */
@@ -116,7 +120,7 @@ export function serializeScene(root) {
       index: g.index ? addArray(g.index.array) : null,
       groups: g.groups.map(gr => ({ start: gr.start, count: gr.count, materialIndex: gr.materialIndex })),
       drawRange: { start: g.drawRange.start, count: Number.isFinite(g.drawRange.count) ? g.drawRange.count : null },
-      userData: plainData(g.userData)
+      userData: plainData(g.userData, addArray, false)
     };
     geometries.push(entry);
     geometryIndex.set(g, geometries.length - 1);
@@ -134,6 +138,7 @@ export function serializeScene(root) {
   const encodeNode = (o) => {
     if (!['Group', 'Object3D', 'Mesh', 'Scene'].includes(o.type)) throw new Error(`unsupported object type ${o.type}`);
     const { rawUvs, ...rest } = o.userData || {};
+    const isRoot = o === root;
     const node = {
       type: o.type === 'Scene' ? 'Group' : o.type,
       name: o.name || '',
@@ -145,7 +150,8 @@ export function serializeScene(root) {
       receiveShadow: o.receiveShadow,
       renderOrder: o.renderOrder,
       frustumCulled: o.frustumCulled,
-      userData: plainData(rest),
+      userData: plainData(rest, addArray, isRoot),
+      signSwitch: !isRoot && typeof rest.setBillboardState === 'function',
       rawUvs: rawUvs ? addRawUvs(rawUvs) : null,
       children: o.children.map(encodeNode)
     };
@@ -196,8 +202,8 @@ export function serializeScene(root) {
  * @param {ArrayBuffer} buffer
  * @returns {THREE.Group}
  */
-export function deserializeScene(buffer) {
-  return buildScene(decodeSceneBuffer(buffer));
+export function deserializeScene(buffer, host = {}) {
+  return buildScene(decodeSceneBuffer(buffer), host);
 }
 
 /**
@@ -206,7 +212,7 @@ export function deserializeScene(buffer) {
  * @param {{ data: Object, arrays: ArrayBufferView[] }} decoded
  * @returns {THREE.Group}
  */
-export function buildScene({ data, arrays }) {
+export function buildScene({ data, arrays }, host = {}) {
   const rawUvs = data.rawUvs.map(entry => Object.fromEntries(Object.entries(entry).map(([k, i]) => [k, arrays[i]])));
   const geometries = data.geometries.map(g => {
     const geom = new THREE.BufferGeometry();
@@ -219,7 +225,7 @@ export function buildScene({ data, arrays }) {
     if (g.index !== null) geom.setIndex(new THREE.BufferAttribute(arrays[g.index], 1));
     for (const gr of g.groups) geom.addGroup(gr.start, gr.count, gr.materialIndex);
     geom.setDrawRange(g.drawRange.start, g.drawRange.count === null ? Infinity : g.drawRange.count);
-    geom.userData = decodeData(g.userData);
+    geom.userData = decodeData(g.userData, arrays);
     return geom;
   });
   const materials = data.materials.map(m => {
@@ -251,20 +257,14 @@ export function buildScene({ data, arrays }) {
     o.receiveShadow = n.receiveShadow;
     o.renderOrder = n.renderOrder;
     o.frustumCulled = n.frustumCulled;
-    o.userData = decodeData(n.userData);
+    o.userData = decodeData(n.userData, arrays);
     if (n.rawUvs !== null) o.userData.rawUvs = rawUvs[n.rawUvs];
+    if (n.signSwitch) attachCrossSignSwitch(o, host);
     for (const c of n.children) o.add(decodeNode(c));
     return o;
   };
   const root = decodeNode(data.tree);
-  // Same scene-level helper loadColladaModel attaches
-  root.userData.setBillboardState = (state) => {
-    root.traverse(child => {
-      if (child !== root && child.userData && typeof child.userData.setBillboardState === 'function') {
-        child.userData.setBillboardState(state);
-      }
-    });
-  };
+  attachSceneBillboardSwitch(root); // as loadColladaModel does for every scene
   return root;
 }
 
@@ -387,7 +387,7 @@ async function decodeOnThisThread(url) {
 export function loadSceneCache(host, cacheUrl) {
   if (!host.sceneCacheCache) host.sceneCacheCache = new Map();
   if (host.sceneCacheCache.has(cacheUrl)) return host.sceneCacheCache.get(cacheUrl);
-  const promise = (host.sceneCacheDecoder ? host.sceneCacheDecoder.load(cacheUrl) : decodeOnThisThread(cacheUrl)).then(buildScene);
+  const promise = (host.sceneCacheDecoder ? host.sceneCacheDecoder.load(cacheUrl) : decodeOnThisThread(cacheUrl)).then(decoded => buildScene(decoded, host));
   host.sceneCacheCache.set(cacheUrl, promise);
   promise.catch(() => host.sceneCacheCache.delete(cacheUrl));
   return promise;
@@ -442,14 +442,26 @@ function packItems(arr, k) {
   return { values: Uint32Array.from(values), index: IndexCtor === Uint32Array ? index : IndexCtor.from(index) };
 }
 
-// userData without functions; typed arrays and nested objects kept only if JSON-safe
-function plainData(obj) {
+// userData as JSON: typed arrays become { $array: index } references into the blob; the only
+// function allowed is setBillboardState (recreated on rebuild), anything else is refused.
+function plainData(obj, addArray, isRoot) {
   const out = {};
   for (const [k, v] of Object.entries(obj || {})) {
-    if (typeof v === 'function' || v === undefined) continue;
-    if (ArrayBuffer.isView(v)) continue; // typed arrays other than rawUvs are not produced by loadColladaModel
+    if (v === undefined) continue;
+    if (typeof v === 'function') {
+      if (k === 'setBillboardState') continue;
+      throw new Error(`userData.${k} is a function the scene cache cannot recreate`);
+    }
+    if (ArrayBuffer.isView(v)) { out[k] = { $array: addArray(v, isRoot ? 1 : 2) }; continue; }
+    if (v && typeof v === 'object' && (v.isObject3D || v.isMaterial || v.isTexture || v.isBufferGeometry)) {
+      throw new Error(`userData.${k} holds a THREE object the scene cache cannot store`);
+    }
     out[k] = JSON.parse(JSON.stringify(v));
   }
   return out;
 }
-function decodeData(obj) { return obj ? JSON.parse(JSON.stringify(obj)) : {}; }
+function decodeData(obj, arrays) {
+  const out = obj ? JSON.parse(JSON.stringify(obj)) : {};
+  for (const [k, v] of Object.entries(out)) if (v && typeof v === 'object' && typeof v.$array === 'number') out[k] = arrays[v.$array];
+  return out;
+}
