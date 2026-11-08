@@ -163,7 +163,31 @@ if (fs.existsSync(manifestPath)) {
   console.log('  ✓ loadCachedScene uses only parts the manifest lists and falls back with a warning on a broken file');
 }
 
-// 6. Corrupt or foreign files are rejected
+// 6. Repeated vertex items are stored once and expanded bit for bit (-0, NaN, empty attributes)
+{
+  const g = new THREE.BufferGeometry();
+  const pos = new Float32Array(3000);
+  for (let i = 0; i < pos.length; i += 3) pos.set([[0, -0, 1.5], [NaN, 2, 3], [0.1, 0.2, 0.3]][(i / 3) % 3], i);
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(4000).fill(1), 4));
+  g.setAttribute('uv1', new THREE.BufferAttribute(new Float32Array(0), 0));
+  const unique = new Float32Array(2000).map((_, i) => i * 0.5);
+  g.setAttribute('uv', new THREE.BufferAttribute(unique, 2));
+  const root = new THREE.Group();
+  root.add(new THREE.Mesh(g, new THREE.MeshPhongMaterial()));
+  const buf = serializeScene(root);
+  assert.ok(buf.byteLength < pos.byteLength / 4 + 4000 * 4 / 4 + unique.byteLength + 2000, `repeated items stored once (${buf.byteLength} bytes)`);
+  const back = deserializeScene(buf).children[0].geometry.attributes;
+  const bits = (a) => Array.from(new Uint32Array(a.buffer, a.byteOffset, a.length));
+  for (const k of ['position', 'color', 'uv', 'uv1']) {
+    assert.strictEqual(back[k].array.constructor, g.attributes[k].array.constructor, `${k} type`);
+    assert.deepStrictEqual(bits(back[k].array), bits(g.attributes[k].array), `${k} identical bit for bit`);
+    assert.strictEqual(back[k].itemSize, g.attributes[k].itemSize, `${k} itemSize`);
+  }
+  console.log(`  ✓ repeated vertex items stored once and expanded bit for bit (${(buf.byteLength / 1024).toFixed(1)} KB for ${((pos.byteLength + 16000 + unique.byteLength) / 1024).toFixed(1)} KB of arrays)`);
+}
+
+// 7. Corrupt or foreign files are rejected
 assert.throws(() => deserializeScene(new TextEncoder().encode('<!doctype html>').buffer), /not a scene cache file/);
 const wrongVersion = serializeScene(new THREE.Group());
 new DataView(wrongVersion).setUint32(4, SCENE_CACHE_VERSION + 1, true);

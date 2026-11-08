@@ -16,9 +16,14 @@ import * as THREE from 'three';
  * File layout: "X4SC" | u32 version | u32 JSON byte length | JSON (UTF-8) | padding to 4 bytes |
  * binary blob holding every typed array, each 4-byte aligned. JSON describes the tree and refers to
  * arrays by index into `arrays`.
+ *
+ * Collada geometry is non-indexed, so most vertex items (a position, normal, colour or UV pair) repeat
+ * many times. Each 4-byte array is therefore stored as its distinct items (compared bit for bit) plus
+ * a Uint8/16/32 index per item whenever that is smaller, and expanded back on load. This is lossless
+ * and cuts the files to about a third.
  */
 
-export const SCENE_CACHE_VERSION = 1;
+export const SCENE_CACHE_VERSION = 2;
 export const SCENE_CACHE_EXTENSION = '.x4scene';
 /** Lists every cached part (written by tools/generate-scene-cache.js). */
 export const SCENE_CACHE_MANIFEST_PATH = '/assets1/scene-cache-manifest.json';
@@ -67,12 +72,14 @@ export function sceneCachePathFor(daePath) {
 export function serializeScene(root) {
   const arrays = [];
   const arrayIndex = new Map();
-  const addArray = (arr) => {
+  const itemSizes = [];
+  const addArray = (arr, itemSize = 1) => {
     if (!arr) return null;
     if (arrayIndex.has(arr)) return arrayIndex.get(arr);
     const type = arr.constructor.name;
     if (!ARRAY_TYPES[type]) throw new Error(`unsupported array type ${type}`);
     arrays.push(arr);
+    itemSizes.push(itemSize);
     arrayIndex.set(arr, arrays.length - 1);
     return arrays.length - 1;
   };
@@ -105,7 +112,7 @@ export function serializeScene(root) {
     const attributes = {};
     for (const [name, attr] of Object.entries(g.attributes)) {
       if (attr.isInterleavedBufferAttribute) throw new Error('interleaved attributes are not supported');
-      attributes[name] = { array: addArray(attr.array), itemSize: attr.itemSize, normalized: attr.normalized, name: attr.name || '' };
+      attributes[name] = { array: addArray(attr.array, attr.itemSize), itemSize: attr.itemSize, normalized: attr.normalized, name: attr.name || '' };
     }
     const entry = {
       name: g.name || '',
@@ -122,7 +129,7 @@ export function serializeScene(root) {
   const addRawUvs = (raw) => {
     if (rawUvsIndex.has(raw)) return rawUvsIndex.get(raw);
     const entry = {};
-    for (const [k, arr] of Object.entries(raw)) entry[k] = addArray(arr);
+    for (const [k, arr] of Object.entries(raw)) entry[k] = addArray(arr, 2); // per-vertex UV pairs
     rawUvsList.push(entry);
     rawUvsIndex.set(raw, rawUvsList.length - 1);
     return rawUvsList.length - 1;
@@ -156,10 +163,20 @@ export function serializeScene(root) {
 
   // Lay out the blob
   let offset = 0;
-  const arrayEntries = arrays.map(arr => {
-    offset = align4(offset);
-    const entry = { type: arr.constructor.name, offset, length: arr.length };
-    offset += arr.byteLength;
+  const chunks = [];
+  const place = (typed) => { offset = align4(offset); const at = offset; chunks.push([typed, at]); offset += typed.byteLength; return at; };
+  const arrayEntries = arrays.map((arr, i) => {
+    const entry = { type: arr.constructor.name, length: arr.length };
+    const packed = packItems(arr, itemSizes[i]);
+    if (packed) {
+      entry.itemSize = itemSizes[i];
+      entry.values = place(packed.values);
+      entry.valueCount = packed.values.length;
+      entry.index = place(packed.index);
+      entry.indexType = packed.index.constructor.name;
+    } else {
+      entry.offset = place(arr);
+    }
     return entry;
   });
   const blobBytes = align4(offset);
@@ -173,7 +190,7 @@ export function serializeScene(root) {
   view.setUint32(4, SCENE_CACHE_VERSION, true);
   view.setUint32(8, json.byteLength, true);
   bytes.set(json, headerBytes);
-  arrays.forEach((arr, i) => bytes.set(new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength), blobStart + arrayEntries[i].offset));
+  for (const [typed, at] of chunks) bytes.set(new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength), blobStart + at);
   return out;
 }
 
@@ -197,7 +214,19 @@ export function deserializeScene(buffer) {
   const arrays = data.arrays.map(a => {
     const Ctor = ARRAY_TYPES[a.type];
     if (!Ctor) throw new Error(`unsupported array type ${a.type}`);
-    return new Ctor(buffer.slice(blobStart + a.offset, blobStart + a.offset + a.length * Ctor.BYTES_PER_ELEMENT));
+    if (a.values === undefined) return new Ctor(buffer.slice(blobStart + a.offset, blobStart + a.offset + a.length * Ctor.BYTES_PER_ELEMENT));
+    // Distinct items + index: expand bit for bit through 32-bit views
+    const IndexCtor = ARRAY_TYPES[a.indexType];
+    const k = a.itemSize;
+    const values = new Uint32Array(buffer, blobStart + a.values, a.valueCount);
+    const index = new IndexCtor(buffer, blobStart + a.index, a.length / k);
+    const out = new Ctor(a.length);
+    const out32 = new Uint32Array(out.buffer);
+    for (let v = 0, o = 0; v < index.length; v++) {
+      const src = index[v] * k;
+      for (let j = 0; j < k; j++) out32[o++] = values[src + j];
+    }
+    return out;
   });
   const rawUvs = data.rawUvs.map(entry => Object.fromEntries(Object.entries(entry).map(([k, i]) => [k, arrays[i]])));
   const geometries = data.geometries.map(g => {
@@ -328,6 +357,35 @@ export async function loadCachedScene(host, daeUrl, log = (m) => console.warn(m)
 }
 
 function align4(n) { return (n + 3) & ~3; }
+
+/**
+ * Distinct items of a 4-byte typed array (compared bit for bit) and the index of each item, or null
+ * when that would not be smaller than the array itself.
+ */
+function packItems(arr, k) {
+  if (arr.BYTES_PER_ELEMENT !== 4 || !(k >= 1) || arr.length === 0 || arr.length % k !== 0) return null;
+  const words = new Uint32Array(arr.buffer, arr.byteOffset, arr.length);
+  const count = arr.length / k;
+  const seen = new Map();
+  const index = new Uint32Array(count);
+  const values = [];
+  for (let v = 0; v < count; v++) {
+    const base = v * k;
+    let key = words[base];
+    for (let j = 1; j < k; j++) key += ',' + words[base + j];
+    let id = seen.get(key);
+    if (id === undefined) {
+      id = seen.size;
+      seen.set(key, id);
+      for (let j = 0; j < k; j++) values.push(words[base + j]);
+    }
+    index[v] = id;
+  }
+  const IndexCtor = seen.size <= 256 ? Uint8Array : seen.size <= 65536 ? Uint16Array : Uint32Array;
+  const packedBytes = values.length * 4 + align4(count * IndexCtor.BYTES_PER_ELEMENT) + 4;
+  if (packedBytes >= arr.byteLength) return null;
+  return { values: Uint32Array.from(values), index: IndexCtor === Uint32Array ? index : IndexCtor.from(index) };
+}
 
 // userData without functions; typed arrays and nested objects kept only if JSON-safe
 function plainData(obj) {
