@@ -37,98 +37,71 @@ viewer.resolveTextureForModel = StationViewer.prototype.resolveTextureForModel;
 viewer.applyTexturesToMeshGroup = StationViewer.prototype.applyTexturesToMeshGroup;
 viewer.loadColladaModel = StationViewer.prototype.loadColladaModel;
 
-// 1. Test Billboard UV Channel Assignment in loadColladaModel
-console.log('  [1] Verifying billboard models bind authored tex1 coordinates to geometry.attributes.uv...');
+// 1. Billboard trim parts map the sign atlas through UV set 0
+// X4's billboard trim materials (p1ads ads_p1_billboardtrims_*, shader p1_complex_unlit) are multi-layer:
+// diffuse_map (the ads_billboard sign atlas) reads UV set 0, the gradient_wave layers read sets 1 and 2.
+// tex0 lands inside the atlas's 4x4 cells; tex1 is a gradient band, and mapping the atlas through it
+// smeared one strip of the atlas over every quad.
+console.log('  [1] Verifying billboard trim parts use tex0 (the sign atlas UVs) as their primary UVs...');
 
 const billboardTestCases = [
-  {
-    name: 'Argon Base 03 anim_arrows',
-    url: '/assets1/structures/connectionmodules/struct_arg_base_03_data/anim_arrows-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.28,
-    expectedSpanU: 0.8
-  },
-  {
-    name: 'Argon Base 03 anim_cross',
-    url: '/assets1/structures/connectionmodules/struct_arg_base_03_data/anim_cross-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.30,
-    expectedSpanU: 0.7
-  },
-  {
-    name: 'Argon L Habitat anim_cross Lockdown Hazard Overlay',
-    url: '/assets1/structures/habitat/hab_arg_l_01_data/anim_cross-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.30,
-    expectedSpanU: 0.7
-  },
-  {
-    name: 'Paranid L Habitat anim_cross Lockdown Hazard Overlay',
-    url: '/assets1/structures/habitat/hab_par_l_01_data/anim_cross-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.30,
-    expectedSpanU: 0.7
-  },
-  {
-    name: 'Teladi L Habitat anim_cross Lockdown Hazard Overlay',
-    url: '/assets1/structures/habitat/hab_tel_l_01_data/anim_cross-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.30,
-    expectedSpanU: 0.7
-  },
-  {
-    name: 'Pirate L Habitat anim_cross Lockdown Hazard Overlay',
-    url: '/assets1/structures/habitat/hab_pir_l_01_data/anim_cross-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.30,
-    expectedSpanU: 0.7
-  },
-  {
-    name: 'Paranid Base 02 anim_arrows',
-    url: '/assets1/structures/connectionmodules/struct_par_base_02_data/anim_arrows-lod0.dae',
-    expectedMinV: 0.05,
-    expectedMaxV: 0.28,
-    expectedSpanU: 0.1
-  },
-  {
-    name: 'Docking Bay Pier anim_signs',
-    url: '/assets1/structures/dock/xref_parts/xref_dockingbay_gen_xl_pier_01_data/anim_signs-lod0.dae',
-    expectedMinV: 0.00,
-    expectedMaxV: 0.35,
-    expectedSpanU: 0.8
-  },
-  {
-    name: 'Teladi Trade Station anim_arrows01_001',
-    url: '/assets1/structures/landmarks/landmarks_tel_tradestation_01_center_01_data/anim_arrows01_001-lod0.dae',
-    expectedMinV: 0.00,
-    expectedMaxV: 1.00,
-    expectedSpanU: 0.9
-  }
+  { name: 'Argon Base 03 anim_arrows', url: '/assets1/structures/connectionmodules/struct_arg_base_03_data/anim_arrows-lod0.dae' },
+  { name: 'Argon Base 03 anim_cross', url: '/assets1/structures/connectionmodules/struct_arg_base_03_data/anim_cross-lod0.dae' },
+  { name: 'Argon L Habitat anim_cross', url: '/assets1/structures/habitat/hab_arg_l_01_data/anim_cross-lod0.dae' },
+  { name: 'Paranid L Habitat anim_cross', url: '/assets1/structures/habitat/hab_par_l_01_data/anim_cross-lod0.dae' },
+  { name: 'Teladi L Habitat anim_cross', url: '/assets1/structures/habitat/hab_tel_l_01_data/anim_cross-lod0.dae' },
+  { name: 'Pirate L Habitat anim_cross', url: '/assets1/structures/habitat/hab_pir_l_01_data/anim_cross-lod0.dae' },
+  { name: 'Paranid Base 02 anim_arrows', url: '/assets1/structures/connectionmodules/struct_par_base_02_data/anim_arrows-lod0.dae' },
+  { name: 'Docking Bay Pier anim_signs', url: '/assets1/structures/dock/xref_parts/xref_dockingbay_gen_xl_pier_01_data/anim_signs-lod0.dae' },
+  { name: 'Teladi Trade Station anim_arrows01_001', url: '/assets1/structures/landmarks/landmarks_tel_tradestation_01_center_01_data/anim_arrows01_001-lod0.dae' }
 ];
+
+// share of quads whose UVs stay inside one cell of the 4x4 sign atlas
+const atlasCellShare = (uvs) => {
+  let inCell = 0, quads = 0;
+  for (let q = 0; q + 6 <= uvs.length / 2; q += 6) {
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    for (let i = q; i < q + 6; i++) { u0 = Math.min(u0, uvs[i * 2]); u1 = Math.max(u1, uvs[i * 2]); v0 = Math.min(v0, uvs[i * 2 + 1]); v1 = Math.max(v1, uvs[i * 2 + 1]); }
+    quads++;
+    if (u0 >= -0.01 && u1 <= 1.01 && v0 >= -0.01 && v1 <= 1.01 &&
+        Math.floor(u0 * 4 + 0.02) === Math.floor(u1 * 4 - 0.02) && Math.floor(v0 * 4 + 0.02) === Math.floor(v1 * 4 - 0.02)) inCell++;
+  }
+  return quads ? inCell / quads : 0;
+};
 
 for (const tc of billboardTestCases) {
   const scene = await viewer.loadColladaModel(tc.url);
   assert.ok(scene, `Scene must be loaded for ${tc.name}`);
-
   let meshFound = false;
   scene.traverse((child) => {
-    if (child.isMesh && child.geometry && child.geometry.attributes.uv) {
-      meshFound = true;
-      const uvs = child.geometry.attributes.uv.array;
-      let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
-      for (let i = 0; i < uvs.length; i += 2) {
-        minU = Math.min(minU, uvs[i]); maxU = Math.max(maxU, uvs[i]);
-        minV = Math.min(minV, uvs[i+1]); maxV = Math.max(maxV, uvs[i+1]);
-      }
-      const spanU = maxU - minU;
-
-      assert.ok(minV >= tc.expectedMinV - 0.02, `${tc.name} minV ${minV} must be >= ${tc.expectedMinV}`);
-      assert.ok(maxV <= tc.expectedMaxV + 0.02, `${tc.name} maxV ${maxV} must be <= ${tc.expectedMaxV}`);
-      assert.ok(spanU >= tc.expectedSpanU - 0.05, `${tc.name} spanU ${spanU} must be >= ${tc.expectedSpanU}`);
-      console.log(`    ✓ ${tc.name}: primary UV U [${minU.toFixed(3)}, ${maxU.toFixed(3)}], V [${minV.toFixed(3)}, ${maxV.toFixed(3)}]`);
-    }
+    if (!child.isMesh || !child.geometry || !child.geometry.attributes.uv) return;
+    meshFound = true;
+    const uvs = child.geometry.attributes.uv.array;
+    const raw = child.userData.rawUvs || {};
+    assert.ok(raw.tex0 && raw.tex1, `${tc.name}: has both UV sets`);
+    assert.strictEqual(uvs.length, raw.tex0.length, `${tc.name}: one UV pair per vertex`);
+    assert.ok(uvs.every((x, i) => Math.abs(x - raw.tex0[i]) < 1e-6), `${tc.name}: primary UVs are tex0 (the sign atlas)`);
+    const share = atlasCellShare(uvs);
+    assert.ok(share >= 0.4, `${tc.name}: ${Math.round(share * 100)}% of quads inside an atlas cell`);
+    assert.strictEqual(atlasCellShare(raw.tex1), 0, `${tc.name}: tex1 (gradient band) never addresses an atlas cell`);
+    console.log(`    ✓ ${tc.name}: tex0, ${Math.round(share * 100)}% of quads on single atlas cells`);
   });
   assert.ok(meshFound, `Mesh with UVs must be found for ${tc.name}`);
+}
+
+// 1b. The cross module sign meshes keep the atlas on their chevrons too
+{
+  const cases = [
+    ['/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_arrows-lod0.dae', 36],
+    ['/assets1/structures/connectionmodules/struct_arg_cross_01_data/anim_cross-lod0.dae', 10]
+  ];
+  for (const [url, chevronQuads] of cases) {
+    const scene = await viewer.loadColladaModel(url);
+    let mesh = null; scene.traverse(o => { if (o.isMesh) mesh = o; });
+    const uvs = mesh.geometry.attributes.uv.array, tex0 = mesh.userData.rawUvs.tex0;
+    for (let i = 0; i < chevronQuads * 6 * 2; i++) assert.ok(Math.abs(uvs[i] - tex0[i]) < 1e-6, `${url}: chevron quads use tex0`);
+    console.log(`    ✓ ${url.split('/').slice(-2).join('/')}: chevron quads 0..${chevronQuads - 1} use tex0`);
+  }
 }
 
 // 2. Test Non-Billboard Meshes Preserve tex0 as primary UV channel
@@ -199,13 +172,24 @@ await viewer.applyTexturesToMeshGroup(
   2
 );
 
-assert.ok(
-  viewer.animatedTextures.length > 0,
-  'anim_arrows must register animated textures for chevron guide scrolling'
-);
-const arrowAnim = viewer.animatedTextures.find(a => a.speedX === -0.25);
-assert.ok(arrowAnim, 'anim_arrows must scroll along U direction at speed -0.25');
-console.log('    ✓ anim_arrows correctly registered for chevron guide scrolling along U direction');
+// X4 (struct_arg_base_03.xml): map channel 1 holds u_offset at 0, slides to 0.25 (one atlas cell)
+// over frames 95-100, holds, and slides back at 195-200 of a 200-frame loop: the icons toggle
+// between a pair of cells. They used to scroll continuously through the whole atlas.
+const arrowAnim = viewer.animatedTextures.find(a => a.uvTracks);
+assert.ok(arrowAnim, 'anim_arrows plays its component UV animation');
+assert.strictEqual(viewer.animatedTextures.filter(a => a.speedX).length, 0, 'no continuous scroll');
+assert.strictEqual(arrowAnim.loopFrames, 200);
+assert.deepStrictEqual(arrowAnim.uvTracks.u, [[0, 0], [95, 0], [100, 0.25], [195, 0.25], [200, 0]]);
+assert.strictEqual(arrowAnim.moduleIndex, 2, 'halts with its module');
+const arrowMat = [].concat(arrowMesh.material)[0];
+assert.strictEqual(arrowMat.map, arrowAnim.texture, "the arrows' map is the animated copy");
+assert.notStrictEqual(arrowAnim.texture, await viewer.loadDdsTexture('/assets1/textures/ad_signs/ads_billboard_02_diff.dds'), 'the shared atlas texture is not moved');
+const { applyUvTrack } = await import('../packages/adapter-three/src/materials/uv-animations.js');
+const probe = { offset: { x: 9, y: 9 } };
+const at = (seconds) => { applyUvTrack(probe, arrowAnim.uvTracks, arrowAnim.loopFrames, seconds); return +probe.offset.x.toFixed(4); };
+assert.deepStrictEqual([at(0), at(2), at(97.5 / 30), at(4), at(6), at(200 / 30)], [0, 0, 0.125, 0.25, 0.25, 0], 'holds a cell, slides, holds the other, returns (30 frames/s)');
+assert.strictEqual(probe.offset.y, 9, 'channel 1 has no v track: v untouched');
+console.log('    ✓ anim_arrows toggles between a pair of atlas cells on its own texture copy (X4 keyframes)');
 
 // 4. Test Billboard Display Screens & Holograms (tex0 primary channel to prevent scrambled displays)
 console.log('  [4] Verifying billboard display screens preserve tex0 coordinates (preventing scrambled tiling)...');
@@ -307,10 +291,11 @@ const textureResolutionCases = [
     expected: '/assets1/textures/ad_signs/p1_holograph_ads_01_diff.dds'
   },
   {
-    desc: 'Billboard Trim Strip Arrows (512x1024 atlas)',
+    // ads_p1_billboardtrims_02's diffuse_map in X4's material library (the .dae names it too)
+    desc: 'Billboard Trim Strip Arrows (billboardtrims_02 -> ads_billboard_02 atlas)',
     url: '/assets1/structures/storage/storage_arg_l_liquid_01_data/anim_arrows-lod0.dae',
     mat: 'anim_arrows-lod0Xlod0XadsXads_p1_billboardtrims_02',
-    expected: '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds'
+    expected: '/assets1/textures/ad_signs/ads_billboard_02_diff.dds'
   },
   {
     desc: 'Station Ads General Fallback',
@@ -328,7 +313,7 @@ const textureResolutionCases = [
     desc: 'Argon L Habitat anim_cross Lockdown Hazard Overlay',
     url: '/assets1/structures/habitat/hab_arg_l_01_data/anim_cross-lod0.dae',
     mat: 'p1ads.ads_p1_billboardtrims_02',
-    expected: '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds'
+    expected: '/assets1/textures/ad_signs/ads_billboard_02_diff.dds'
   },
   {
     desc: 'Paranid L Habitat Billboard Display',
@@ -340,7 +325,7 @@ const textureResolutionCases = [
     desc: 'Paranid L Habitat anim_cross Lockdown Hazard Overlay',
     url: '/assets1/structures/habitat/hab_par_l_01_data/anim_cross-lod0.dae',
     mat: 'p1ads.ads_p1_billboardtrims_03',
-    expected: '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds'
+    expected: '/assets1/textures/ad_signs/ads_billboard_03_diff.dds'
   },
   {
     desc: 'Pirate L Habitat Billboard Display',
@@ -352,7 +337,7 @@ const textureResolutionCases = [
     desc: 'Pirate L Habitat anim_cross Lockdown Hazard Overlay',
     url: '/assets1/structures/habitat/hab_pir_l_01_data/anim_cross-lod0.dae',
     mat: 'p1ads.ads_p1_billboardtrims_02',
-    expected: '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds'
+    expected: '/assets1/textures/ad_signs/ads_billboard_02_diff.dds'
   },
   {
     desc: 'Teladi L Habitat Billboard Display',
@@ -364,7 +349,7 @@ const textureResolutionCases = [
     desc: 'Teladi L Habitat anim_cross Lockdown Hazard Overlay',
     url: '/assets1/structures/habitat/hab_tel_l_01_data/anim_cross-lod0.dae',
     mat: 'p1ads.ads_p1_billboardtrims_03',
-    expected: '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds'
+    expected: '/assets1/textures/ad_signs/ads_billboard_03_diff.dds'
   }
 ];
 

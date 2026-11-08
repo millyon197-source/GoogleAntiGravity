@@ -48,7 +48,8 @@ viewer.updateAnimatedParts = StationViewer.prototype.updateAnimatedParts;
 
 const dummyTexture = new THREE.Texture();
 dummyTexture.offset = new THREE.Vector2(0, 0);
-viewer.loadDdsTexture = async () => dummyTexture;
+const requestedTextures = [];
+viewer.loadDdsTexture = async (url) => { requestedTextures.push(url); return dummyTexture; };
 
 // 1. Verify Texture Atlas Resolution for Cross Modules
 console.log('  [1] Verifying billboard texture resolution for connection cross modules...');
@@ -293,6 +294,14 @@ console.log('    ✓ Verified continuous vertical scrolling animation (speedY = 
 assert.strictEqual(bgCross.material.transparent, true, 'bg_cross material must be transparent');
 assert.strictEqual(bgCross.material.depthWrite, false, 'bg_cross material depthWrite must be false');
 assert.strictEqual(bgCross.renderOrder, 1, 'bg_cross renderOrder must be 1 (rendered before foreground sign)');
+// Drawn like X4's ads_p1_billboardtrims material: unlit and additive, vertex colour times the gradient layer
+assert.ok(bgCross.material.isMeshBasicMaterial, 'bg_cross is unlit (p1_complex_unlit)');
+assert.strictEqual(bgCross.material.blending, THREE.AdditiveBlending, 'bg_cross blends additively (blendmode ADDITIVE)');
+assert.strictEqual(bgCross.material.vertexColors, true, 'bg_cross takes its colour from the vertex colours');
+assert.strictEqual(bgCross.material.toneMapped, false);
+assert.ok(requestedTextures.includes('/assets1/textures/fx/gradient_wave_01_diff.dds'), "the screens use the material's gradient_wave layer texture");
+assert.ok(!requestedTextures.includes('/assets1/textures/ad_signs/ads_bg_trims.dds'), 'not ads_bg_trims, which this material does not use');
+console.log('    ✓ bg_cross drawn unlit and additive, vertex colour times the gradient wave layer');
 
 // 4. Verify 3D Alignment Between Foreground Physical Signs and Background Matrix Screens
 console.log('  [4] Verifying 3D spatial alignment between all 4 physical signs and background matrix screens...');

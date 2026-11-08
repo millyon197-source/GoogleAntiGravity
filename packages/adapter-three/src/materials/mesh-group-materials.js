@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { resolveTextureForModel } from '../textures/texture-resolver.js';
 import { getRaceGlowColor, getRaceHullColor } from '../textures/race-colors.js';
+import { loadPartUvAnimations } from './uv-animations.js';
 
 /**
  * @typedef {Object} MeshGroupMaterialHost
@@ -336,8 +337,28 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
 
               const isAdTrimMesh = !isDamageArea && partBase.includes('anim_arrows') && !isBillboardDisplay;
               if (isAdTrimMesh && (diffuseTex || emissiveTex)) {
-                registerAnimTex('map', -0.25, 0.0);
-                registerAnimTex('emissiveMap', -0.25, 0.0);
+                // X4's own UV animation for the part, from its component XML. For anim_arrows, map
+                // channel 1 (the sign atlas) toggles u_offset between 0 and 0.25: the icons switch
+                // between a pair of atlas cells. A continuous scroll here slid the whole atlas past.
+                const uvAnim = await loadPartUvAnimations(url, partBase);
+                const atlasTracks = uvAnim && uvAnim.channels[1];
+                if (atlasTracks) {
+                  // Own copy of the atlas texture: its offset must not move other parts sharing it
+                  const copies = new Map();
+                  for (const prop of ['map', 'emissiveMap']) {
+                    const tex = newMat[prop];
+                    if (!tex) continue;
+                    if (!copies.has(tex)) {
+                      const copy = tex.clone();
+                      copy.wrapS = THREE.RepeatWrapping;
+                      copy.wrapT = THREE.RepeatWrapping;
+                      copy.needsUpdate = true;
+                      copies.set(tex, copy);
+                      host.animatedTextures.push({ texture: copy, uvTracks: atlasTracks, loopFrames: uvAnim.loopFrames, moduleIndex });
+                    }
+                    newMat[prop] = copies.get(tex);
+                  }
+                }
               }
 
               // Habitat Station Billboards: Static foreground advertisement poster with animated background matrix
@@ -845,27 +866,21 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                       bgTex.needsUpdate = true;
                     }
 
-                    const bgMat = new THREE.MeshStandardMaterial({
+                    // As X4 draws them (p1ads ads_p1_billboardtrims_*, shader p1_complex_unlit, ADDITIVE):
+                    // each screen is its vertex colour (green, orange, teal...) times the scrolling
+                    // gradient_wave layer read through UV set 2, added onto the scene, unlit. The edge
+                    // strips fade to black through their vertex colours.
+                    const bgMat = new THREE.MeshBasicMaterial({
                       vertexColors: Boolean(col),
                       color: 0xffffff,
                       map: bgTex || null,
-                      emissiveMap: bgTex || null,
-                      emissive: new THREE.Color(0xffffff),
-                      emissiveIntensity: 1.0,
-                      roughness: 0.5,
-                      metalness: 0.1,
+                      blending: THREE.AdditiveBlending,
                       transparent: true,
-                      opacity: 0.85,
                       side: THREE.DoubleSide,
-                      depthWrite: false
+                      depthWrite: false,
+                      toneMapped: false
                     });
                     bgMat.name = matName + '_cross_bg';
-                    bgMat.onBeforeCompile = (shader) => {
-                      shader.fragmentShader = shader.fragmentShader.replace(
-                        '#include <emissivemap_fragment>',
-                        '#include <emissivemap_fragment>\n  totalEmissiveRadiance *= vColor.rgb;\n'
-                      );
-                    };
 
                     const bgDefs = [
                       { name: 'bg_cross', quads: [10, 11, 12] },
@@ -927,7 +942,7 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                   };
 
                   promises.push(
-                    host.loadDdsTexture('/assets1/textures/ad_signs/ads_bg_trims.dds')
+                    host.loadDdsTexture('/assets1/textures/fx/gradient_wave_01_diff.dds')
                       .then(bgTex => {
                         createBackgrounds(bgTex);
                       })

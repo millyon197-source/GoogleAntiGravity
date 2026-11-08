@@ -269,8 +269,15 @@ export function resolveTextureForModel(modelUrl, materialName = '') {
       adDiff = '/assets1/textures/ad_signs/ads_p1_casino_01.dds';
     } else if (matLower.includes('holograph') || lower.includes('holograph')) {
       adDiff = '/assets1/textures/ad_signs/p1_holograph_ads_01_diff.dds';
+    } else if (/billboardtrims_0?[123]/.test(matLower)) {
+      // X4's material library (p1ads): the billboard trim materials' diffuse_map, read through UV set 0.
+      // _01 uses the trims atlas, _02 and _03 the ads_billboard_02/03 sign atlases (anim_cross,
+      // anim_arrows and anim_signs parts on cross modules, docks, piers and habitats).
+      const trim = matLower.match(/billboardtrims_0?([123])/)[1];
+      adDiff = trim === '1'
+        ? '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds'
+        : `/assets1/textures/ad_signs/ads_billboard_0${trim}_diff.dds`;
     } else if (lower.includes('anim_cross') || matLower.includes('anim_cross')) {
-      // Emergency lockdown hazard cross overlay is authored on the trims atlas across all modules
       adDiff = '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds';
     } else {
       const isDisplayModule = lower.includes('habitat') || lower.includes('hab_') || lower.includes('cross') || lower.includes('pier');

@@ -245,7 +245,8 @@ const testCases = [
     name: 'Liquid Storage Billboard Trims Arrows',
     url: '/assets1/structures/storage/storage_arg_l_liquid_01_data/anim_arrows-lod0.dae',
     mat: 'anim_arrows-lod0Xlod0XadsXads_p1_billboardtrims_02',
-    expectedDiffuse: '/assets1/textures/ad_signs/ads_billboardtrims_01_diff.dds',
+    // ads_p1_billboardtrims_02's diffuse_map in X4's material library (the .dae names it too)
+    expectedDiffuse: '/assets1/textures/ad_signs/ads_billboard_02_diff.dds',
     checkChannels: []
   },
   {

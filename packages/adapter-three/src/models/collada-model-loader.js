@@ -195,8 +195,13 @@ export function loadColladaModel(host, url) {
             const isAnimCross = urlLower.includes('anim_cross');
             const isHabitat = urlLower.includes('habitat') || urlLower.includes('hab_');
 
-            if (isAnimCross && r1 && r1.spanU >= 0.1 && r1.spanU <= 2.0 && Math.abs(r1.minU) <= 2.0 && Math.abs(r1.maxU) <= 2.0) {
-              // Emergency lockdown hazard cross overlay is authored on tex1 across all modules
+            if (text.includes('billboardtrims')) {
+              // X4's billboard trim materials (p1ads ads_p1_billboardtrims_*, shader p1_complex_unlit) are
+              // multi-layer: diffuse_map (the ads_billboard sign atlas) reads UV set 0, the gradient_wave
+              // diffuse2/diffuse3 layers read sets 1 and 2. In every trim part tex0 lands inside atlas cells
+              // and tex1 never does, so the atlas uses tex0 (tex1 smeared a band of the atlas over them).
+              pickTex1 = false;
+            } else if (isAnimCross && r1 && r1.spanU >= 0.1 && r1.spanU <= 2.0 && Math.abs(r1.minU) <= 2.0 && Math.abs(r1.maxU) <= 2.0) {
               pickTex1 = true;
             } else if (isHabitat) {
               // Habitat station billboards are authored on tex0 display quad
@@ -296,7 +301,7 @@ export function loadColladaModel(host, url) {
               const count = child.geometry.attributes.position.count;
               const childLower = (child.name || '').toLowerCase();
               // Connection Cross modules: struct_arg_cross_01 anim_arrows (44 quads = 264 verts)
-              // Quads 0..35 are entrance/exit chevrons on tex1
+              // Quads 0..35 are entrance/exit chevrons on the sign atlas (UV set tex0, like every trim layer 1)
               // Quads 36..43 are the 4 double-sided station billboard signs:
               // State A: Sign 1 (Q36,37): Cross, Sign 2 (Q38,39): Info, Sign 3 (Q40,41): Food, Sign 4 (Q42,43): Tools
               // State B: Sign 1 (Q36,37): Capsule, Sign 2 (Q38,39): Cart, Sign 3 (Q40,41): Bed, Sign 4 (Q42,43): Law
@@ -304,10 +309,10 @@ export function loadColladaModel(host, url) {
                 const hybridA = new Float32Array(264 * 2);
                 const hybridB = new Float32Array(264 * 2);
                 for (let k = 0; k < 36 * 6; k++) {
-                  hybridA[k * 2] = rawUvs.tex1[k * 2];
-                  hybridA[k * 2 + 1] = rawUvs.tex1[k * 2 + 1];
-                  hybridB[k * 2] = rawUvs.tex1[k * 2];
-                  hybridB[k * 2 + 1] = rawUvs.tex1[k * 2 + 1];
+                  hybridA[k * 2] = rawUvs.tex0[k * 2];
+                  hybridA[k * 2 + 1] = rawUvs.tex0[k * 2 + 1];
+                  hybridB[k * 2] = rawUvs.tex0[k * 2];
+                  hybridB[k * 2 + 1] = rawUvs.tex0[k * 2 + 1];
                 }
                 // 4 pairs of double-sided quads for the 4 signs
                 const signPairs = [
@@ -340,12 +345,13 @@ export function loadColladaModel(host, url) {
                 attachCrossSignSwitch(child, host);
               }
               // Connection Cross modules: struct_arg_cross_01 anim_cross (22 quads = 132 verts)
-              // Quads 0..9 are chevron backings on tex1; Quads 10..21 are billboard background matrix screens on tex2
-              if (urlLower.includes('cross') && (urlLower.includes('anim_cross') || childLower.includes('anim_cross')) && count === 132 && rawUvs.tex1 && rawUvs.tex2) {
+              // Quads 0..9 are chevron backings on the sign atlas (tex0); quads 10..21 are the billboard
+              // background matrix screens, drawn with the scrolling third layer's UVs (tex2)
+              if (urlLower.includes('cross') && (urlLower.includes('anim_cross') || childLower.includes('anim_cross')) && count === 132 && rawUvs.tex0 && rawUvs.tex2) {
                 const hybrid = new Float32Array(132 * 2);
                 for (let k = 0; k < 10 * 6; k++) {
-                  hybrid[k * 2] = rawUvs.tex1[k * 2];
-                  hybrid[k * 2 + 1] = rawUvs.tex1[k * 2 + 1];
+                  hybrid[k * 2] = rawUvs.tex0[k * 2];
+                  hybrid[k * 2 + 1] = rawUvs.tex0[k * 2 + 1];
                 }
                 for (let k = 10 * 6; k < 132; k++) {
                   hybrid[k * 2] = rawUvs.tex2[k * 2];

@@ -23,6 +23,7 @@ import {
   getRaceHullColor,
   loadDdsTexture,
   releaseTextureData,
+  applyUvTrack,
   loadBinaryModel,
   loadColladaModel,
   loadCachedScene,
@@ -3503,11 +3504,11 @@ export class StationViewer {
   onWindowResize() {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
-
     // A hidden or collapsed container: keep the last size (a zero-size drawing buffer cannot be drawn to)
     if (!(width > 0 && height > 0)) return;
     if (this.renderer && this.lastViewSize && this.lastViewSize[0] === width && this.lastViewSize[1] === height) return;
     this.lastViewSize = [width, height];
+
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
 
@@ -4721,6 +4722,11 @@ export class StationViewer {
       for (const item of this.animatedTextures) {
         if (item.texture) {
           if (item.moduleIndex !== undefined && this.haltedModuleAnimations && this.haltedModuleAnimations.has(item.moduleIndex)) {
+            continue;
+          }
+          // Keyframed X4 UV animation from the component file (e.g. anim_arrows toggling atlas cells)
+          if (item.uvTracks) {
+            applyUvTrack(item.texture, item.uvTracks, item.loopFrames, time);
             continue;
           }
           item.texture.offset.x = (item.texture.offset.x + (item.speedX || 0) * delta) % 1.0;
