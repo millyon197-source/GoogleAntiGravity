@@ -68,6 +68,29 @@ function sendLogToVSC(msg, type = 'log') {
 
 const daeAssetIndex = createDaeAssetIndex(DAE_HASH_TABLE);
 
+// Module types drawn as placeholders in the current plan load get " (Procedural)" appended to
+// their display name. The original names are kept here so the next load can restore them;
+// otherwise one failed load (e.g. a dev-server restart mid-load) labelled the type for the session.
+const PROCEDURAL_SUFFIX = ' (Procedural)';
+const proceduralLabelOriginals = new Map();
+
+/** Marks a module type as drawn with a placeholder in the current load. */
+export function labelModuleAsProcedural(macro, fallbackName) {
+  if (proceduralLabelOriginals.has(macro)) return;
+  const name = MACRO_TO_NAME_DB[macro] || fallbackName;
+  proceduralLabelOriginals.set(macro, MACRO_TO_NAME_DB[macro]);
+  if (!name.endsWith(PROCEDURAL_SUFFIX)) MACRO_TO_NAME_DB[macro] = name + PROCEDURAL_SUFFIX;
+}
+
+/** Restores the names changed by labelModuleAsProcedural (called when a new plan load starts). */
+export function resetProceduralLabels() {
+  for (const [macro, original] of proceduralLabelOriginals) {
+    if (original === undefined) delete MACRO_TO_NAME_DB[macro];
+    else MACRO_TO_NAME_DB[macro] = original;
+  }
+  proceduralLabelOriginals.clear();
+}
+
 /**
  * Main Three.js station viewer and interaction controller.
  */
@@ -1055,6 +1078,9 @@ export class StationViewer {
 
     if (!planData.modules || planData.modules.length === 0) return;
 
+    // Placeholder labels describe this load only
+    resetProceduralLabels();
+
     console.log(`[*] Loading ${planData.modules.length} station modules...`);
 
     // Display the loader banner
@@ -1097,10 +1123,7 @@ export class StationViewer {
           sendLogToVSC(`[!]Loading: ${friendlyName} DAE files not found/loaded for ${mod.macro}. Falling back to procedural representation.`, 'warn');
         }
         moduleGroup = createProceduralModule(mod.macro, THREE);
-        const baseFriendlyName = MACRO_TO_NAME_DB[mod.macro] || friendlyName;
-        if (!baseFriendlyName.endsWith(' (Procedural)')) {
-          MACRO_TO_NAME_DB[mod.macro] = baseFriendlyName + ' (Procedural)';
-        }
+        labelModuleAsProcedural(mod.macro, friendlyName);
       } else {
         isDae = true;
       }
