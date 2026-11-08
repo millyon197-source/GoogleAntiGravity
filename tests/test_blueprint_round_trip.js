@@ -78,4 +78,15 @@ const failed = summary.filter(s => s.problems.length);
 assert.deepStrictEqual(failed.map(s => s.name), [],
   'plans that do not survive the round trip:\n' + failed.map(s => `  ${s.name}:\n    ${s.problems.slice(0, 5).join('\n    ')}`).join('\n'));
 
+// Without getModuleCalculatedRotation on the viewer, exportModulesFromScene must compute the same
+// rotations itself (its old fallback subtracted 180 degrees from pitch and roll)
+for (const [name, xml] of plans) {
+  const plan = parseConstructionPlan(xml);
+  const scene = sceneFor(plan);
+  const withViewer = exportModulesFromScene(scene, plan);
+  const withoutViewer = exportModulesFromScene({ modulesGroup: scene.modulesGroup }, plan);
+  assert.deepStrictEqual(withoutViewer, withViewer, `${name}: export without getModuleCalculatedRotation differs`);
+}
+console.log('  ✓ export gives the same result when the viewer does not provide getModuleCalculatedRotation');
+
 console.log('\n[PASS] test_blueprint_round_trip');

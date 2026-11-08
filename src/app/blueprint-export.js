@@ -2,8 +2,8 @@
  * Exports the current station plan as an X4 construction-plan blueprint .xml.
  * Extracted from main.js.
  */
-import * as THREE from 'three';
 import { downloadXMLFile, generatePlanXML, getFefbModuleIndex, showCreateBlueprintModal } from '../blueprint-exporter.js';
+import { computeX4RotationFromModuleGroup } from '../rotation-math.js';
 
 /**
  * Controller state and actions supplied by main.js via initBlueprintExport().
@@ -64,45 +64,26 @@ export function exportCurrentPlanAsBlueprint() {
  */
 export function exportModulesFromScene(viewer, plan) {
   return viewer.modulesGroup.children.map((child, idx) => {
-      const origMod = (plan.modules && plan.modules.find(m => m.index === child.userData.index)) || {};
-      const pos = child.position;
-      
-      // 6 decimals like X4's own exports: whole degrees would turn e.g. yaw -112.49992 into -112
-      const calcRot = viewer.getModuleCalculatedRotation ? viewer.getModuleCalculatedRotation(child.userData.index, { decimals: 6 }) : null;
-      let yaw = 0, pitch = 0, roll = 0;
-      if (calcRot) {
-        yaw = calcRot.yaw;
-        pitch = calcRot.pitch;
-        roll = calcRot.roll;
-      } else {
-        child.rotation.order = 'YXZ';
-        yaw = Math.round(THREE.MathUtils.radToDeg(child.rotation.y)) % 360;
-        pitch = Math.round(THREE.MathUtils.radToDeg(child.rotation.x) - 180) % 360;
-        roll = Math.round(THREE.MathUtils.radToDeg(child.rotation.z) - 180) % 360;
-      }
+    const origMod = (plan.modules && plan.modules.find(m => m.index === child.userData.index)) || {};
+    const pos = child.position;
 
-      if (yaw > 180) yaw -= 360;
-      if (yaw <= -180) yaw += 360;
-      if (pitch > 180) pitch -= 360;
-      if (pitch <= -180) pitch += 360;
-      if (roll > 180) roll -= 360;
-      if (roll <= -180) roll += 360;
+    // 6 decimals like X4's own exports: whole degrees would turn e.g. yaw -112.49992 into -112.
+    // Same inverse as StationViewer.getModuleCalculatedRotation when the viewer does not provide it.
+    const rotationOptions = { decimals: 6 };
+    const rotation = (viewer.getModuleCalculatedRotation && viewer.getModuleCalculatedRotation(child.userData.index, rotationOptions))
+      || computeX4RotationFromModuleGroup(child, rotationOptions);
 
-      yaw = Object.is(yaw, -0) ? 0 : yaw;
-      pitch = Object.is(pitch, -0) ? 0 : pitch;
-      roll = Object.is(roll, -0) ? 0 : roll;
-
-      return {
-        index: child.userData.index !== undefined ? child.userData.index : (idx + 1),
-        macro: child.userData.macro || origMod.macro || '',
-        connection: child.userData.connection || origMod.connection || '',
-        predecessor: child.userData.predecessor || origMod.predecessor || null,
-        position: {
-          x: Math.round(pos.x * 1000) / 1000,
-          y: Math.round(pos.y * 1000) / 1000,
-          z: -Math.round(pos.z * 1000) / 1000
-        },
-        rotation: { yaw, pitch, roll }
-      };
+    return {
+      index: child.userData.index !== undefined ? child.userData.index : (idx + 1),
+      macro: child.userData.macro || origMod.macro || '',
+      connection: child.userData.connection || origMod.connection || '',
+      predecessor: child.userData.predecessor || origMod.predecessor || null,
+      position: {
+        x: Math.round(pos.x * 1000) / 1000,
+        y: Math.round(pos.y * 1000) / 1000,
+        z: -Math.round(pos.z * 1000) / 1000
+      },
+      rotation: { yaw: rotation.yaw, pitch: rotation.pitch, roll: rotation.roll }
+    };
   });
 }
