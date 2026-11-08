@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SCENE_CACHE_VERSION, SCENE_CACHE_MAGIC as MAGIC, ARRAY_TYPES, align4, decodeSceneBuffer } from './scene-cache-format.js';
 
 /**
  * Scene cache: a compact binary snapshot of the scene loadColladaModel builds from a .dae part, so
@@ -23,15 +24,10 @@ import * as THREE from 'three';
  * and cuts the files to about a third.
  */
 
-export const SCENE_CACHE_VERSION = 2;
+export { SCENE_CACHE_VERSION, decodeSceneBuffer } from './scene-cache-format.js';
 export const SCENE_CACHE_EXTENSION = '.x4scene';
 /** Lists every cached part (written by tools/generate-scene-cache.js). */
 export const SCENE_CACHE_MANIFEST_PATH = '/assets1/scene-cache-manifest.json';
-const MAGIC = 'X4SC';
-
-const ARRAY_TYPES = {
-  Float32Array, Float64Array, Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array
-};
 
 // Material settings worth keeping (everything ColladaLoader sets on its Phong/Lambert/Basic materials)
 const MATERIAL_COLOR_KEYS = ['color', 'specular', 'emissive'];
@@ -201,33 +197,16 @@ export function serializeScene(root) {
  * @returns {THREE.Group}
  */
 export function deserializeScene(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
-  if (magic !== MAGIC) throw new Error('not a scene cache file');
-  const view = new DataView(buffer);
-  const version = view.getUint32(4, true);
-  if (version !== SCENE_CACHE_VERSION) throw new Error(`scene cache version ${version}, expected ${SCENE_CACHE_VERSION}`);
-  const jsonLength = view.getUint32(8, true);
-  const data = JSON.parse(new TextDecoder().decode(bytes.subarray(12, 12 + jsonLength)));
-  const blobStart = align4(12 + jsonLength);
+  return buildScene(decodeSceneBuffer(buffer));
+}
 
-  const arrays = data.arrays.map(a => {
-    const Ctor = ARRAY_TYPES[a.type];
-    if (!Ctor) throw new Error(`unsupported array type ${a.type}`);
-    if (a.values === undefined) return new Ctor(buffer.slice(blobStart + a.offset, blobStart + a.offset + a.length * Ctor.BYTES_PER_ELEMENT));
-    // Distinct items + index: expand bit for bit through 32-bit views
-    const IndexCtor = ARRAY_TYPES[a.indexType];
-    const k = a.itemSize;
-    const values = new Uint32Array(buffer, blobStart + a.values, a.valueCount);
-    const index = new IndexCtor(buffer, blobStart + a.index, a.length / k);
-    const out = new Ctor(a.length);
-    const out32 = new Uint32Array(out.buffer);
-    for (let v = 0, o = 0; v < index.length; v++) {
-      const src = index[v] * k;
-      for (let j = 0; j < k; j++) out32[o++] = values[src + j];
-    }
-    return out;
-  });
+/**
+ * Builds the THREE scene from decoded scene data (decodeSceneBuffer output, possibly produced in the
+ * scene cache worker). Cheap: all array work has been done already.
+ * @param {{ data: Object, arrays: ArrayBufferView[] }} decoded
+ * @returns {THREE.Group}
+ */
+export function buildScene({ data, arrays }) {
   const rawUvs = data.rawUvs.map(entry => Object.fromEntries(Object.entries(entry).map(([k, i]) => [k, arrays[i]])));
   const geometries = data.geometries.map(g => {
     const geom = new THREE.BufferGeometry();
@@ -323,15 +302,92 @@ export function loadSceneCacheManifest(host) {
   return host.sceneCacheManifest;
 }
 
+/** Default worker factory: a module worker Vite bundles from the co-located script. */
+function createDefaultSceneCacheWorker() {
+  if (typeof Worker === 'undefined') return null;
+  return new Worker(new URL('./scene-cache-worker.js', import.meta.url), { type: 'module' });
+}
+
 /**
- * Loads a scene cache file (cached per URL in host.sceneCacheCache, like host.colladaCache).
- * @param {{ sceneCacheCache?: Map<string, Promise<THREE.Object3D>> }} host
+ * Fetches and decodes scene cache files in a worker so large plan loads do not block the page. The
+ * worker is started on first use. Without workers (Node), or once the worker fails, files are
+ * fetched and decoded on the calling thread instead, including any requests that were in flight.
+ */
+export class SceneCacheDecoder {
+  /** @param {() => Worker|null} [createWorker] */
+  constructor(createWorker = createDefaultSceneCacheWorker) {
+    this.createWorker = createWorker;
+    this._worker = undefined; // undefined: not started; null: unavailable
+    this._pending = new Map();
+    this._nextId = 1;
+  }
+
+  /**
+   * @param {string} url .x4scene URL
+   * @returns {Promise<{ data: Object, arrays: ArrayBufferView[] }>}
+   */
+  load(url) {
+    const worker = this._getWorker();
+    if (!worker) return decodeOnThisThread(url);
+    const id = this._nextId++;
+    return new Promise((resolve, reject) => {
+      this._pending.set(id, { url, resolve, reject });
+      worker.postMessage({ id, url });
+    });
+  }
+
+  dispose() {
+    if (this._worker) this._worker.terminate();
+    this._worker = null;
+    this._retryPendingHere();
+  }
+
+  _getWorker() {
+    if (this._worker !== undefined) return this._worker;
+    try {
+      this._worker = this.createWorker ? this.createWorker() : null;
+    } catch {
+      this._worker = null;
+    }
+    if (this._worker) {
+      this._worker.onmessage = (event) => {
+        const { id, decoded, error } = event.data || {};
+        const pending = this._pending.get(id);
+        if (!pending) return;
+        this._pending.delete(id);
+        if (error) pending.reject(new Error(error)); else pending.resolve(decoded);
+      };
+      this._worker.onerror = () => {
+        // Worker unusable (e.g. failed to load): decode here from now on, including queued work
+        try { this._worker.terminate(); } catch { /* already gone */ }
+        this._worker = null;
+        this._retryPendingHere();
+      };
+    }
+    return this._worker;
+  }
+
+  _retryPendingHere() {
+    const pending = [...this._pending.values()];
+    this._pending.clear();
+    for (const { url, resolve, reject } of pending) decodeOnThisThread(url).then(resolve, reject);
+  }
+}
+
+async function decodeOnThisThread(url) {
+  return decodeSceneBuffer(await readBytes(url));
+}
+
+/**
+ * Loads a scene cache file (cached per URL in host.sceneCacheCache, like host.colladaCache). Decoding
+ * runs in host.sceneCacheDecoder's worker when the host has one, otherwise on this thread.
+ * @param {{ sceneCacheCache?: Map<string, Promise<THREE.Object3D>>, sceneCacheDecoder?: SceneCacheDecoder }} host
  * @param {string} cacheUrl URL of the .x4scene file
  */
 export function loadSceneCache(host, cacheUrl) {
   if (!host.sceneCacheCache) host.sceneCacheCache = new Map();
   if (host.sceneCacheCache.has(cacheUrl)) return host.sceneCacheCache.get(cacheUrl);
-  const promise = readBytes(cacheUrl).then(deserializeScene);
+  const promise = (host.sceneCacheDecoder ? host.sceneCacheDecoder.load(cacheUrl) : decodeOnThisThread(cacheUrl)).then(buildScene);
   host.sceneCacheCache.set(cacheUrl, promise);
   promise.catch(() => host.sceneCacheCache.delete(cacheUrl));
   return promise;
@@ -356,7 +412,6 @@ export async function loadCachedScene(host, daeUrl, log = (m) => console.warn(m)
   }
 }
 
-function align4(n) { return (n + 3) & ~3; }
 
 /**
  * Distinct items of a 4-byte typed array (compared bit for bit) and the index of each item, or null

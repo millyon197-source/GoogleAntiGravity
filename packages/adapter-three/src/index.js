@@ -16,7 +16,7 @@ export { getRaceGlowColor, getRaceHullColor } from './textures/race-colors.js';
 export { loadDdsTexture } from './textures/dds-texture-loader.js';
 export { loadBinaryModel } from './models/binary-model-loader.js';
 export { loadColladaModel } from './models/collada-model-loader.js';
-export { loadCachedScene, loadSceneCacheManifest } from './models/scene-cache.js';
+export { loadCachedScene, loadSceneCacheManifest, SceneCacheDecoder } from './models/scene-cache.js';
 export { applyTexturesToMeshGroup } from './materials/mesh-group-materials.js';
 export { loadModuleMesh } from './models/module-mesh-loader.js';
 export { adaptTransformControls, getTransformControlsHelper } from './gizmos/transform-controls-compat.js';

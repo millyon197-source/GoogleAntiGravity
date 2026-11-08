@@ -187,7 +187,64 @@ if (fs.existsSync(manifestPath)) {
   console.log(`  ✓ repeated vertex items stored once and expanded bit for bit (${(buf.byteLength / 1024).toFixed(1)} KB for ${((pos.byteLength + 16000 + unique.byteLength) / 1024).toFixed(1)} KB of arrays)`);
 }
 
-// 7. Corrupt or foreign files are rejected
+// 7. Decoding in a worker (SceneCacheDecoder), with fallback to this thread
+{
+  const { SceneCacheDecoder, decodeSceneBuffer, loadSceneCache } = await import('../packages/adapter-three/src/models/scene-cache.js');
+  const url = urls[0];
+  const cacheUrl = sceneCachePathFor(url);
+  if (fs.existsSync('.' + cacheUrl)) {
+    const file = fs.readFileSync('.' + cacheUrl);
+    const expected = deserializeScene(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength));
+    // Stand-in for scene-cache-worker.js: same decode, answered asynchronously through onmessage
+    class FakeWorker {
+      constructor({ crashAfter = Infinity, fail = null } = {}) { this.received = []; this.crashAfter = crashAfter; this.fail = fail; this.terminated = false; }
+      postMessage({ id, url: u }) {
+        this.received.push(u);
+        if (this.received.length > this.crashAfter) { setTimeout(() => this.onerror?.({ message: 'worker died' }), 0); return; }
+        setTimeout(() => {
+          if (this.fail) return this.onmessage({ data: { id, error: this.fail } });
+          const f = fs.readFileSync('.' + u);
+          this.onmessage({ data: { id, decoded: decodeSceneBuffer(f.buffer.slice(f.byteOffset, f.byteOffset + f.byteLength)) } });
+        }, 0);
+      }
+      terminate() { this.terminated = true; }
+    }
+    let created = 0, worker = null;
+    const decoder = new SceneCacheDecoder(() => { created++; return (worker = new FakeWorker()); });
+    assert.strictEqual(created, 0, 'worker is started on first use, not up front');
+    const viaWorker = await loadSceneCache({ sceneCacheDecoder: decoder }, cacheUrl);
+    assert.deepStrictEqual(compareScenes(expected, viaWorker), [], 'scene decoded in the worker is identical');
+    assert.deepStrictEqual(worker.received, [cacheUrl], 'the worker fetched the file');
+    await loadSceneCache({ sceneCacheDecoder: decoder }, cacheUrl);
+    assert.strictEqual(created, 1, 'one worker serves every load');
+
+    // Worker dies with requests in flight: they and later loads are decoded here
+    let dying = null;
+    const crashing = new SceneCacheDecoder(() => (dying = new FakeWorker({ crashAfter: 0 })));
+    const crashHost = { sceneCacheDecoder: crashing };
+    const [a, b] = await Promise.all([loadSceneCache(crashHost, cacheUrl), loadSceneCache(crashHost, cacheUrl)]);
+    assert.deepStrictEqual(compareScenes(expected, a), [], 'in-flight load completed on this thread');
+    assert.strictEqual(a, b, 'same URL shares one load per host');
+    assert.ok(dying.terminated, 'failed worker terminated');
+    const after = await loadSceneCache({ sceneCacheDecoder: crashing }, cacheUrl);
+    assert.deepStrictEqual(compareScenes(expected, after), [], 'later loads decoded on this thread');
+    assert.strictEqual(dying.received.length, 1, 'failed worker gets no further requests');
+
+    // Worker cannot be created at all
+    const noWorker = new SceneCacheDecoder(() => { throw new Error('blocked'); });
+    assert.deepStrictEqual(compareScenes(expected, await loadSceneCache({ sceneCacheDecoder: noWorker }, cacheUrl)), [], 'no worker: decoded here');
+
+    // An error reported by the worker (e.g. a missing file) reaches loadCachedScene, which falls back to the .dae
+    const failing = new SceneCacheDecoder(() => new FakeWorker({ fail: 'HTTP 404 for x' }));
+    const warned = [];
+    const host2 = { sceneCacheDecoder: failing, sceneCacheManifest: Promise.resolve({ version: SCENE_CACHE_VERSION, files: { [url]: {} } }) };
+    assert.strictEqual(await loadCachedScene(host2, url, (m, t) => warned.push(t)), null, 'worker error: null so the .dae is loaded');
+    assert.deepStrictEqual(warned, ['warn'], 'worker error reported as a warning');
+    console.log('  ✓ cache files decode in a worker; a failed or missing worker falls back to this thread');
+  }
+}
+
+// 8. Corrupt or foreign files are rejected
 assert.throws(() => deserializeScene(new TextEncoder().encode('<!doctype html>').buffer), /not a scene cache file/);
 const wrongVersion = serializeScene(new THREE.Group());
 new DataView(wrongVersion).setUint32(4, SCENE_CACHE_VERSION + 1, true);

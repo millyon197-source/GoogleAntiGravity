@@ -20,6 +20,7 @@ import {
   loadBinaryModel,
   loadColladaModel,
   loadCachedScene,
+  SceneCacheDecoder,
   computeModuleGroupRotation,
   computeX4RotationFromModuleGroup,
   CameraController,
@@ -177,6 +178,7 @@ export class StationViewer {
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
     this.meshLoader = new MeshLoader();
+    this.sceneCacheDecoder = new SceneCacheDecoder(); // .x4scene files decoded off the main thread
     this.colladaCache = new Map();
     this.isGridAtComponentScale = false;
     this.cameraTransitionAnimId = null;
