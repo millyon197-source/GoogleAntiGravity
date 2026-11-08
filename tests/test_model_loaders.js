@@ -167,13 +167,29 @@ function binaryHost() {
   assert.ok(root.getObjectByName('module_mesh_group'), 'root contains module_mesh_group');
   assert.deepStrictEqual(calls.bin, ['/x/test_mod_data/part_main-lod0.bin'], 'plain hull part uses the binary fast path');
   assert.deepStrictEqual(calls.dae, ['/x/test_mod_data/anim_door-lod0.dae'], 'anim_* part is routed to the Collada loader');
-  assert.ok(calls.log.some(m => m.includes('Falling back to ColladaLoader') && m.includes('anim_door')), 'fallback logged through options.log');
+  assert.deepStrictEqual(calls.log, [], 'parts that always come from the .dae are not reported as fallbacks');
   assert.deepStrictEqual(calls.apply.map(c => c[1]), [4, 4], 'materials applied per component with the module index');
   let door = null; root.traverse(o => { if (o.name === 'dae_part') door = o; });
   assert.ok(door, 'Collada component present in the assembled module');
   assert.ok(door.parent.position.equals(new THREE.Vector3(1, 2, 3)), 'componentOffsets applied to the component');
   assert.strictEqual(await loadModuleMesh(host, { macro: 'unknown_macro', index: 0 }), null, 'module without assets returns null (default options)');
-  console.log('  ✓ loadModuleMesh: binary/Collada routing, offsets, logging and material application via plain host');
+  // Scene cache: listed .dae parts come from host.loadCachedScene, others still from ColladaLoader
+  calls.dae.length = 0; calls.bin.length = 0;
+  host.getModuleActiveComponentFiles = () => ['part_main-lod0.dae', 'fx_glow-lod0.dae', 'anim_door-lod0.dae'];
+  const cached = [];
+  host.loadCachedScene = async (url) => { cached.push(url); return url.includes('fx_glow') ? fakeScene('cached_part') : null; };
+  const withCache = await loadModuleMesh(host, { macro: 'test_mod_macro', index: 5 }, options);
+  assert.deepStrictEqual(cached, ['/x/test_mod_data/fx_glow-lod0.dae', '/x/test_mod_data/anim_door-lod0.dae'], 'the cache is asked only for parts that need the .dae');
+  assert.deepStrictEqual(calls.dae, ['/x/test_mod_data/anim_door-lod0.dae'], 'a cached part skips ColladaLoader; an uncached one still uses it');
+  assert.ok(withCache.getObjectByName('cached_part'), 'cached scene is part of the module');
+  // A missing .bin is a real fallback and is reported as a warning
+  host.loadBinaryModel = async () => { throw new Error('HTTP 404'); };
+  calls.dae.length = 0;
+  const logged = [];
+  await loadModuleMesh(host, { macro: 'test_mod_macro', index: 6 }, { log: (msg, type) => logged.push([msg, type]) });
+  assert.ok(calls.dae.includes('/x/test_mod_data/part_main-lod0.dae'), 'part_main falls back to its .dae');
+  assert.ok(logged.some(([m, t]) => t === 'warn' && m.includes('part_main-lod0.dae') && m.includes('HTTP 404')), 'missing .bin reported as a warning');
+  console.log('  ✓ loadModuleMesh: binary/Collada/scene-cache routing, offsets, logging and material application via plain host');
 }
 
 // ---------------------------------------------------------------- viewer delegates

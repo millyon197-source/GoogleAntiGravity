@@ -9,6 +9,8 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  * @property {(index: number, macro: string) => string[]} getModuleActiveComponentFiles Active component files for a module.
  * @property {(url: string) => Promise<THREE.Object3D>} loadColladaModel
  * @property {(binUrl: string, jsonUrl: string) => Promise<THREE.Group>} loadBinaryModel
+ * @property {(daeUrl: string) => Promise<THREE.Object3D|null>} [loadCachedScene] Prebuilt scene for a
+ *   part normally loaded from its .dae (tools/generate-scene-cache.js), or null when there is none.
  * @property {(group: THREE.Object3D, url: string, moduleIndex?: number) => Promise<void>} applyTexturesToMeshGroup
  * @property {number} [glowingEmissiveIntensity] Current glow intensity setting (default 2.2).
  * @property {Array<Object>} animatedParts Mesh/part animation registry read by the render loop.
@@ -48,9 +50,8 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       const jsonUrl = url.replace(/\.dae$/i, '.json');
       const partBase = url.split('/').pop().replace(/-lod\d+\.dae$/i, '').toLowerCase();
 
-      try {
-        const uLower = url.toLowerCase();
-        if (
+      const uLower = url.toLowerCase();
+      const needsCollada =
           partBase.startsWith('fx') ||
           partBase.startsWith('anim') ||
           partBase.includes('billboard') ||
@@ -66,17 +67,22 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           uLower.includes('detail_l_main') ||
           uLower.includes('detail_s_main') ||
           uLower.includes('simon') ||
-          (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production')))
-        ) {
-          // fx*, anim*, billboards/signs, detail_m_main, detail_l_main, detail_s_main, simon, and production part_main components contain distinct subnodes (hull, fx, alpha, lightcones, foliage) requiring ColladaLoader
-          throw new Error('Multi-material subnodes, FX, Anim, or Billboards require DAE');
+          (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production')));
+
+      if (needsCollada) {
+        // fx*, anim*, billboards/signs, detail_m/l/s_main, simon and production part_main components have
+        // distinct subnodes (hull, fx, alpha, lightcones, foliage) and authored colour/UV channels that the
+        // .bin format does not keep, so they always come from the .dae: from the prebuilt scene cache
+        // when there is one, otherwise parsed by ColladaLoader.
+        sceneTemplate = (host.loadCachedScene ? await host.loadCachedScene(url) : null) || await host.loadColladaModel(url);
+      } else {
+        try {
+          // Fast path: Vulkan-aligned binary blob
+          sceneTemplate = await host.loadBinaryModel(binUrl, jsonUrl);
+        } catch (binErr) {
+          log(`[!] No usable .bin for ${url} (${binErr.message}); loading the .dae instead`, 'warn');
+          sceneTemplate = await host.loadColladaModel(url);
         }
-        // Fast-path: Load Vulkan-aligned binary blob via MeshWorker
-        sceneTemplate = await host.loadBinaryModel(binUrl, jsonUrl);
-      } catch (binErr) {
-        // Fallback to ColladaLoader using .dae files
-        log(`[*] Falling back to ColladaLoader for ${url}`, 'log');
-        sceneTemplate = await host.loadColladaModel(url);
       }
 
       if (sceneTemplate) {

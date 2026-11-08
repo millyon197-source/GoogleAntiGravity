@@ -19,6 +19,7 @@ import {
   loadDdsTexture,
   loadBinaryModel,
   loadColladaModel,
+  loadCachedScene,
   computeModuleGroupRotation,
   computeX4RotationFromModuleGroup,
   CameraController,
@@ -63,7 +64,11 @@ function sendLogToVSC(msg, type = 'log') {
   } else {
     console.log(msg);
   }
-  fetch(`/api/log?msg=${encodeURIComponent(msg)}&type=${type}`).catch(() => {});
+  // Only warnings and errors go to the dev-server terminal: a large plan logs thousands of progress
+  // lines, and one request each slowed the load.
+  if (type === 'warn' || type === 'error') {
+    fetch(`/api/log?msg=${encodeURIComponent(msg)}&type=${type}`).catch(() => {});
+  }
 }
 
 const daeAssetIndex = createDaeAssetIndex(DAE_HASH_TABLE);
@@ -1466,6 +1471,11 @@ export class StationViewer {
 
   loadColladaModel(url) {
     return loadColladaModel(this, url);
+  }
+
+  /** Prebuilt scene for a .dae part (npm run generate:scene-cache), or null to load the .dae. */
+  loadCachedScene(daeUrl) {
+    return loadCachedScene(this, daeUrl, sendLogToVSC);
   }
 
   clear() {

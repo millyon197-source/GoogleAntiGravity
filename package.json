@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "test": "node tests/run-all.js",
     "sync:dlc-components": "node tools/sync-dlc-components.js",
-    "generate:macro-refs": "node tools/generate-macro-component-refs.js"
+    "generate:macro-refs": "node tools/generate-macro-component-refs.js",
+    "generate:scene-cache": "node tools/generate-scene-cache.js"
   },
   "dependencies": {
     "@x4/adapter-three": "^1.0.0",
