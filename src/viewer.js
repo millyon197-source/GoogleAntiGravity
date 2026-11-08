@@ -267,7 +267,9 @@ export class StationViewer {
 
     // 3. Renderer setup
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height, false);
+    // The canvas always fills its container; onWindowResize matches the drawing buffer to it
+    Object.assign(this.renderer.domElement.style, { display: 'block', width: '100%', height: '100%' });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -555,7 +557,14 @@ export class StationViewer {
     this.boundOnPointerMove = this.onPointerMove.bind(this);
     this.boundOnPointerUp = this.onPointerUp.bind(this);
 
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    // Follow the container's size, not just the window's: panels and layout changes resize it too, and
+    // a canvas sized only on window resizes kept a stale (even zero) size
+    this.boundOnWindowResize = this.onWindowResize.bind(this);
+    window.addEventListener('resize', this.boundOnWindowResize);
+    if (typeof ResizeObserver !== 'undefined') {
+      this.containerResizeObserver = new ResizeObserver(() => this.onWindowResize());
+      this.containerResizeObserver.observe(this.container);
+    }
     this.renderer.domElement.tabIndex = 0;
     this.renderer.domElement.style.outline = 'none';
     this.renderer.domElement.addEventListener('pointerdown', this.boundOnPointerDown);
@@ -3495,10 +3504,14 @@ export class StationViewer {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
 
+    // A hidden or collapsed container: keep the last size (a zero-size drawing buffer cannot be drawn to)
+    if (!(width > 0 && height > 0)) return;
+    if (this.renderer && this.lastViewSize && this.lastViewSize[0] === width && this.lastViewSize[1] === height) return;
+    this.lastViewSize = [width, height];
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height, false);
     if (this.composer) {
       this.composer.setSize(width, height);
       if (this.bloomPass && this.bloomPass.resolution) {
@@ -5534,7 +5547,8 @@ export class StationViewer {
 
   destroy() {
     cancelAnimationFrame(this.animationFrameId);
-    window.removeEventListener('resize', this.onWindowResize.bind(this));
+    if (this.boundOnWindowResize) window.removeEventListener('resize', this.boundOnWindowResize);
+    if (this.containerResizeObserver) this.containerResizeObserver.disconnect();
     if (this.boundOnPointerDown && this.renderer) {
       this.renderer.domElement.removeEventListener('pointerdown', this.boundOnPointerDown);
     }
