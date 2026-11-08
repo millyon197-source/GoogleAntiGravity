@@ -35,6 +35,23 @@ export function readComponentSnaps(file) {
   return snaps;
 }
 
+/**
+ * The part_main placement in a game component file: the offset position of the connection that
+ * directly contains <part name="part_main">. An empty or missing offset is [0, 0, 0].
+ * @param {string} file path of the component XML
+ * @returns {number[]|null} [x, y, z] in X4 component space, or null without a part_main part
+ */
+export function readPartMainOffset(file) {
+  if (!fs.existsSync(file)) return null;
+  const xml = fs.readFileSync(file, 'utf8');
+  const at = xml.search(/<part name="part_main"[\s>]/);
+  if (at < 0) return null;
+  const head = xml.slice(xml.lastIndexOf('<connection ', at), at);
+  if (!/<offset>/.test(head)) return [0, 0, 0];
+  const p = head.match(/<position x="([-\d.Ee]+)" y="([-\d.Ee]+)" z="([-\d.Ee]+)"/);
+  return p ? p.slice(1).map(Number) : [0, 0, 0];
+}
+
 /** Every macro file (<name>_macro.xml) and component file (<name>.xml) under `root`, by lowercase name. */
 export function indexGameFiles(root = 'assets1') {
   const macros = new Map();
@@ -54,6 +71,21 @@ export function indexGameFiles(root = 'assets1') {
 }
 
 /**
+ * The component file a module is built on, found the way X4 does it: the macro file's
+ * <component ref="..."/>, or a component named after the module when there is no macro file.
+ * @param {{ macros: Map<string, string>, components: Map<string, string> }} files from indexGameFiles
+ * @param {string} macro module macro name (e.g. hab_ter_m_01_macro)
+ * @returns {{ componentName: string, componentFile: string|undefined }}
+ */
+export function findComponentFile(files, macro) {
+  const ownBase = macro.toLowerCase().replace(/_macro$/, '');
+  const macroFile = files.macros.get(macro.toLowerCase());
+  const ref = macroFile ? (fs.readFileSync(macroFile, 'utf8').match(/<component ref="([^"]+)"/) || [])[1]?.toLowerCase() : null;
+  const componentName = ref || ownBase;
+  return { componentName, componentFile: files.components.get(componentName) };
+}
+
+/**
  * Compares each module's snaps with its game component file: same snap names, and positions equal
  * to the game values rounded to 2 decimals (the table's convention). The component is found the way
  * X4 does it: the macro file's <component ref="..."/> (several modules are built on another module's
@@ -68,10 +100,7 @@ export function compareSnapTableWithGame(macros, getSnaps, root = 'assets1') {
   const report = { own: 0, referenced: 0, noFile: [], mismatches: [] };
   for (const macro of macros) {
     const ownBase = macro.replace(/_macro$/, '');
-    const macroFile = files.macros.get(macro.toLowerCase());
-    const ref = macroFile ? (fs.readFileSync(macroFile, 'utf8').match(/<component ref="([^"]+)"/) || [])[1]?.toLowerCase() : null;
-    const componentName = ref || ownBase;
-    const componentFile = files.components.get(componentName);
+    const { componentName, componentFile } = findComponentFile(files, macro);
     const game = componentFile ? readComponentSnaps(componentFile) : null;
     if (!game) { report.noFile.push(ownBase); continue; }
     const source = componentName === ownBase ? 'own' : `component ${componentName}`;

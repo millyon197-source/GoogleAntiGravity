@@ -5646,6 +5646,151 @@ Object.assign(SNAP_POINTS_DB, {
     { "name": "ConnectionSnap002", "pos": [0, 0, -800] },
     { "name": "ConnectionSnap003", "pos": [-800, 0, 0] },
     { "name": "ConnectionSnap004", "pos": [800, 0, 0] }
+  ],
+  "buildmodule_ter_ships_m_dockarea_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [-600, -200, 0] },
+    { "name": "ConnectionSnap002", "pos": [600, -200, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 0, -400] },
+    { "name": "ConnectionSnap004", "pos": [0, 0, 400] }
+  ],
+  "buildmodule_ter_ships_l_macro": [
+    { "name": "ConnectionSnap001", "pos": [800, 0, 0] }
+  ],
+  "buildmodule_ter_ships_xl_macro": [
+    { "name": "ConnectionSnap001", "pos": [1800, 0, 0] },
+    { "name": "ConnectionSnap002", "pos": [-1800, 0, 0] }
+  ],
+  "struct_ter_vertical_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap002", "pos": [0, -200, 0] }
+  ],
+  "defence_ter_claim_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -800, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, -800, -400] }
+  ],
+  "defence_ter_disc_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] },
+    { "name": "ConnectionSnap003", "pos": [-400, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [400, 0, 0] },
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap006", "pos": [0, 200, 0] }
+  ],
+  "defence_ter_tube_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] }
+  ],
+  "buildmodule_ter_equip_m_dockarea_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [-600, -200, 0] },
+    { "name": "ConnectionSnap002", "pos": [600, -200, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 0, -400] },
+    { "name": "ConnectionSnap004", "pos": [0, 0, 400] }
+  ],
+  "buildmodule_ter_equip_l_macro": [
+    { "name": "ConnectionSnap001", "pos": [800, 0, 0] }
+  ],
+  "buildmodule_ter_equip_xl_macro": [
+    { "name": "ConnectionSnap001", "pos": [-1000, 0, 0] }
+  ],
+  "hab_ter_m_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 600] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -600] },
+    { "name": "ConnectionSnap003", "pos": [-600, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [600, 0, 0] }
+  ],
+  "hab_ter_s_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap002", "pos": [0, 0, -400] },
+    { "name": "ConnectionSnap003", "pos": [-400, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [400, 0, 0] }
+  ],
+  "pier_ter_harbor_01_macro": [
+    { "name": "ConnectionSnap001", "pos": [600, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap008", "pos": [0, -200, 0] }
+  ],
+  "pier_ter_harbor_04_macro": [
+    { "name": "ConnectionSnap008", "pos": [0, 0, 0] }
+  ],
+  "pier_ter_tradestation_01_macro": [
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] },
+    { "name": "ConnectionSnap006", "pos": [0, 200, 0] }
+  ],
+  "prod_ter_computronicsubstrate_macro": [
+    { "name": "ConnectionSnap002", "pos": [600, -500, 0] },
+    { "name": "ConnectionSnap001", "pos": [-600, -500, 0] }
+  ],
+  "prod_ter_medicalsupplies_macro": [
+    { "name": "ConnectionSnap002", "pos": [400, 0, 0] },
+    { "name": "ConnectionSnap001", "pos": [-400, 0, 0] }
+  ],
+  "prod_ter_metallicmicrolattice_macro": [
+    { "name": "ConnectionSnap002", "pos": [400, -600, 0] },
+    { "name": "ConnectionSnap001", "pos": [-400, -600, 0] }
+  ],
+  "prod_ter_proteinpaste_macro": [
+    { "name": "ConnectionSnap002", "pos": [600, 0, 0] },
+    { "name": "ConnectionSnap003", "pos": [0, 0, -600] },
+    { "name": "ConnectionSnap001", "pos": [-600, 0, 0] },
+    { "name": "ConnectionSnap004", "pos": [0, 0, 600] },
+    { "name": "ConnectionSnap005", "pos": [0, -200, 0] }
+  ],
+  "prod_ter_siliconcarbide_macro": [
+    { "name": "ConnectionSnap002", "pos": [400, -600, 0] },
+    { "name": "ConnectionSnap001", "pos": [-400, -600, 0] }
+  ],
+  "prod_ter_stimulants_macro": [
+    { "name": "ConnectionSnap002", "pos": [600, -600, 0] },
+    { "name": "ConnectionSnap001", "pos": [-600, -600, 0] }
+  ],
+  "prod_ter_mre_macro": [
+    { "name": "ConnectionSnap001", "pos": [0, -600, 0] }
+  ],
+  "storage_ter_m_container_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 600, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -600, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 200, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 200, -400] }
+  ],
+  "storage_ter_s_container_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 400, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -400, 0] }
+  ],
+  "storage_ter_l_liquid_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 800, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 400, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 400, -400] },
+    { "name": "ConnectionSnap05", "pos": [400, 400, 0] },
+    { "name": "ConnectionSnap06", "pos": [-400, 400, 0] }
+  ],
+  "storage_ter_m_liquid_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 600, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -600, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 200, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 200, -400] }
+  ],
+  "storage_ter_s_liquid_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 400, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -400, 0] }
+  ],
+  "storage_ter_l_solid_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 800, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -800, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 400, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 400, -400] },
+    { "name": "ConnectionSnap05", "pos": [400, 400, 0] },
+    { "name": "ConnectionSnap06", "pos": [-400, 400, 0] }
+  ],
+  "storage_ter_m_solid_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 600, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -600, 0] },
+    { "name": "ConnectionSnap03", "pos": [0, 200, 400] },
+    { "name": "ConnectionSnap04", "pos": [0, 200, -400] }
+  ],
+  "storage_ter_s_solid_01_macro": [
+    { "name": "ConnectionSnap01", "pos": [0, 400, 0] },
+    { "name": "ConnectionSnap02", "pos": [0, -400, 0] }
   ]
 });
 

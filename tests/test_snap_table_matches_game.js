@@ -5,7 +5,8 @@
  */
 import assert from 'node:assert';
 import { SNAP_POINTS_DB, getModuleSnapPoints } from '../src/snap-points-db.js';
-import { compareSnapTableWithGame } from '../tools/snap-game-data.js';
+import { MODULES_COST_DB } from '../packages/catalog/src/index.js';
+import { compareSnapTableWithGame, findComponentFile, indexGameFiles, readComponentSnaps } from '../tools/snap-game-data.js';
 
 console.log('[*] Testing that the snap table matches the game component files...');
 
@@ -17,6 +18,17 @@ assert.strictEqual(report.own + report.referenced, macros.length, 'every module 
 assert.deepStrictEqual(report.mismatches, [],
   'modules differing from the game:\n' + report.mismatches.map(m => `  ${m.module}: ${m.problems.join('; ')}`).join('\n'));
 console.log(`  ✓ all ${macros.length} modules match (${report.own} own component, ${report.referenced} built on another module's)`);
+
+// Every placeable module must have its own entry when the game defines its snaps; otherwise the
+// lookup falls back to a look-alike module's snaps (this hid wrong snaps on 24 Terran modules)
+const files = indexGameFiles();
+const missing = Object.keys(MODULES_COST_DB).filter(m => !(m in SNAP_POINTS_DB));
+const missingWithGameSnaps = missing.filter(m => {
+  const { componentFile } = findComponentFile(files, m);
+  return componentFile && (readComponentSnaps(componentFile)?.size || 0) > 0;
+});
+assert.deepStrictEqual(missingWithGameSnaps, [], `placeable modules without a snap entry although the game defines snaps: ${missingWithGameSnaps.join(', ')}`);
+console.log(`  ✓ every placeable module with game snap data has an entry (${missing.length} without game data: ${missing.map(m => m.replace('_macro', '')).join(', ') || 'none'})`);
 
 // The comparison must notice a wrong position, a missing snap and an extra snap
 const tampered = (macro) => {
