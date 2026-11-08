@@ -1872,10 +1872,15 @@ export class StationViewer {
     return box ? box.getSize(new THREE.Vector3()) : null;
   }
 
-  getModuleCalculatedRotation(index) {
+  /**
+   * X4 plan rotation (yaw, pitch, roll) of a module as currently placed in the scene.
+   * @param {number} index
+   * @param {{ decimals?: number }} [options] whole degrees by default; see computeX4RotationFromModuleGroup
+   */
+  getModuleCalculatedRotation(index, options) {
     const targetModule = this.modulesGroup.children.find(child => child.userData.index === index);
     if (!targetModule) return null;
-    return computeX4RotationFromModuleGroup(targetModule);
+    return computeX4RotationFromModuleGroup(targetModule, options);
   }
 
   setModulePosition(index, pos) {

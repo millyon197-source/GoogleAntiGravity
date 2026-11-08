@@ -31,13 +31,44 @@ export function exportCurrentPlanAsBlueprint() {
   }
 
   // Gather active/updated module positions and rotations from viewer.modulesGroup or currentPlan.modules
-  let activeModules = [];
-  if (deps.getViewer() && deps.getViewer().modulesGroup && deps.getViewer().modulesGroup.children.length > 0) {
-    activeModules = deps.getViewer().modulesGroup.children.map((child, idx) => {
-      const origMod = (deps.getCurrentPlan().modules && deps.getCurrentPlan().modules.find(m => m.index === child.userData.index)) || {};
+  const viewer = deps.getViewer();
+  const activeModules = (viewer && viewer.modulesGroup && viewer.modulesGroup.children.length > 0)
+    ? exportModulesFromScene(viewer, deps.getCurrentPlan())
+    : deps.getCurrentPlan().modules;
+
+  const defaultName = deps.getCurrentPlan().name || 'Custom Station Plan';
+  const totalModules = activeModules.length;
+
+  showCreateBlueprintModal({
+    defaultName,
+    totalModules,
+    onSave: (chosenName) => {
+      const fefbIdx = deps.getCurrentPlan()?.fefbModuleIndex ?? deps.getViewer()?.fefbModuleIndex ?? getFefbModuleIndex();
+      const xmlContent = generatePlanXML(chosenName, deps.getCurrentPlan(), { modules: activeModules, fefbModuleIndex: fefbIdx });
+      const safeFileName = chosenName.replace(/[<>:"/\\|?*]+/g, '_').trim() || 'Custom Station Plan';
+
+      downloadXMLFile(xmlContent, `${safeFileName}.xml`);
+
+      deps.getCurrentPlan().name = chosenName;
+      deps.updatePlanMetadata(deps.getCurrentPlan());
+      deps.showNotification(`Blueprint "${safeFileName}.xml" saved successfully!`, 'success');
+    }
+  });
+}
+
+/**
+ * Plan modules as they are now in the 3D scene (moved/rotated by the user), in X4 plan coordinates,
+ * ready for generatePlanXML. Used by exportCurrentPlanAsBlueprint.
+ * @param {{ modulesGroup: { children: object[] }, getModuleCalculatedRotation?: (index: number) => object }} viewer
+ * @param {{ modules?: object[] }} plan the loaded plan (supplies macro/connection/predecessor fallbacks)
+ */
+export function exportModulesFromScene(viewer, plan) {
+  return viewer.modulesGroup.children.map((child, idx) => {
+      const origMod = (plan.modules && plan.modules.find(m => m.index === child.userData.index)) || {};
       const pos = child.position;
       
-      const calcRot = deps.getViewer().getModuleCalculatedRotation ? deps.getViewer().getModuleCalculatedRotation(child.userData.index) : null;
+      // 6 decimals like X4's own exports: whole degrees would turn e.g. yaw -112.49992 into -112
+      const calcRot = viewer.getModuleCalculatedRotation ? viewer.getModuleCalculatedRotation(child.userData.index, { decimals: 6 }) : null;
       let yaw = 0, pitch = 0, roll = 0;
       if (calcRot) {
         yaw = calcRot.yaw;
@@ -73,27 +104,5 @@ export function exportCurrentPlanAsBlueprint() {
         },
         rotation: { yaw, pitch, roll }
       };
-    });
-  } else {
-    activeModules = deps.getCurrentPlan().modules;
-  }
-
-  const defaultName = deps.getCurrentPlan().name || 'Custom Station Plan';
-  const totalModules = activeModules.length;
-
-  showCreateBlueprintModal({
-    defaultName,
-    totalModules,
-    onSave: (chosenName) => {
-      const fefbIdx = deps.getCurrentPlan()?.fefbModuleIndex ?? deps.getViewer()?.fefbModuleIndex ?? getFefbModuleIndex();
-      const xmlContent = generatePlanXML(chosenName, deps.getCurrentPlan(), { modules: activeModules, fefbModuleIndex: fefbIdx });
-      const safeFileName = chosenName.replace(/[<>:"/\\|?*]+/g, '_').trim() || 'Custom Station Plan';
-
-      downloadXMLFile(xmlContent, `${safeFileName}.xml`);
-
-      deps.getCurrentPlan().name = chosenName;
-      deps.updatePlanMetadata(deps.getCurrentPlan());
-      deps.showNotification(`Blueprint "${safeFileName}.xml" saved successfully!`, 'success');
-    }
   });
 }

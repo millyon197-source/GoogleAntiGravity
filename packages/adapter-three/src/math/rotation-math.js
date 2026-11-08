@@ -26,14 +26,21 @@ export function computeModuleGroupRotation(yawDeg, pitchDeg, rollDeg) {
   return new THREE.Euler().setFromRotationMatrix(M_three, 'YXZ');
 }
 
-/** Inverse of computeModuleGroupRotation: the X4 plan (yaw, pitch, roll) of a module group, rounded to whole degrees. */
-export function computeX4RotationFromModuleGroup(moduleGroup) {
+/**
+ * Inverse of computeModuleGroupRotation: the X4 plan (yaw, pitch, roll) of a module group.
+ * @param {import('three').Object3D} moduleGroup
+ * @param {{ decimals?: number }} [options] rounding: whole degrees by default (UI fields, gizmo
+ *   snapping); blueprint export asks for more so non-integer angles survive a save
+ */
+export function computeX4RotationFromModuleGroup(moduleGroup, { decimals = 0 } = {}) {
   const M_three = new THREE.Matrix4().makeRotationFromEuler(moduleGroup.rotation);
   const Mx4 = new THREE.Matrix4().copy(S_MAT).multiply(M_three).multiply(M_BASE_MESH).multiply(S_MAT);
   const eX4 = new THREE.Euler().setFromRotationMatrix(Mx4, 'YXZ');
-  let yaw = Math.round(THREE.MathUtils.radToDeg(eX4.y)) % 360;
-  let pitch = -Math.round(THREE.MathUtils.radToDeg(eX4.x)) % 360;
-  let roll = -Math.round(THREE.MathUtils.radToDeg(eX4.z)) % 360;
+  const scale = 10 ** decimals;
+  const round = (deg) => Math.round(deg * scale) / scale;
+  let yaw = round(THREE.MathUtils.radToDeg(eX4.y)) % 360;
+  let pitch = -round(THREE.MathUtils.radToDeg(eX4.x)) % 360;
+  let roll = -round(THREE.MathUtils.radToDeg(eX4.z)) % 360;
   if (yaw > 180) yaw -= 360;
   if (yaw <= -180) yaw += 360;
   if (pitch > 180) pitch -= 360;
