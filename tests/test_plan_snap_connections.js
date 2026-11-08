@@ -66,11 +66,21 @@ function checkPlan(name, xml, { tolerance }) {
 //    connections meet (98.7%; the remaining ~1% are spread over a few modules), so this checks the
 //    overall rate. With X4's pitch sign wrong it drops to 95.6%; without the Terran snap entries, 93.8%.
 let exportedChecked = 0, exportedMet = 0;
+const quaternionFailures = [];
 for (const f of fs.readdirSync('tests/fixtures').filter(f => f.endsWith('.xml'))) {
-  const r = checkPlan(f, fs.readFileSync(`tests/fixtures/${f}`, 'utf8'), { tolerance: 0.1 });
+  const xml = fs.readFileSync(`tests/fixtures/${f}`, 'utf8');
+  const r = checkPlan(f, xml, { tolerance: 0.1 });
   exportedChecked += r.checked;
   exportedMet += r.checked - r.failures.length;
+  // Connections involving a quaternion-stored rotation must all meet (they once failed when the
+  // quaternion -> yaw/pitch/roll conversion used a different roll sign than the rotation maths)
+  const quatIndexes = new Set(parseConstructionPlan(xml).modules.filter(m => m.quaternion).map(m => m.index));
+  for (const failure of r.failures) {
+    const [, parentIdx, childIdx] = failure.match(/^(\d+):.* -> (\d+):/) || [];
+    if (quatIndexes.has(+parentIdx) || quatIndexes.has(+childIdx)) quaternionFailures.push(`${f}: ${failure}`);
+  }
 }
+assert.deepStrictEqual(quaternionFailures, [], `connections with quaternion rotations that do not meet:\n  ${quaternionFailures.join('\n  ')}`);
 const rate = exportedMet / exportedChecked;
 assert.ok(exportedChecked > 1000, 'enough real connections were checked');
 assert.ok(rate >= 0.97, `only ${(rate * 100).toFixed(1)}% of exported connections meet: the placement maths no longer matches X4`);
