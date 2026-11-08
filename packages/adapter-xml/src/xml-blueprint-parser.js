@@ -4,6 +4,8 @@ import { IBlueprintParserPort } from '@x4/application';
 /**
  * Convert an X4 quaternion (qx, qy, qz, qw) to Euler angles (yaw, pitch, roll) in degrees.
  * Uses X4's standard rotation sequence 'YXZ' (yaw around Y, pitch around X, roll around Z).
+ * Pitch is returned with the sign X4 uses in <rotation pitch="..."/> attributes, which is the
+ * opposite of a rotation about +X, so quaternion and attribute rotations mean the same thing.
  *
  * @param {number} qx
  * @param {number} qy
@@ -43,7 +45,7 @@ export function quaternionToEulerYXZ(qx, qy, qz, qw) {
   const radToDeg = 180 / Math.PI;
   return {
     yaw: yawRad * radToDeg,
-    pitch: pitchRad * radToDeg,
+    pitch: pitchRad ? -pitchRad * radToDeg : 0,
     roll: rollRad * radToDeg
   };
 }

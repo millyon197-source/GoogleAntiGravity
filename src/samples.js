@@ -117,7 +117,7 @@ export const SAMPLES = {
       <predecessor index="9" connection="connectionsnap001"/>
       <offset>
         <position x="0" y="800" z="0"/>
-        <rotation pitch="90"/>
+        <rotation pitch="-90"/>
       </offset>
     </entry>
     <!-- Tower (bottom) -->
@@ -133,7 +133,7 @@ export const SAMPLES = {
       <predecessor index="11" connection="connectionsnap001"/>
       <offset>
         <position x="0" y="-800" z="0"/>
-        <rotation pitch="-90"/>
+        <rotation pitch="90"/>
       </offset>
     </entry>
     <!-- Dock flank (starboard) -->

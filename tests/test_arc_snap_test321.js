@@ -19,7 +19,9 @@ assert(m6, 'Module #6 must exist');
 assert.strictEqual(m6.macro, 'struct_arg_arc_01_macro');
 assert(m6.quaternion, 'Module #6 must have parsed quaternion');
 assert(Math.abs(m6.rotation.yaw - (-180)) < 0.01, `Yaw must be -180, got ${m6.rotation.yaw}`);
-assert(Math.abs(m6.rotation.pitch - (-90)) < 0.01, `Pitch must be -90, got ${m6.rotation.pitch}`);
+// Pitch in X4's <rotation pitch> sign convention (opposite to a rotation about +X), so this
+// quaternion reads as pitch +90, as X4 itself would write it in attribute form
+assert(Math.abs(m6.rotation.pitch - 90) < 0.01, `Pitch must be 90, got ${m6.rotation.pitch}`);
 
 // 2. Build 3D scene matching StationViewer.loadStationPlan under unified mathematical pipeline
 const modulesMap = new Map();

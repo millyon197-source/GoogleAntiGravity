@@ -63,8 +63,8 @@ function checkPlan(name, xml, { tolerance }) {
 }
 
 // 1. Real plans exported from the game: the placement maths must make nearly all their recorded
-//    connections meet. Not all of them do (about 6% of X4's exported connections are off, spread
-//    over many module types, e.g. hab_ter_l_01 -> hab_ter_m_01), so this checks the overall rate.
+//    connections meet (98.7%; the remaining ~1% are spread over a few modules), so this checks the
+//    overall rate. With X4's pitch sign wrong it drops to 95.6%; without the Terran snap entries, 93.8%.
 let exportedChecked = 0, exportedMet = 0;
 for (const f of fs.readdirSync('tests/fixtures').filter(f => f.endsWith('.xml'))) {
   const r = checkPlan(f, fs.readFileSync(`tests/fixtures/${f}`, 'utf8'), { tolerance: 0.1 });
@@ -73,7 +73,7 @@ for (const f of fs.readdirSync('tests/fixtures').filter(f => f.endsWith('.xml'))
 }
 const rate = exportedMet / exportedChecked;
 assert.ok(exportedChecked > 1000, 'enough real connections were checked');
-assert.ok(rate >= 0.9, `only ${(rate * 100).toFixed(1)}% of exported connections meet: the placement maths no longer matches X4`);
+assert.ok(rate >= 0.97, `only ${(rate * 100).toFixed(1)}% of exported connections meet: the placement maths no longer matches X4`);
 console.log(`  ✓ exported plans: ${exportedMet} of ${exportedChecked} connections meet within 0.1 m (${(rate * 100).toFixed(1)}%), so the maths matches X4`);
 
 // 2. Built-in samples that record connections
@@ -86,5 +86,18 @@ for (const [key, xml] of Object.entries(SAMPLES)) {
 }
 const fortress = checkPlan('defenseFortress', SAMPLES.defenseFortress, { tolerance: 0.1 });
 assert.strictEqual(fortress.checked, fortress.modules - 1, 'every defenseFortress module after the first is connected to a predecessor');
+
+// 3. Blueprint export reads rotations back with the inverse; it must return X4's own angles
+const { computeX4RotationFromModuleGroup } = await import('../packages/adapter-three/src/math/rotation-math.js');
+for (const [yaw, pitch, roll] of [[0, 30, 0], [0, -45, 0], [90, 15, 0], [-135, 0, 20], [45, 60, -30], [0, 90, 0], [180, -90, 0]]) {
+  const group = new THREE.Object3D();
+  group.rotation.copy(computeModuleGroupRotation(yaw, pitch, roll));
+  const back = computeX4RotationFromModuleGroup(group);
+  const sameOrientation = new THREE.Quaternion().setFromEuler(computeModuleGroupRotation(back.yaw, back.pitch, back.roll))
+    .angleTo(new THREE.Quaternion().setFromEuler(group.rotation)) < 1e-6;
+  assert.ok(sameOrientation, `rotation (${yaw}, ${pitch}, ${roll}) read back as (${back.yaw}, ${back.pitch}, ${back.roll})`);
+  if (Math.abs(pitch) < 90) assert.deepStrictEqual([back.yaw, back.pitch, back.roll], [yaw, pitch, roll], `angles round-trip for (${yaw}, ${pitch}, ${roll})`);
+}
+console.log('  ✓ rotations round-trip through the export inverse, pitch sign included');
 
 console.log('\n[PASS] test_plan_snap_connections');
