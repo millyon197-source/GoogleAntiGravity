@@ -731,11 +731,23 @@ export class StationViewer {
     // Held while a plan load compiles shaders for a newly added module (see precompileShaders): a frame
     // drawn now would compile them synchronously, one after another, and freeze the page
     if (this.renderHeld) return;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    // While a plan loads, the station still appears progressively, but frames are spaced out so drawing
+    // takes at most about a fifth of the time. A frame redraws the whole scene (2 s for a 585-module plan)
+    // and loading asked for one per module, so drawing took most of the load (Prod Max: 139 s vs 20 s).
+    if (this.planLoading && this.lastRenderEnd !== undefined &&
+        now - this.lastRenderEnd < Math.max(250, 4 * (this.lastRenderDuration || 0))) {
+      this.renderSkippedWhileLoading = true;
+      return;
+    }
     if (this.composer && this.bloomEnabled !== false) {
       this.composer.render();
     } else if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }
+    const end = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    this.lastRenderDuration = end - now;
+    this.lastRenderEnd = end;
   }
 
   /**
@@ -1107,7 +1119,26 @@ export class StationViewer {
     this.rebuildGridAndBounds(sizeX, sizeZ, sizeY, centerX, centerY, centerZ, gridY);
   }
 
+  /**
+   * Loads a station plan. While it loads, renderScene spaces frames out (planLoading); the finished
+   * station is drawn once at the end if a frame was skipped.
+   * @param {Object} planData
+   */
   async loadStationPlan(planData) {
+    this.planLoading = true;
+    this.renderSkippedWhileLoading = false;
+    try {
+      return await this.loadStationPlanContents(planData);
+    } finally {
+      this.planLoading = false;
+      if (this.renderSkippedWhileLoading) {
+        this.renderSkippedWhileLoading = false;
+        this.renderScene();
+      }
+    }
+  }
+
+  async loadStationPlanContents(planData) {
     this.clear();
     this.currentPlan = planData;
     this.hiddenMacros.clear();
