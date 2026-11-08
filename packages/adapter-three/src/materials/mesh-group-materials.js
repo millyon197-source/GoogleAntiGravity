@@ -874,12 +874,18 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                       { name: 'bg_tools', quads: [19, 20, 21] }
                     ];
 
+                    // Not every anim_cross has all 22 quads (struct_arg_base_03 has 14): reading
+                    // quads past the end filled panels with NaN vertices. Use only quads that exist
+                    // and skip panels that have none (callers already handle a missing panel).
+                    const quadCount = Math.floor((child.geometry.attributes.position?.count || 0) / 6);
                     child.userData.isolatedBackgrounds = {};
                     for (const def of bgDefs) {
+                      const quads = def.quads.filter(q => q < quadCount);
                       let bMesh = child.getObjectByName(def.name);
                       if (!bMesh || !bMesh.isMesh) {
+                        if (quads.length === 0) continue;
                         if (bMesh) child.remove(bMesh);
-                        const bGeom = createQuadGeom(def.quads);
+                        const bGeom = createQuadGeom(quads);
                         bMesh = new THREE.Mesh(bGeom, bgMat);
                         bMesh.name = def.name;
                         bMesh.renderOrder = 1;
