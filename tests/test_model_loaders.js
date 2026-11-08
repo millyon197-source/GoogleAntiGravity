@@ -191,8 +191,20 @@ function binaryHost() {
   const withRaw = await loadModuleMesh(host, { macro: 'test_mod_macro', index: 8 }, options);
   const placed = withRaw.getObjectByName('raw_part');
   assert.ok(placed && placed !== rawTemplate.children[0], 'part placed as a clone');
-  assert.strictEqual(placed.userData.rawUvs, rawUvs, 'clone shares the template raw UVs');
-  assert.strictEqual(rawTemplate.children[0].userData.rawUvs, rawUvs, 'template keeps its raw UVs');
+  assert.strictEqual(placed.userData.rawUvs, undefined, 'raw UVs are dropped for parts that never use them');
+  assert.strictEqual(rawTemplate.children[0].userData.rawUvs, undefined, '...from the cached template too');
+  // cross module parts keep them, shared between the template and its clones
+  const crossTemplate = fakeScene('cross_part');
+  crossTemplate.children[0].userData.rawUvs = rawUvs;
+  const resolveBefore = host.resolveModuleAssetEntry;
+  host.resolveModuleAssetEntry = () => ({ baseName: 'struct_arg_cross_01', folderPath: '/x/connectionmodules/struct_arg_cross_01_data', defaultFiles: ['fx_glow-lod0.dae'] });
+  host.getModuleActiveComponentFiles = () => ['fx_glow-lod0.dae'];
+  host.loadCachedScene = async () => crossTemplate;
+  const cross = await loadModuleMesh(host, { macro: 'struct_arg_cross_01_macro', index: 9 }, options);
+  assert.strictEqual(cross.getObjectByName('cross_part').userData.rawUvs, rawUvs, 'cross parts share the template raw UVs');
+  assert.strictEqual(crossTemplate.children[0].userData.rawUvs, rawUvs, 'and the template keeps them');
+  host.resolveModuleAssetEntry = resolveBefore;
+  host.getModuleActiveComponentFiles = () => ['part_main-lod0.dae', 'fx_glow-lod0.dae', 'anim_door-lod0.dae'];
   // A part without a .bin that the cache lists: no .bin request and no warning
   calls.bin.length = 0; calls.dae.length = 0;
   host.loadCachedScene = async (url) => (url.includes('part_main') ? fakeScene('cached_main') : null);

@@ -23,6 +23,25 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  * @property {(msg: string, type?: 'log'|'warn'|'error') => void} [log] Diagnostic logger.
  */
 
+/**
+ * Whether the texturing code reads a part's raw texture-coordinate channels (userData.rawUvs): only
+ * for the cross/connection module signs and backgrounds it splits into quads.
+ * @param {string} url
+ */
+export function partUsesRawUvs(url) {
+  const u = String(url || '').toLowerCase();
+  return u.includes('cross') || u.includes('connectionmodules');
+}
+
+/**
+ * Removes userData.rawUvs from a part template. Every part kept the raw UV channels of its .dae (about
+ * 290 MB with all 247 module types loaded), though only cross module signs use them.
+ * @param {THREE.Object3D} template
+ */
+export function dropRawUvs(template) {
+  template.traverse(o => { if (o.userData && o.userData.rawUvs !== undefined) delete o.userData.rawUvs; });
+}
+
 // Geometries of cached part templates: placed parts share them, and they stay cached for reuse
 const templateGeometries = new WeakSet();
 
@@ -194,6 +213,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
 
       if (sceneTemplate) {
         if (host.templatesInUse) host.templatesInUse.add(sceneTemplate); // see releaseUnusedTemplates
+        if (!partUsesRawUvs(url)) dropRawUvs(sceneTemplate);
         const scene = cloneSharingRawUvs(sceneTemplate);
         scene.traverse(child => {
           if (child.userData) {

@@ -15,10 +15,14 @@ import {
   loadModuleMesh,
   disposeModuleGeometry,
   releaseUnusedTemplates,
+  shareModuleMaterials,
+  ownModuleMaterials,
+  castsShadow,
   applyTexturesToMeshGroup,
   getRaceGlowColor,
   getRaceHullColor,
   loadDdsTexture,
+  releaseTextureData,
   loadBinaryModel,
   loadColladaModel,
   loadCachedScene,
@@ -75,6 +79,29 @@ function sendLogToVSC(msg, type = 'log') {
 }
 
 const daeAssetIndex = createDaeAssetIndex(DAE_HASH_TABLE);
+
+/**
+ * Most lights the modules of a plan switch on (forcefield and glow parts bring their own point lights).
+ * three writes the lighting code out once per light in every lit shader, and compiling grows faster
+ * than the light count: on D3D11 one material took 0.07 s with 4 lights, 0.22 s with 16 and 1.2 s
+ * with 64. Prod Max brings 146, so the first frame after its load compiled for minutes and the page
+ * hung. The rest stay off (flagged userData.offToLimitLights); their glow textures still show.
+ */
+export const MAX_MODULE_LIGHTS = 16;
+
+/**
+ * Up to `max` items spread evenly over `items`, in order.
+ * @template T
+ * @param {T[]} items
+ * @param {number} max
+ * @returns {T[]}
+ */
+export function pickEvenly(items, max) {
+  if (items.length <= max) return items.slice();
+  const picked = [];
+  for (let i = 0; i < max; i++) picked.push(items[Math.floor((i * items.length) / max)]);
+  return picked;
+}
 
 // Module types drawn as placeholders in the current plan load get " (Procedural)" appended to
 // their display name. The original names are kept here so the next load can restore them;
@@ -710,6 +737,8 @@ export class StationViewer {
       : this.modulesGroup;
 
     if (target) {
+      // Materials are shared between modules: a single module's glow changes its own copies
+      if (moduleIndex !== null) ownModuleMaterials(target);
       target.traverse(child => {
         if (child.isMesh && child.material) {
           const mats = Array.isArray(child.material) ? child.material : [child.material];
@@ -779,6 +808,44 @@ export class StationViewer {
       renderer.setRenderTarget(previous);
     }
     return Promise.resolve(pending).then(() => {}, () => {});
+  }
+
+  /**
+   * Keeps the lights of newly added module parts within MAX_MODULE_LIGHTS: lights beyond what the
+   * plan's other modules already use are switched off (flagged userData.offToLimitLights).
+   * @param {THREE.Object3D} added Parts just added to a module (e.g. a component swap)
+   * @returns {number} How many lights were switched off
+   */
+  limitModuleLights(added) {
+    if (!this.modulesGroup || !added) return 0;
+    const isLight = (o) => o.isPointLight || o.isSpotLight;
+    const inAdded = new Set();
+    added.traverse(o => { if (isLight(o)) inAdded.add(o); });
+    let budget = MAX_MODULE_LIGHTS;
+    this.modulesGroup.traverse(o => { if (isLight(o) && o.visible && !inAdded.has(o)) budget--; });
+    let switchedOff = 0;
+    for (const light of inAdded) {
+      if (!light.visible) continue;
+      if (budget > 0) { budget--; continue; }
+      light.visible = false;
+      light.userData.offToLimitLights = true;
+      switchedOff++;
+    }
+    return switchedOff;
+  }
+
+  /**
+   * Frees the JavaScript copy of cached texture data that is already on the GPU (releaseTextureData);
+   * loadDdsTexture decodes it again when a texture is needed for a change.
+   * @returns {number} How many textures were freed
+   */
+  releaseUploadedTextureData() {
+    if (!this.renderer || !this.renderer.properties || !this.textureCache) return 0;
+    const properties = this.renderer.properties;
+    return releaseTextureData(this, (texture) => {
+      const p = properties.get(texture);
+      return Boolean(p && p.__webglTexture) && p.__version === texture.version;
+    });
   }
 
   /**
@@ -1154,9 +1221,11 @@ export class StationViewer {
     // cached templates it does not use are released (releaseUnusedTemplates)
     const templatesInUse = new Set();
     this.templatesInUse = templatesInUse;
+    let loadSucceeded = false;
     try {
       const result = await this.loadStationPlanContents(planData);
       if (this.templatesInUse === templatesInUse) await releaseUnusedTemplates(this, templatesInUse);
+      loadSucceeded = true;
       return result;
     } finally {
       this.planLoading = false;
@@ -1164,6 +1233,8 @@ export class StationViewer {
         this.renderSkippedWhileLoading = false;
         this.renderScene();
       }
+      // The station has been drawn: free the JavaScript copies of texture data already on the GPU
+      if (loadSucceeded) this.releaseUploadedTextureData();
     }
   }
 
@@ -1202,6 +1273,8 @@ export class StationViewer {
     const sortedModules = sortModulesByLayerCategoryOrder(planData.modules, layerOrder);
     const plotConfig = this.currentPlotConfig || getCurrentPlotConfig();
     const deferredLights = [];
+    // Identical materials are shared across the plan (shareModuleMaterials); also used for component swaps
+    this.sharedMaterialRegistry = new Map();
 
     // Modules are placed one at a time in order, but the next few are already loading meanwhile so
     // their fetches and decoding overlap with placing this one
@@ -1268,10 +1341,12 @@ export class StationViewer {
         clampModulePositionToPlot(moduleGroup.position, moduleGroup.userData.initialSize, plotConfig);
       }
 
-      // Enable casting/receiving shadow on child meshes
+      // Share identical materials with the modules already placed, then set shadows: effects and small
+      // parts cast none (castsShadow), every mesh receives them
+      shareModuleMaterials(moduleGroup, this.sharedMaterialRegistry);
       moduleGroup.traverse(child => {
         if (child.isMesh) {
-          child.castShadow = true;
+          child.castShadow = castsShadow(child);
           child.receiveShadow = true;
           child.userData.moduleIndex = mod.index; // For raycasting target identification
         }
@@ -1309,7 +1384,12 @@ export class StationViewer {
     if (deferredLights.length > 0) {
       this.renderHeld = true;
       try {
-        for (const light of deferredLights) light.visible = true;
+        // At most MAX_MODULE_LIGHTS of them, spread evenly over the plan (see MAX_MODULE_LIGHTS)
+        const lit = new Set(pickEvenly(deferredLights, MAX_MODULE_LIGHTS));
+        for (const light of deferredLights) {
+          if (lit.has(light)) light.visible = true;
+          else light.userData.offToLimitLights = true;
+        }
         await this.precompileModulesInBatches();
       } finally {
         this.renderHeld = false;
@@ -1440,10 +1520,12 @@ export class StationViewer {
       disposeModuleGeometry(oldMeshGroup);
     }
     targetModule.add(newMeshGroup);
+    this.limitModuleLights(newMeshGroup);
 
+    if (this.sharedMaterialRegistry) shareModuleMaterials(newMeshGroup, this.sharedMaterialRegistry);
     newMeshGroup.traverse(child => {
       if (child.isMesh) {
-        child.castShadow = true;
+        child.castShadow = castsShadow(child);
         child.receiveShadow = true;
         child.userData.moduleIndex = index;
       }
