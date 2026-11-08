@@ -69,7 +69,16 @@ export function sceneCachePathFor(daePath) {
  * @param {THREE.Object3D} root
  * @returns {ArrayBuffer}
  */
-export function serializeScene(root) {
+export function serializeScene(root, { shouldIndex = null } = {}) {
+  // Geometry to store indexed: every mesh using it must qualify (shouldIndex)
+  const indexable = new Map();
+  if (shouldIndex) {
+    root.traverse(o => {
+      if (!o.isMesh || !o.geometry) return;
+      const ok = !o.geometry.index && shouldIndex(o) === true;
+      indexable.set(o.geometry, (indexable.has(o.geometry) ? indexable.get(o.geometry) : true) && ok);
+    });
+  }
   const arrays = [];
   const arrayIndex = new Map();
   const itemSizes = [];
@@ -109,15 +118,17 @@ export function serializeScene(root) {
   };
   const addGeometry = (g) => {
     if (geometryIndex.has(g)) return geometryIndex.get(g);
+    const indexed = indexable.get(g) ? indexGeometryData(g) : null;
     const attributes = {};
     for (const [name, attr] of Object.entries(g.attributes)) {
       if (attr.isInterleavedBufferAttribute) throw new Error('interleaved attributes are not supported');
-      attributes[name] = { array: addArray(attr.array, attr.itemSize), itemSize: attr.itemSize, normalized: attr.normalized, name: attr.name || '' };
+      const array = indexed ? indexed.attributes[name] : attr.array;
+      attributes[name] = { array: addArray(array, attr.itemSize), itemSize: attr.itemSize, normalized: attr.normalized, name: attr.name || '' };
     }
     const entry = {
       name: g.name || '',
       attributes,
-      index: g.index ? addArray(g.index.array) : null,
+      index: indexed ? addArray(indexed.index) : (g.index ? addArray(g.index.array) : null),
       groups: g.groups.map(gr => ({ start: gr.start, count: gr.count, materialIndex: gr.materialIndex })),
       drawRange: { start: g.drawRange.start, count: Number.isFinite(g.drawRange.count) ? g.drawRange.count : null },
       userData: plainData(g.userData, addArray, false)
@@ -194,6 +205,81 @@ export function serializeScene(root) {
   bytes.set(json, headerBytes);
   for (const [typed, at] of chunks) bytes.set(new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength), blobStart + at);
   return out;
+}
+
+/**
+ * Indexed form of a non-indexed geometry: vertices whose attributes are all identical (bit for bit)
+ * are stored once, in order of first use, and the index lists them in the original vertex order. So
+ * triangles, their order, draw ranges and material groups (which count index entries) are unchanged,
+ * and expanding the index gives back exactly the original arrays. Collada geometry is non-indexed and
+ * reuses each vertex about 2.3 times, so this halves the vertex data uploaded to the GPU.
+ * Returns null when it would not help or the geometry cannot be indexed this way.
+ * @param {THREE.BufferGeometry} g
+ * @returns {{ attributes: Record<string, ArrayBufferView>, index: Uint16Array|Uint32Array }|null}
+ */
+export function indexGeometryData(g) {
+  if (g.index || !g.attributes.position) return null;
+  const count = g.attributes.position.count;
+  if (count === 0) return null;
+  const used = [];
+  for (const [name, attr] of Object.entries(g.attributes)) {
+    if (attr.isInterleavedBufferAttribute) return null;
+    if (attr.array.length === 0) continue; // empty channels (e.g. an unused uv1) stay as they are
+    // ColladaLoader leaves some channels (uv1) with itemSize 0 but per-vertex data: use the real width
+    const k = attr.itemSize > 0 ? attr.itemSize : attr.array.length / count;
+    if (!Number.isInteger(k) || k < 1 || attr.array.length !== count * k || attr.array.BYTES_PER_ELEMENT !== 4) return null;
+    used.push([name, attr, new Uint32Array(attr.array.buffer, attr.array.byteOffset, attr.array.length), k]);
+  }
+  const seen = new Map();
+  const index = new Uint32Array(count);
+  const firstVertex = [];
+  for (let v = 0; v < count; v++) {
+    let key = '';
+    for (const [, , words, k] of used) {
+      const base = v * k;
+      for (let j = 0; j < k; j++) key += words[base + j] + ',';
+    }
+    let id = seen.get(key);
+    if (id === undefined) { id = firstVertex.length; seen.set(key, id); firstVertex.push(v); }
+    index[v] = id;
+  }
+  const unique = firstVertex.length;
+  const IndexCtor = unique <= 65535 ? Uint16Array : Uint32Array;
+  const bytesBefore = used.reduce((sum, [, attr]) => sum + attr.array.byteLength, 0);
+  const bytesAfter = used.reduce((sum, [, , , k]) => sum + unique * k * 4, 0) + count * IndexCtor.BYTES_PER_ELEMENT;
+  if (bytesAfter >= bytesBefore) return null;
+  const attributes = {};
+  for (const [name, attr] of Object.entries(g.attributes)) attributes[name] = attr.array;
+  for (const [name, attr, words, k] of used) {
+    const out = new attr.array.constructor(unique * k);
+    const outWords = new Uint32Array(out.buffer);
+    for (let u = 0; u < unique; u++) {
+      const src = firstVertex[u] * k;
+      for (let j = 0; j < k; j++) outWords[u * k + j] = words[src + j];
+    }
+    attributes[name] = out;
+  }
+  return { attributes, index: IndexCtor === Uint32Array ? index : IndexCtor.from(index) };
+}
+
+/**
+ * Whether the scene cache may store a mesh's geometry indexed. Left non-indexed: meshes without
+ * normals (computeVertexNormals would smooth across shared vertices) and every part the texturing
+ * code splits into quads by vertex position (cross and connection modules, signs, ads, billboards,
+ * habitat billboards) or switches sign UVs on.
+ * @param {string} url .dae part URL
+ * @param {THREE.Mesh} mesh
+ */
+export function mayIndexForCache(url, mesh) {
+  const u = String(url || '').toLowerCase();
+  const part = u.split('/').pop().replace(/-lod\d+\.dae$/, '');
+  if (!mesh.geometry || !mesh.geometry.attributes.normal) return false;
+  if (mesh.userData && (mesh.userData.billboardStateAUvs || typeof mesh.userData.setBillboardState === 'function')) return false;
+  if (u.includes('cross') || u.includes('connectionmodules') || u.includes('billboard') || u.includes('ad_signs')) return false;
+  if (part.includes('anim_arrows') || part.includes('anim_cross') || part.includes('billboard') || part.includes('sign') || part.includes('ads')) return false;
+  const names = [mesh.name, ...[].concat(mesh.material || []).map(m => m && m.name)].join(' ').toLowerCase();
+  if (names.includes('billboard') || names.includes('anim_arrows') || names.includes('anim_cross')) return false;
+  return true;
 }
 
 /**

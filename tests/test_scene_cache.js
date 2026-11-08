@@ -106,6 +106,26 @@ function sameArray(x, y) {
   for (let i = 0; i < x.length; i++) if (!Object.is(x[i], y[i])) return false;
   return true;
 }
+// Expands indexed geometry back to non-indexed arrays, bit for bit (cache files store some geometry
+// indexed; expanded, it must equal the .dae geometry exactly)
+function expandIndexed(scene) {
+  scene.traverse(o => {
+    const g = o.isMesh && o.geometry;
+    if (!g || !g.index) return;
+    const idx = g.index.array;
+    for (const [name, attr] of Object.entries(g.attributes)) {
+      if (attr.array.length === 0) continue;
+      const k = attr.itemSize > 0 ? attr.itemSize : attr.array.length / (Math.max(...idx) + 1); // itemSize-0 channels: real width
+      const out = new attr.array.constructor(idx.length * k);
+      const ow = new Uint32Array(out.buffer), iw = new Uint32Array(attr.array.buffer, attr.array.byteOffset, attr.array.length);
+      for (let i = 0; i < idx.length; i++) for (let j = 0; j < k; j++) ow[i * k + j] = iw[idx[i] * k + j];
+      const na = new THREE.BufferAttribute(out, attr.itemSize, attr.normalized); na.name = attr.name;
+      g.setAttribute(name, na);
+    }
+    g.setIndex(null);
+  });
+  return scene;
+}
 const texKey = (t) => (t ? { name: t.name, image: Boolean(t.image), wrap: [t.wrapS, t.wrapT], repeat: t.repeat.toArray(), offset: t.offset.toArray(), colorSpace: t.colorSpace, flipY: t.flipY } : null);
 
 // 3. Rebuild vs .dae for a spread of parts, before and after texturing
@@ -207,6 +227,46 @@ console.log(`  ✓ ${checked} parts rebuild identically to the .dae scene, befor
   console.log(`  ✓ ${parts} parts: sharing raw UVs when placing a part gives the same textured result as a plain clone`);
 }
 
+// 3d. Indexed geometry: what the generator stores indexed expands to exactly the .dae geometry, textures
+//     the same way, and parts whose quads the texturing code splits by vertex stay non-indexed
+{
+  const { mayIndexForCache, indexGeometryData } = await import('../packages/adapter-three/src/models/scene-cache.js');
+  let indexedMeshes = 0, keptMeshes = 0, bytesBefore = 0, bytesAfter = 0;
+  for (const url of urls) {
+    host.colladaCache.delete(url);
+    const original = await quiet(loadColladaModel)(host, url);
+    const rebuilt = deserializeScene(serializeScene(original, { shouldIndex: (m) => mayIndexForCache(url, m) }));
+    const sizes = (sc) => { let b = 0; sc.traverse(o => { if (o.isMesh) { for (const a of Object.values(o.geometry.attributes)) b += a.array.byteLength; if (o.geometry.index) b += o.geometry.index.array.byteLength; } }); return b; };
+    bytesBefore += sizes(original); bytesAfter += sizes(rebuilt);
+    const om = [], rm = []; original.traverse(o => o.isMesh && om.push(o)); rebuilt.traverse(o => o.isMesh && rm.push(o));
+    om.forEach((o, i) => {
+      if (rm[i].geometry.index) {
+        indexedMeshes++;
+        assert.ok(mayIndexForCache(url, o), `${url}: only qualifying meshes are indexed`);
+        assert.strictEqual(rm[i].geometry.index.count, o.geometry.attributes.position.count, 'one index entry per original vertex');
+      } else keptMeshes++;
+    });
+    if (/connectionmodules|anim_arrows|anim_cross/.test(url)) assert.ok(rm.every(m => !m.geometry.index), `${url}: quad-split parts stay non-indexed`);
+    const problems = compareScenes(original, expandIndexed(deserializeScene(serializeScene(original, { shouldIndex: (m) => mayIndexForCache(url, m) }))));
+    assert.deepStrictEqual(problems, [], `${url}: indexed geometry does not expand to the .dae geometry: ${problems.slice(0, 8).join(' | ')}`);
+    // textured: the indexed rebuild gets the same materials as a plain clone of the .dae scene
+    const a = original.clone(), b = rebuilt.clone();
+    await quiet(applyTexturesToMeshGroup)(host, a, url, 1);
+    await quiet(applyTexturesToMeshGroup)(host, b, url, 1);
+    const after = compareScenes(a, expandIndexed(b));
+    assert.deepStrictEqual(after, [], `${url}: textured indexed scene differs: ${after.slice(0, 8).join(' | ')}`);
+    host.colladaCache.delete(url);
+  }
+  assert.ok(indexedMeshes > 0, 'some sample meshes are indexed');
+  // a geometry that does not shrink is left alone; one with every vertex shared once collapses
+  const tri = new THREE.BufferGeometry(); tri.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
+  assert.strictEqual(indexGeometryData(tri), null, 'no shared vertices: stays non-indexed');
+  const quad = new THREE.BufferGeometry(); quad.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0]), 3));
+  const q = indexGeometryData(quad);
+  assert.ok(q && q.attributes.position.length === 12 && Array.from(q.index).join() === '0,1,2,0,2,3,0,1,2,0,2,3', 'shared vertices stored once, index keeps the original order');
+  console.log(`  ✓ ${indexedMeshes} sample meshes stored indexed (${(bytesBefore / 1048576).toFixed(1)} -> ${(bytesAfter / 1048576).toFixed(1)} MB), ${keptMeshes} kept as they are; all expand to the .dae geometry and texture identically`);
+}
+
 // 4. Generated cache files and manifest, when present
 const manifestPath = '.' + SCENE_CACHE_MANIFEST_PATH;
 if (fs.existsSync(manifestPath)) {
@@ -219,7 +279,7 @@ if (fs.existsSync(manifestPath)) {
   for (const url of urls) {
     if (!manifest.files[url]) continue;
     const file = fs.readFileSync('.' + sceneCachePathFor(url));
-    const rebuilt = deserializeScene(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength));
+    const rebuilt = expandIndexed(deserializeScene(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength)));
     const problems = compareScenes(await quiet(loadColladaModel)(host, url), rebuilt);
     assert.deepStrictEqual(problems, [], `${url}: cache file differs from the .dae:\n  ${problems.slice(0, 8).join('\n  ')}`);
     fromDisk++;

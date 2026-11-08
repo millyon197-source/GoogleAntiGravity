@@ -4,7 +4,7 @@
  * typed arrays, expanding arrays stored as distinct items + index. See scene-cache.js for the layout.
  */
 
-export const SCENE_CACHE_VERSION = 2;
+export const SCENE_CACHE_VERSION = 3; // 3: geometry may be stored indexed
 export const SCENE_CACHE_MAGIC = 'X4SC';
 
 export const ARRAY_TYPES = {

@@ -37,7 +37,7 @@ if (typeof globalThis.localStorage === 'undefined') {
 const { ColladaLoader } = await import('three/examples/jsm/loaders/ColladaLoader.js');
 const { loadColladaModel } = await import('../packages/adapter-three/src/models/collada-model-loader.js');
 const {
-  serializeScene, isSceneCacheCandidate, sceneCachePathFor, SCENE_CACHE_VERSION, SCENE_CACHE_MANIFEST_PATH
+  serializeScene, mayIndexForCache, isSceneCacheCandidate, sceneCachePathFor, SCENE_CACHE_VERSION, SCENE_CACHE_MANIFEST_PATH
 } = await import('../packages/adapter-three/src/models/scene-cache.js');
 
 const args = process.argv.slice(2);
@@ -106,7 +106,7 @@ for (const [i, url] of targets.entries()) {
     const scene = await loadColladaModel(host, url);
     restoreConsole();
     if (!scene) throw new Error('loader returned nothing');
-    const buffer = Buffer.from(serializeScene(scene));
+    const buffer = Buffer.from(serializeScene(scene, { shouldIndex: (mesh) => mayIndexForCache(url, mesh) }));
     fs.writeFileSync(cacheFile, buffer);
     manifest.files[url] = { daeBytes: stat.size, daeMtime: Math.round(stat.mtimeMs), cacheBytes: buffer.length };
     converted++; daeBytes += stat.size; cacheBytes += buffer.length;
