@@ -1143,7 +1143,20 @@ export class StationViewer {
     const plotConfig = this.currentPlotConfig || getCurrentPlotConfig();
     const deferredLights = [];
 
-    for (const mod of sortedModules) {
+    // Modules are placed one at a time in order, but the next few are already loading meanwhile so
+    // their fetches and decoding overlap with placing this one
+    const MODULES_LOADING_AHEAD = 3;
+    const meshLoads = new Map();
+    const startMeshLoad = (i) => {
+      if (i >= sortedModules.length || meshLoads.has(i)) return;
+      const pending = this.loadModuleMesh(sortedModules[i]);
+      pending.catch(() => {}); // awaited (and any error raised) when its turn comes
+      meshLoads.set(i, pending);
+    };
+
+    for (let moduleIndex = 0; moduleIndex < sortedModules.length; moduleIndex++) {
+      const mod = sortedModules[moduleIndex];
+      for (let ahead = 0; ahead <= MODULES_LOADING_AHEAD; ahead++) startMeshLoad(moduleIndex + ahead);
       const friendlyName = getFriendlyName(mod.macro);
       
       // Update loading text when module loading starts or progresses
@@ -1155,7 +1168,8 @@ export class StationViewer {
         initialLoaderSubtext.textContent = `Loading: ${friendlyName} (${completed}/${total} - ${Math.round(completed / total * 100)}%)`;
       }
 
-      let moduleGroup = await this.loadModuleMesh(mod);
+      let moduleGroup = await meshLoads.get(moduleIndex);
+      meshLoads.delete(moduleIndex);
       let isDae = false;
       if (!moduleGroup) {
         // Without the game assets every module is a placeholder; the missing-assets pop-up explains that once

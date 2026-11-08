@@ -71,7 +71,9 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
   }
 
   const loadedScenes = [];
-  for (const url of uniqueUrls) {
+  // Parts load concurrently: fetching, decoding, placing and texturing one part no longer waits for the
+  // previous one. Results keep the file order.
+  const prepared = await Promise.all(uniqueUrls.map(async (url) => {
     try {
       let sceneTemplate = null;
       const binUrl = url.replace(/\.dae$/i, '.bin');
@@ -355,97 +357,110 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
             }
           }
         });
-        loadedScenes.push(scene);
+        return { url, partBase, scene };
+      }
+      return null;
+    } catch (e) {
+      log(`  [-] Failed to load ${url}: ${e.message || e}`, 'warn');
+      return null;
+    }
+  }));
 
-        if (partBase.includes('anim_crane_holder') || partBase.includes('anim_arm')) {
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              scene.position.z = Math.sin(time * 0.25) * 450;
-            }
-          });
-        } else if (partBase.includes('anim_vent')) {
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              scene.rotation.x = Math.sin(time * 1.5) * 0.25;
-            }
-          });
-        } else if ((url.toLowerCase().includes('anim_centrifuge') ||
-                    url.toLowerCase().includes('anim_rotor') ||
-                    url.toLowerCase().includes('anim_rotator') ||
-                    url.toLowerCase().includes('anim_fan') ||
-                    url.toLowerCase().includes('anim_stomp_wheels')) &&
-                   (partBase.includes('anim_centrifuge') ||
-                    partBase.includes('anim_rotor') ||
-                    partBase.includes('anim_rotator') ||
-                    partBase.includes('anim_fan') ||
-                    partBase.includes('anim_stomp_wheels'))) {
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              // Continuous industrial rotation (0.157 rad/s)
-              scene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
-            }
-          });
-        } else if (url.toLowerCase().includes('anim_stomp') && partBase.startsWith('anim_stomp') && !partBase.includes('wheels')) {
-          const basePosY = scene.position.y;
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              // Hydraulic stamping machine motion: downward crush and retract
-              const phase = (time * 2.2) % (Math.PI * 2);
-              const crush = Math.pow(Math.sin(phase), 4);
-              scene.position.y = basePosY - crush * 8.0;
-            }
-          });
-        } else if (url.toLowerCase().includes('anim_alge') && partBase.includes('anim_alge')) {
-          const baseRotZ = scene.rotation.z;
-          const algeOffset = (partBase.length * 1.3) % Math.PI;
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              // Harmonic bio-flora swaying underwater
-              scene.rotation.z = baseRotZ + Math.sin(time * 1.2 + algeOffset) * 0.05;
-            }
-          });
-        } else if (url.toLowerCase().includes('detail_xs_simon')) {
-          const simonConfigs = {
-            'detail_xs_simon_01': { delta: [-334.78, 0.08, -11.66], period: 80.0 },
-            'detail_xs_simon_02': { delta: [120.0, 8.0, -80.0], period: 66.7 },
-            'detail_xs_simon_03': { delta: [-60.0, 5.0, 40.0], period: 20.0 },
-            'detail_xs_simon_04': { delta: [334.77, -0.13, -200.77], period: 53.3 },
-            'detail_xs_simon_05': { delta: [-150.0, -6.0, 70.0], period: 40.0 },
-            'detail_xs_simon_06': { delta: [110.0, 10.0, 90.0], period: 48.3 },
-            'detail_xs_simon_07': { delta: [-140.0, -8.0, -60.0], period: 33.3 },
-            'detail_xs_simon_08': { delta: [-95.10, 33.86, -453.09], period: 60.0 },
-            'detail_xs_simon_09': { delta: [-80.0, 12.0, 120.0], period: 56.7 },
-            'detail_xs_simon_10': { delta: [-120.0, -10.0, 150.0], period: 66.7 },
-            'detail_xs_simon_12': { delta: [258.41, 18.87, -0.91], period: 60.0 },
-            'detail_xs_simon_18': { delta: [-332.63, 84.43, -248.36], period: 60.0 }
-          };
-          const cfg = simonConfigs[partBase] || { delta: [60.0, 5.0, 40.0], period: 40.0 };
-          const basePos = scene.position.clone();
-          const baseRot = scene.rotation.clone();
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              const phase = (time * (Math.PI * 2 / cfg.period)) % (Math.PI * 2);
-              const u = (1 - Math.cos(phase)) * 0.5;
-              scene.position.x = basePos.x + u * cfg.delta[0];
-              scene.position.y = basePos.y + u * cfg.delta[1] + Math.sin(time * 2.2) * 1.2;
-              scene.position.z = basePos.z + u * cfg.delta[2];
-              scene.rotation.z = baseRot.z + Math.sin(phase) * 0.08;
-              scene.rotation.x = baseRot.x + Math.sin(time * 2.8) * 0.03;
-            }
-          });
-        }
+  // Collect the parts and register their animations in file order, whatever order they finished in
+  for (const part of prepared) {
+    if (!part) continue;
+    const { url, partBase, scene } = part;
+    try {
+      loadedScenes.push(scene);
+
+      if (partBase.includes('anim_crane_holder') || partBase.includes('anim_arm')) {
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            scene.position.z = Math.sin(time * 0.25) * 450;
+          }
+        });
+      } else if (partBase.includes('anim_vent')) {
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            scene.rotation.x = Math.sin(time * 1.5) * 0.25;
+          }
+        });
+      } else if ((url.toLowerCase().includes('anim_centrifuge') ||
+                  url.toLowerCase().includes('anim_rotor') ||
+                  url.toLowerCase().includes('anim_rotator') ||
+                  url.toLowerCase().includes('anim_fan') ||
+                  url.toLowerCase().includes('anim_stomp_wheels')) &&
+                 (partBase.includes('anim_centrifuge') ||
+                  partBase.includes('anim_rotor') ||
+                  partBase.includes('anim_rotator') ||
+                  partBase.includes('anim_fan') ||
+                  partBase.includes('anim_stomp_wheels'))) {
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            // Continuous industrial rotation (0.157 rad/s)
+            scene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
+          }
+        });
+      } else if (url.toLowerCase().includes('anim_stomp') && partBase.startsWith('anim_stomp') && !partBase.includes('wheels')) {
+        const basePosY = scene.position.y;
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            // Hydraulic stamping machine motion: downward crush and retract
+            const phase = (time * 2.2) % (Math.PI * 2);
+            const crush = Math.pow(Math.sin(phase), 4);
+            scene.position.y = basePosY - crush * 8.0;
+          }
+        });
+      } else if (url.toLowerCase().includes('anim_alge') && partBase.includes('anim_alge')) {
+        const baseRotZ = scene.rotation.z;
+        const algeOffset = (partBase.length * 1.3) % Math.PI;
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            // Harmonic bio-flora swaying underwater
+            scene.rotation.z = baseRotZ + Math.sin(time * 1.2 + algeOffset) * 0.05;
+          }
+        });
+      } else if (url.toLowerCase().includes('detail_xs_simon')) {
+        const simonConfigs = {
+          'detail_xs_simon_01': { delta: [-334.78, 0.08, -11.66], period: 80.0 },
+          'detail_xs_simon_02': { delta: [120.0, 8.0, -80.0], period: 66.7 },
+          'detail_xs_simon_03': { delta: [-60.0, 5.0, 40.0], period: 20.0 },
+          'detail_xs_simon_04': { delta: [334.77, -0.13, -200.77], period: 53.3 },
+          'detail_xs_simon_05': { delta: [-150.0, -6.0, 70.0], period: 40.0 },
+          'detail_xs_simon_06': { delta: [110.0, 10.0, 90.0], period: 48.3 },
+          'detail_xs_simon_07': { delta: [-140.0, -8.0, -60.0], period: 33.3 },
+          'detail_xs_simon_08': { delta: [-95.10, 33.86, -453.09], period: 60.0 },
+          'detail_xs_simon_09': { delta: [-80.0, 12.0, 120.0], period: 56.7 },
+          'detail_xs_simon_10': { delta: [-120.0, -10.0, 150.0], period: 66.7 },
+          'detail_xs_simon_12': { delta: [258.41, 18.87, -0.91], period: 60.0 },
+          'detail_xs_simon_18': { delta: [-332.63, 84.43, -248.36], period: 60.0 }
+        };
+        const cfg = simonConfigs[partBase] || { delta: [60.0, 5.0, 40.0], period: 40.0 };
+        const basePos = scene.position.clone();
+        const baseRot = scene.rotation.clone();
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            const phase = (time * (Math.PI * 2 / cfg.period)) % (Math.PI * 2);
+            const u = (1 - Math.cos(phase)) * 0.5;
+            scene.position.x = basePos.x + u * cfg.delta[0];
+            scene.position.y = basePos.y + u * cfg.delta[1] + Math.sin(time * 2.2) * 1.2;
+            scene.position.z = basePos.z + u * cfg.delta[2];
+            scene.rotation.z = baseRot.z + Math.sin(phase) * 0.08;
+            scene.rotation.x = baseRot.x + Math.sin(time * 2.8) * 0.03;
+          }
+        });
       }
     } catch (e) {
       log(`  [-] Failed to load ${url}: ${e.message || e}`, 'warn');
