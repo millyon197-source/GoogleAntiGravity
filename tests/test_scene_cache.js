@@ -168,6 +168,45 @@ console.log(`  ✓ ${checked} parts rebuild identically to the .dae scene, befor
   }
 }
 
+// 3c. Placing parts: cloneSharingRawUvs gives the same textured result as a plain clone, but the
+//     clones use the template's raw UV arrays instead of a JSON copy per mesh
+{
+  const { cloneSharingRawUvs } = await import('../packages/adapter-three/src/models/module-mesh-loader.js');
+  let parts = 0;
+  for (const url of urls) {
+    host.colladaCache.delete(url);
+    const template = await quiet(loadColladaModel)(host, url);
+    const before = []; template.traverse(o => before.push(o.userData.rawUvs));
+    const plainClone = template.clone();
+    const shared = cloneSharingRawUvs(template);
+    const after = []; template.traverse(o => after.push(o.userData.rawUvs));
+    assert.ok(before.every((r, i) => r === after[i]), `${url}: template keeps its own raw UVs`);
+    const sharedRaw = []; shared.traverse(o => sharedRaw.push(o.userData.rawUvs));
+    assert.ok(sharedRaw.every((r, i) => r === before[i]), `${url}: clones use the template's raw UV arrays`);
+    assert.ok(shared !== template && sharedRaw.length === before.length, `${url}: a separate tree of the same shape`);
+    // Texture both the way loadModuleMesh does, then compare (raw UVs: same values, typed arrays)
+    await quiet(applyTexturesToMeshGroup)(host, plainClone, url, 1);
+    await quiet(applyTexturesToMeshGroup)(host, shared, url, 1);
+    const pa = [], pb = []; plainClone.traverse(o => pa.push(o)); shared.traverse(o => pb.push(o));
+    pa.forEach((o, i) => {
+      const x = o.userData.rawUvs, y = pb[i].userData.rawUvs;
+      if (x || y) {
+        assert.deepStrictEqual(Object.keys(x).sort(), Object.keys(y).sort(), `${url}: raw UV channels`);
+        for (const k of Object.keys(x)) {
+          assert.ok(ArrayBuffer.isView(y[k]), `${url}: shared raw UVs stay typed arrays`);
+          assert.ok(Object.keys(x[k]).length === y[k].length && Array.from(y[k]).every((v, j) => Object.is(Math.fround(x[k][j] ?? NaN), v) || (Number.isNaN(v) && x[k][j] === null)), `${url}: raw UV ${k} values`);
+        }
+        delete o.userData.rawUvs; delete pb[i].userData.rawUvs;
+      }
+    });
+    const problems = compareScenes(plainClone, shared);
+    assert.deepStrictEqual(problems, [], `${url}: textured scene differs from a plain clone:\n  ${problems.slice(0, 8).join('\n  ')}`);
+    host.colladaCache.delete(url); // texturing changed the shared geometry of this template
+    parts++;
+  }
+  console.log(`  ✓ ${parts} parts: sharing raw UVs when placing a part gives the same textured result as a plain clone`);
+}
+
 // 4. Generated cache files and manifest, when present
 const manifestPath = '.' + SCENE_CACHE_MANIFEST_PATH;
 if (fs.existsSync(manifestPath)) {

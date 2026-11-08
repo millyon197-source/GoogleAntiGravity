@@ -24,6 +24,34 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  */
 
 /**
+ * Clones a part template for placement in a module, sharing each node's userData.rawUvs with the
+ * template instead of copying it. three's Object3D.clone copies userData through JSON, which turned
+ * every mesh's raw UV arrays (often hundreds of thousands of floats, shared by all meshes of a part)
+ * into a fresh plain-object copy per mesh and took most of a large plan's load time. The raw UVs are
+ * only read, so all clones can use the template's typed arrays. Everything else is cloned as before.
+ * @param {THREE.Object3D} template
+ * @returns {THREE.Object3D}
+ */
+export function cloneSharingRawUvs(template) {
+  const rawUvs = [];
+  template.traverse(o => {
+    const r = o.userData ? o.userData.rawUvs : undefined;
+    rawUvs.push(r);
+    if (r !== undefined) delete o.userData.rawUvs;
+  });
+  let copy;
+  try {
+    copy = template.clone();
+  } finally {
+    let i = 0;
+    template.traverse(o => { if (rawUvs[i] !== undefined) o.userData.rawUvs = rawUvs[i]; i++; });
+  }
+  let i = 0;
+  copy.traverse(o => { if (rawUvs[i] !== undefined) o.userData.rawUvs = rawUvs[i]; i++; });
+  return copy;
+}
+
+/**
  * Loads and assembles all component meshes for one station module: resolves its DAE
  * components, loads each (binary fast path or Collada), applies materials, positions
  * components using the offset tables, and registers part animations on the host.
@@ -91,7 +119,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       }
 
       if (sceneTemplate) {
-        const scene = sceneTemplate.clone();
+        const scene = cloneSharingRawUvs(sceneTemplate);
         scene.traverse(child => {
           if (child.userData) {
             if (child.userData.isolatedBillboards && !child.userData.isolatedBillboards.billboard_cross?.isMesh) {

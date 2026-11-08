@@ -183,6 +183,16 @@ function binaryHost() {
   assert.deepStrictEqual(calls.bin, ['/x/test_mod_data/part_main-lod0.bin'], 'a part the cache does not list still uses its .bin');
   assert.deepStrictEqual(calls.dae, ['/x/test_mod_data/anim_door-lod0.dae'], 'a cached part skips ColladaLoader; an uncached one still uses it');
   assert.ok(withCache.getObjectByName('cached_part'), 'cached scene is part of the module');
+  // Placed parts share the template's raw UV arrays (no per-mesh JSON copy)
+  const rawUvs = { tex0: new Float32Array([0.25, 0.5, 0.75, 1]) };
+  const rawTemplate = fakeScene('raw_part');
+  rawTemplate.children[0].userData.rawUvs = rawUvs;
+  host.loadCachedScene = async (url) => (url.includes('fx_glow') ? rawTemplate : null);
+  const withRaw = await loadModuleMesh(host, { macro: 'test_mod_macro', index: 8 }, options);
+  const placed = withRaw.getObjectByName('raw_part');
+  assert.ok(placed && placed !== rawTemplate.children[0], 'part placed as a clone');
+  assert.strictEqual(placed.userData.rawUvs, rawUvs, 'clone shares the template raw UVs');
+  assert.strictEqual(rawTemplate.children[0].userData.rawUvs, rawUvs, 'template keeps its raw UVs');
   // A part without a .bin that the cache lists: no .bin request and no warning
   calls.bin.length = 0; calls.dae.length = 0;
   host.loadCachedScene = async (url) => (url.includes('part_main') ? fakeScene('cached_main') : null);
