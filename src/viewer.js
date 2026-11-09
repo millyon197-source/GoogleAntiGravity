@@ -267,7 +267,8 @@ export class StationViewer {
     this.camera.position.set(400, 300, 600);
 
     // 3. Renderer setup
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // stencil: anim_cross masks anim_arrows (see applyArrowMasks)
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, stencil: true });
     this.renderer.setSize(width, height, false);
     // The canvas always fills its container; onWindowResize matches the drawing buffer to it
     Object.assign(this.renderer.domElement.style, { display: 'block', width: '100%', height: '100%' });
@@ -685,7 +686,17 @@ export class StationViewer {
   initBloomComposer(width, height) {
     try {
       if (!this.renderer || typeof document === 'undefined') return;
-      this.composer = new EffectComposer(this.renderer);
+      // Render targets with a stencil buffer, which the anim_cross / anim_arrows masking needs
+      const pixelRatio = this.renderer.getPixelRatio();
+      const composerTarget = new THREE.WebGLRenderTarget(Math.max(1, width * pixelRatio), Math.max(1, height * pixelRatio), {
+        type: THREE.HalfFloatType,
+        stencilBuffer: true
+      });
+      composerTarget.texture.name = 'EffectComposer.rt1';
+      this.composer = new EffectComposer(this.renderer, composerTarget);
+      // A composer given its own target assumes pixel ratio 1: keep the renderer's
+      this.composer.setPixelRatio(pixelRatio);
+      this.composer.setSize(width, height);
 
       const renderPass = new RenderPass(this.scene, this.camera);
       this.composer.addPass(renderPass);

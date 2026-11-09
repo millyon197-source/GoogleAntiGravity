@@ -157,13 +157,13 @@ assert.ok(
 );
 console.log('    ✓ Verified shader hook multiplies totalEmissiveRadiance by vColor.rgb for authored icon glow');
 
-// Verify stationary billboard display (no horizontal scrolling scrambling the signs)
-assert.strictEqual(
-  viewer.animatedTextures.length,
-  0,
-  'struct_arg_cross_01 billboards must remain static (0 animated texture registrations)'
-);
-console.log('    ✓ struct_arg_cross_01 billboard displays remain completely static');
+// No continuous scroll scrambling the signs: only X4's keyframed toggle from struct_arg_cross_01.xml
+// (map channel 1 u_offset 0 -> 0.25 -> 0 over 200 frames), on the arrows' own texture copy
+assert.strictEqual(viewer.animatedTextures.filter(t => t.speedX || t.speedY).length, 0, 'no continuous scroll on the arrows');
+const arrowToggle = viewer.animatedTextures.filter(t => t.uvTracks);
+assert.strictEqual(arrowToggle.length, 1, 'one keyframed arrow toggle');
+assert.deepStrictEqual(arrowToggle[0].uvTracks.u, [[0, 0], [95, 0], [100, 0.25], [195, 0.25], [200, 0]]);
+console.log('    ✓ struct_arg_cross_01 arrows: no continuous scroll, only the X4 keyframed toggle');
 
 // Verify isolated billboard sub-meshes: all 8 commercial sub-meshes defined
 assert.ok(arrowMesh.userData.isolatedBillboards, 'arrowMesh must isolate billboard sub-meshes');
@@ -286,9 +286,14 @@ console.log(`    ✓ Verified bg_cross emerald green vertex color: [${bgR.toFixe
 
 // Verify animated green striping registered
 assert.ok(viewer.animatedTextures.length > 0, 'Vertical scanline animation must be registered');
-const animEntry = viewer.animatedTextures.find(a => a.speedY === -0.35);
-assert.ok(animEntry, 'Must register continuous vertical scrolling (speedY = -0.35) matching uv_animation mapchannel 3');
-console.log('    ✓ Verified continuous vertical scrolling animation (speedY = -0.35) for animated green striping');
+// The screens' gradient layer plays anim_cross's own UV animation from struct_arg_cross_01.xml
+// (map channel 3: v_offset 0 -> -4 over 100 frames), in step with the arrow reveal
+await new Promise(r => setTimeout(r, 50)); // the component file is read asynchronously
+const animEntry = viewer.animatedTextures.find(a => a.uvTracks && a.uvTracks.v && a.loopFrames === 100);
+assert.ok(animEntry, 'screens play the component channel 3 animation');
+assert.deepEqual(animEntry.uvTracks.v, [[0, 0], [100, -4]]); // the file writes the first key as -0
+assert.strictEqual(animEntry.loopFrames, 100);
+console.log('    ✓ screens scroll with the anim_cross X4 keyframes (v 0 -> -4 per 100 frames)');
 
 // Verify background matrix material transparency & render ordering
 assert.strictEqual(bgCross.material.transparent, true, 'bg_cross material must be transparent');

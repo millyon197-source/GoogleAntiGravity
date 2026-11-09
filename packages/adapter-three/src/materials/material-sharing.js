@@ -16,7 +16,8 @@ const VALUE_KEYS = [
   'type', 'name', 'opacity', 'transparent', 'alphaTest', 'depthWrite', 'depthTest', 'side', 'blending',
   'vertexColors', 'toneMapped', 'visible', 'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits',
   'roughness', 'metalness', 'emissiveIntensity', 'wireframe', 'flatShading', 'fog', 'premultipliedAlpha',
-  'alphaToCoverage', 'colorWrite', 'blendSrc', 'blendDst', 'blendEquation', 'shininess', 'reflectivity'
+  'alphaToCoverage', 'colorWrite', 'blendSrc', 'blendDst', 'blendEquation', 'shininess', 'reflectivity',
+  'stencilWrite', 'stencilRef', 'stencilFunc', 'stencilFuncMask', 'stencilFail', 'stencilZFail', 'stencilZPass', 'stencilWriteMask'
 ];
 const COLOR_KEYS = ['color', 'emissive', 'specular'];
 const TEXTURE_KEYS = [

@@ -335,7 +335,9 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 }
               }
 
-              const isAdTrimMesh = !isDamageArea && partBase.includes('anim_arrows') && !isBillboardDisplay;
+              // Connection modules (cross, base, vertical) count as "billboard displays" by URL but play the
+              // same X4 arrow toggle; habitat/pier/dock displays keep their own handling
+              const isAdTrimMesh = !isDamageArea && partBase.includes('anim_arrows') && (!isBillboardDisplay || urlLower.includes('cross') || urlLower.includes('connectionmodules'));
               if (isAdTrimMesh && (diffuseTex || emissiveTex)) {
                 // X4's own UV animation for the part, from its component XML. For anim_arrows, map
                 // channel 1 (the sign atlas) toggles u_offset between 0 and 0.25: the icons switch
@@ -930,14 +932,15 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                       child.userData.physicalSigns = arrowMeshObj.userData.isolatedBillboards.physicalSigns;
                     }
 
-                    // Continuous vertical scrolling animation matching mapchannel 3
+                    // The gradient layer scrolls with anim_cross's own UV animation (component XML, map
+                    // channel 3), in step with the arrow reveal (applyArrowReveal) that uses the same layer
                     if (bgTex && !host.animatedTextures.some(a => a.texture === bgTex && a.moduleIndex === moduleIndex)) {
-                      host.animatedTextures.push({
-                        texture: bgTex,
-                        speedX: 0.0,
-                        speedY: -0.35,
-                        moduleIndex
-                      });
+                      const entry = { texture: bgTex, speedX: 0.0, speedY: -0.35, moduleIndex };
+                      host.animatedTextures.push(entry);
+                      loadPartUvAnimations(url, partBase).then(uvAnim => {
+                        const tracks = uvAnim && uvAnim.channels[3];
+                        if (tracks) Object.assign(entry, { uvTracks: tracks, loopFrames: uvAnim.loopFrames, speedY: 0 });
+                      }, () => {});
                     }
                   };
 

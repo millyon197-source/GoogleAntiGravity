@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { loadPartUvAnimations } from '../materials/uv-animations.js';
 import { getRaceGlowColor } from '../textures/race-colors.js';
 
 const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) : type === 'error' ? console.error(msg) : console.log(msg));
@@ -23,6 +24,169 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  * @property {(msg: string, type?: 'log'|'warn'|'error') => void} [log] Diagnostic logger.
  */
 
+/** Stencil value the anim_cross mask writes and anim_arrows tests for. */
+export const ARROW_MASK_STENCIL_REF = 1;
+
+/**
+ * X4 draws a module's anim_arrows only through its anim_cross: the anim_cross backings and screens are
+ * windows, and the arrows' icons (which toggle by sliding a full atlas cell, see uv-animations.js)
+ * show only where they cover. Done with the stencil buffer: every anim_cross mesh writes
+ * ARROW_MASK_STENCIL_REF where it draws, and every anim_arrows mesh (signs included) draws only there,
+ * later in the transparent pass so the mask is always written first. Modules without both parts are
+ * left alone (their arrows would otherwise disappear).
+ * @param {THREE.Object3D} root A module (or part group) as assembled by loadModuleMesh
+ * @returns {boolean} Whether a mask was set up
+ */
+export function applyArrowMasks(root) {
+  const masks = [], masked = [];
+  root.traverse(o => {
+    const part = String((o.userData && o.userData.partName) || '');
+    if (part.startsWith('anim_cross')) masks.push(o);
+    else if (part.startsWith('anim_arrows')) masked.push(o);
+  });
+  if (masks.length === 0 || masked.length === 0) return false;
+  for (const part of masks) {
+    part.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      for (const mat of [].concat(mesh.material || [])) {
+        Object.assign(mat, {
+          stencilWrite: true,
+          stencilRef: ARROW_MASK_STENCIL_REF,
+          stencilFunc: THREE.AlwaysStencilFunc,
+          stencilFail: THREE.KeepStencilOp,
+          stencilZFail: THREE.KeepStencilOp,
+          stencilZPass: THREE.ReplaceStencilOp,
+          stencilWriteMask: 0xff
+        });
+      }
+    });
+  }
+  for (const part of masked) {
+    part.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      mesh.renderOrder = Math.max(mesh.renderOrder, 3); // after the masks (renderOrder 0-1)
+      for (const mat of [].concat(mesh.material || [])) {
+        Object.assign(mat, {
+          transparent: true, // drawn in the transparent pass, after the (transparent) masks
+          stencilWrite: true, // enables the stencil test; the ops below leave the buffer unchanged
+          stencilRef: ARROW_MASK_STENCIL_REF,
+          stencilFunc: THREE.EqualStencilFunc,
+          stencilFail: THREE.KeepStencilOp,
+          stencilZFail: THREE.KeepStencilOp,
+          stencilZPass: THREE.KeepStencilOp,
+          stencilWriteMask: 0x00
+        });
+      }
+    });
+  }
+  return true;
+}
+
+/** Texture of the gradient_wave layer X4's billboard trim materials use for their 2nd and 3rd layers. */
+export const GRADIENT_WAVE_URL = '/assets1/textures/fx/gradient_wave_01_diff.dds';
+
+/**
+ * Third UV set (tex2) of the anim_cross triangle under each anim_arrows vertex, as a new 'uv3'
+ * attribute on the arrow geometry. The parts lie in the same planes; each arrow vertex is projected
+ * onto the anim_cross triangle it lies on (or the nearest one) and given that triangle's tex2 at that
+ * point (affine within a triangle, so exact for vertices inside it).
+ * @param {THREE.Mesh} crossMesh anim_cross mesh with userData.rawUvs.tex2 (non-indexed)
+ * @param {THREE.Mesh} arrowMesh
+ * @returns {boolean} Whether the attribute was set
+ */
+export function projectCrossUvsOntoArrows(crossMesh, arrowMesh) {
+  const tex2 = crossMesh.userData && crossMesh.userData.rawUvs && crossMesh.userData.rawUvs.tex2;
+  const cPos = crossMesh.geometry && crossMesh.geometry.attributes.position;
+  const aPos = arrowMesh.geometry && arrowMesh.geometry.attributes.position;
+  if (!tex2 || !cPos || !aPos || crossMesh.geometry.index || tex2.length !== cPos.count * 2) return false;
+  crossMesh.updateWorldMatrix(true, false);
+  arrowMesh.updateWorldMatrix(true, false);
+  // arrow vertices into the cross mesh's local space (both meshes share the module's scale)
+  const toCross = new THREE.Matrix4().copy(crossMesh.matrixWorld).invert().multiply(arrowMesh.matrixWorld);
+  const tris = [];
+  for (let t = 0; t + 2 < cPos.count; t += 3) {
+    const a = new THREE.Vector3().fromBufferAttribute(cPos, t), b = new THREE.Vector3().fromBufferAttribute(cPos, t + 1), c = new THREE.Vector3().fromBufferAttribute(cPos, t + 2);
+    const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a));
+    if (n.lengthSq() < 1e-12) continue; // degenerate
+    tris.push({ a, b, c, n: n.normalize(), t });
+  }
+  if (tris.length === 0) return false;
+  const out = new Float32Array(aPos.count * 2);
+  const p = new THREE.Vector3(), bary = new THREE.Vector3(), proj = new THREE.Vector3();
+  const tri = new THREE.Triangle();
+  for (let i = 0; i < aPos.count; i++) {
+    p.fromBufferAttribute(aPos, i).applyMatrix4(toCross);
+    let best = null, bestScore = Infinity;
+    for (const T of tris) {
+      const signed = proj.subVectors(p, T.a).dot(T.n); // distance from the triangle's plane
+      const dist = Math.abs(signed);
+      proj.copy(p).addScaledVector(T.n, -signed); // p projected into that plane
+      tri.set(T.a, T.b, T.c).getBarycoord(proj, bary);
+      const outside = Math.max(0, -bary.x) + Math.max(0, -bary.y) + Math.max(0, -bary.z);
+      const score = dist + outside * 1000; // inside a triangle first, then the nearest plane
+      if (score < bestScore) { bestScore = score; best = { T, bary: bary.clone() }; }
+    }
+    const { T, bary: w } = best;
+    const ia = T.t, ib = T.t + 1, ic = T.t + 2;
+    out[i * 2] = w.x * tex2[ia * 2] + w.y * tex2[ib * 2] + w.z * tex2[ic * 2];
+    out[i * 2 + 1] = w.x * tex2[ia * 2 + 1] + w.y * tex2[ib * 2 + 1] + w.z * tex2[ic * 2 + 1];
+  }
+  arrowMesh.geometry.setAttribute('uv3', new THREE.BufferAttribute(out, 2));
+  return true;
+}
+
+/**
+ * The movement X4 shows on anim_arrows: anim_cross's third texture layer, the gradient_wave bands,
+ * scrolls horizontally (its component UV animation, map channel 3), and the arrows show through it,
+ * so they appear to travel. Each arrow mesh gets anim_cross's tex2 under it (projectCrossUvsOntoArrows)
+ * and an alphaMap of gradient_wave read through that channel, playing anim_cross's channel 3 keyframes.
+ * Works with applyArrowMasks, which keeps the arrows inside the anim_cross windows.
+ * @param {{ loadDdsTexture: Function, animatedTextures?: Array }} host
+ * @param {THREE.Object3D} root
+ * @param {number} [moduleIndex] Module the animation halts with
+ * @returns {Promise<number>} How many arrow meshes were set up
+ */
+export async function applyArrowReveal(host, root, moduleIndex) {
+  let crossPart = null; const arrowParts = [];
+  root.traverse(o => {
+    const part = String((o.userData && o.userData.partName) || '');
+    if (part.startsWith('anim_cross') && !crossPart) crossPart = o;
+    else if (part.startsWith('anim_arrows')) arrowParts.push(o);
+  });
+  if (!crossPart || arrowParts.length === 0 || !host || typeof host.loadDdsTexture !== 'function') return 0;
+  let crossMesh = null;
+  crossPart.traverse(o => { if (!crossMesh && o.isMesh && o.userData.rawUvs && o.userData.rawUvs.tex2) crossMesh = o; });
+  if (!crossMesh) return 0;
+  const crossUrl = crossPart.userData.sourceUrl || '';
+  const anim = await loadPartUvAnimations(crossUrl, crossPart.userData.partName);
+  const tracks = anim && anim.channels[3];
+  const gradient = await host.loadDdsTexture(GRADIENT_WAVE_URL);
+  if (!tracks || !gradient) return 0;
+  // One gradient copy per module: its offset animates (and halts) with this module
+  const reveal = gradient.clone();
+  reveal.wrapS = THREE.RepeatWrapping;
+  reveal.wrapT = THREE.RepeatWrapping;
+  reveal.channel = 3; // reads 'uv3'
+  reveal.needsUpdate = true;
+  let count = 0;
+  for (const part of arrowParts) {
+    part.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      if (!mesh.geometry.attributes.uv3 && !projectCrossUvsOntoArrows(crossMesh, mesh)) return;
+      for (const mat of [].concat(mesh.material || [])) {
+        mat.alphaMap = reveal;
+        mat.transparent = true;
+        mat.needsUpdate = true;
+      }
+      count++;
+    });
+  }
+  if (count > 0 && Array.isArray(host.animatedTextures)) {
+    host.animatedTextures.push({ texture: reveal, uvTracks: tracks, loopFrames: anim.loopFrames, moduleIndex });
+  }
+  return count;
+}
+
 /**
  * Whether the texturing code reads a part's raw texture-coordinate channels (userData.rawUvs): only
  * for the cross/connection module signs and backgrounds it splits into quads.
@@ -30,7 +194,9 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  */
 export function partUsesRawUvs(url) {
   const u = String(url || '').toLowerCase();
-  return u.includes('cross') || u.includes('connectionmodules');
+  const part = u.split('/').pop();
+  // anim_cross / anim_arrows anywhere: their third UV set drives the arrow reveal (applyArrowReveal)
+  return u.includes('cross') || u.includes('connectionmodules') || part.startsWith('anim_cross') || part.startsWith('anim_arrows');
 }
 
 /**
@@ -233,6 +399,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
         scene.scale.set(1, 1, 1);
         scene.name = partBase;
         scene.userData.partName = partBase;
+        scene.userData.sourceUrl = url;
         if (mod && mod.index !== undefined) {
           scene.userData.moduleIndex = mod.index;
         }
@@ -683,5 +850,6 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       }
     });
   };
+  if (applyArrowMasks(moduleRoot)) await applyArrowReveal(host, moduleRoot, mod?.index);
   return moduleRoot;
 }
