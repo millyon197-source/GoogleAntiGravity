@@ -315,11 +315,13 @@ assert.notStrictEqual(dHullMesh.material.color.getHex(), 0x000000, 'dHullMesh co
 assert.ok(dFxMesh.material.isMeshStandardMaterial, 'dFxMesh must be MeshStandardMaterial');
 assert.ok(dFxMesh.material.map, 'dFxMesh must have fx diffuse map');
 assert.strictEqual(dFxMesh.material.map.offset.x, 0, 'dFxMesh diffuse map offset.x must be 0 (static)');
-assert.strictEqual(dFxMesh.material.map.offset.y, 0, 'dFxMesh diffuse map offset.y must be 0 (static)');
+assert.strictEqual(dFxMesh.material.map.offset.y, 1, 'dFxMesh diffuse map offset.y must be 1 (V-flip)');
+assert.strictEqual(dFxMesh.material.map.repeat.y, -1, 'dFxMesh diffuse map repeat.y must be -1 (V-flip)');
 assert.strictEqual(viewer.animatedTextures.some(a => a.texture === dFxMesh.material.map), false, 'dFxMesh diffuse map must NOT be in animatedTextures');
 assert.ok(dFxMesh.material.emissiveMap, 'dFxMesh must have fx glow emissive map');
 assert.strictEqual(dFxMesh.material.emissiveMap.offset.x, 0, 'dFxMesh emissive map offset.x must be 0 (static)');
-assert.strictEqual(dFxMesh.material.emissiveMap.offset.y, 0, 'dFxMesh emissive map offset.y must be 0 (static)');
+assert.strictEqual(dFxMesh.material.emissiveMap.offset.y, 1, 'dFxMesh emissive map offset.y must be 1 (V-flip)');
+assert.strictEqual(dFxMesh.material.emissiveMap.repeat.y, -1, 'dFxMesh emissive map repeat.y must be -1 (V-flip)');
 assert.strictEqual(viewer.animatedTextures.some(a => a.texture === dFxMesh.material.emissiveMap), false, 'dFxMesh emissive map must NOT be in animatedTextures');
 assert.strictEqual(dFxMesh.material.toneMapped, false, 'dFxMesh status glow must not be toneMapped');
 

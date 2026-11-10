@@ -129,11 +129,12 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                                    (matName.toLowerCase().includes('fx') || (child.name || '').toLowerCase().includes('fx'));
               const isGenericFx = !isDecal && (matName.toLowerCase().includes('generic_p1_fx') || matName.toLowerCase().includes('gen_p2_fx') || (matName.toLowerCase().includes('fx') && Boolean(texUrls.emissive))) && !isLightConeOrGlow;
               const isAnimCross = partBase.includes('anim_cross') || childLower.includes('anim_cross');
+              const isAnimArrows = partBase.includes('anim_arrows') || childLower.includes('anim_arrows');
               const isBillboardDisplay = (urlLower.includes('habitat') || urlLower.includes('hab_') || urlLower.includes('cross') || urlLower.includes('pier') || urlLower.includes('dock') || urlLower.includes('welfare') || urlLower.includes('venture') || urlLower.includes('landmark')) &&
-                (partBase.includes('anim_arrows') || matName.toLowerCase().includes('billboard')) && !isAnimCross;
+                (isAnimArrows || matName.toLowerCase().includes('billboard')) && !isAnimCross;
               const isHabitatBillboard = (urlLower.includes('habitat') || urlLower.includes('hab_')) &&
-                (partBase.includes('anim_arrows') || matName.toLowerCase().includes('billboard')) && !isAnimCross;
-              const isAdTrim = (partBase.includes('anim_arrows') || isAnimCross || matName.toLowerCase().includes('billboardtrims') || matName.toLowerCase().includes('billboard')) && !isBillboardDisplay;
+                (isAnimArrows || matName.toLowerCase().includes('billboard')) && !isAnimCross;
+              const isAdTrim = (isAnimArrows || isAnimCross || matName.toLowerCase().includes('billboardtrims') || matName.toLowerCase().includes('billboard')) && !isBillboardDisplay;
               const isLiquidStorageTank = (urlLower.includes('storage') && urlLower.includes('liquid') && (matName.toLowerCase().includes('multimat') || (child.name || '').toLowerCase().includes('multimat')));
               const isGlowingLight = isLightConeOrGlow || isEscalator || isGenericFx || isDetailFx || isPartMainFx || isAdTrim || isBillboardDisplay || (isDecal && texUrls.emissive) || partBase.includes('poslight') || (child.name || '').toLowerCase().includes('poslight') || matName.toLowerCase().includes('poslight') ||
                                      (texUrls.emissive && partBase.includes('anim_arm'));
@@ -166,10 +167,10 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                   : 0.0,
                 blending: (isLightConeOrGlow || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor) ? THREE.AdditiveBlending : THREE.NormalBlending,
                 toneMapped: (isLava || isFire) ? false : ((isLightCone || isBubbles || isSmoke || isVapor) ? true : (isHexShield ? false : (isGlowingLight ? false : true))),
-                transparent: isAlpha || isFoliage || isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor || isAnimCross || isBillboardDisplay,
+                transparent: isAlpha || isFoliage || isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor || isAnimCross || isBillboardDisplay || isAnimArrows,
                 opacity: isVapor ? 0.4 : (isFire ? 0.85 : (isSmoke ? 0.35 : (isLightCone ? 0.25 : (isHexShield ? 0.2 : (isBubbles ? 0.8 : (isHaze ? 0.35 : (isForcefield ? 0.65 : (isPoslight ? 0.9 : (isLightConeOrGlow ? 0.85 : (isWater ? 0.8 : (isAnimCross ? 0.95 : 1.0))))))))))),
-                alphaTest: isAnimCross ? 0.2 : (isBillboardDisplay ? 0.05 : (isDecal ? 0.1 : ((isAlpha || isFoliage) && !isLightConeOrGlow && !isSmoke && !isLava && !isFire && !isVapor ? 0.35 : 0.0))),
-                depthWrite: (isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor || isAnimCross || isBillboardDisplay) ? false : true,
+                alphaTest: isAnimCross ? 0.2 : ((isBillboardDisplay || isAnimArrows) ? 0.05 : (isDecal ? 0.1 : ((isAlpha || isFoliage) && !isLightConeOrGlow && !isSmoke && !isLava && !isFire && !isVapor ? 0.35 : 0.0))),
+                depthWrite: (isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isSmoke || isFire || isVapor || isAnimCross || isBillboardDisplay || isAnimArrows) ? false : true,
                 polygonOffset: isDecal || isAnimCross,
                 polygonOffsetFactor: (isDecal || isAnimCross) ? -1 : 0,
                 polygonOffsetUnits: (isDecal || isAnimCross) ? -1 : 0,
@@ -181,17 +182,30 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 child.userData.scanlineVOffset = { value: 0.0 };
               }
 
-              if (hasVertexColors) {
+              if (hasVertexColors || isAnimArrows) {
                 newMat.onBeforeCompile = (shader) => {
-                  shader.fragmentShader = shader.fragmentShader.replace(
-                    '#include <emissivemap_fragment>',
-                    `#include <emissivemap_fragment>
-                    #if defined( USE_COLOR_ALPHA )
-                      totalEmissiveRadiance *= vColor.rgb;
-                    #elif defined( USE_COLOR )
-                      totalEmissiveRadiance *= vColor.rgb;
-                    #endif`
-                  );
+                  if (hasVertexColors) {
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                      '#include <emissivemap_fragment>',
+                      `#include <emissivemap_fragment>
+                      #if defined( USE_COLOR_ALPHA )
+                        totalEmissiveRadiance *= vColor.rgb;
+                      #elif defined( USE_COLOR )
+                        totalEmissiveRadiance *= vColor.rgb;
+                      #endif`
+                    );
+                  }
+                  if (isAnimArrows) {
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                      '#include <map_fragment>',
+                      `#include <map_fragment>
+                      #if defined( USE_MAP )
+                        // The black background in anim_arrows is transparent so the neon glow and anim_cross stencil show through
+                        float arrowLuma = max(sampledDiffuseColor.r, max(sampledDiffuseColor.g, sampledDiffuseColor.b));
+                        diffuseColor.a *= smoothstep(0.02, 0.15, arrowLuma);
+                      #endif`
+                    );
+                  }
                   if (isCrossAnimArrows && child.userData.scanlineVOffset) {
                     if (shader.uniforms) {
                       shader.uniforms.uCrossScanlineV = child.userData.scanlineVOffset;
@@ -208,6 +222,10 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                     );
                   }
                 };
+                newMat.customProgramCacheKey = () =>
+                  (isAnimArrows ? 'anim_arrows_cutout' : 'standard') +
+                  (hasVertexColors ? '_vcolor' : '') +
+                  (isCrossAnimArrows ? '_cross' : '');
               }
               newMat.name = matName;
 
@@ -237,10 +255,19 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
 
               if (isDecal || isNonDockDetailFx || ((partBase.includes('detail_l_main') || (child.name || '').toLowerCase().includes('detail_l_main')) && matName.toLowerCase().includes('hulltexture'))) {
                 // Static decals, windowfont, and station structural lights/detail_l/detail_s/detail_m meshes must have dedicated non-scrolling UVs
+                const isDetailLMainFx = (partBase.includes('detail_l_main') || (child.name || '').toLowerCase().includes('detail_l_main')) &&
+                                        (matName.toLowerCase().includes('generic_p1_fx') || matName.toLowerCase().includes('fx'));
                 ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
                   if (newMat[prop]) {
                     newMat[prop] = newMat[prop].clone();
-                    newMat[prop].offset.set(0, 0);
+                    if (isDetailLMainFx) {
+                      newMat[prop].wrapS = THREE.RepeatWrapping;
+                      newMat[prop].wrapT = THREE.RepeatWrapping;
+                      newMat[prop].repeat.set(1, -1);
+                      newMat[prop].offset.set(0, 1);
+                    } else {
+                      newMat[prop].offset.set(0, 0);
+                    }
                     newMat[prop].needsUpdate = true;
                   }
                 });
@@ -509,10 +536,10 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                       if (uvCell) {
                         const [uMin, uMax, vMin, vMax] = uvCell;
                         const kMod = j % 6;
-                        if (kMod === 0 || kMod === 5) { subUv[j * 2] = uMax; subUv[j * 2 + 1] = vMin; }
-                        else if (kMod === 1) { subUv[j * 2] = uMax; subUv[j * 2 + 1] = vMax; }
-                        else if (kMod === 2 || kMod === 3) { subUv[j * 2] = uMin; subUv[j * 2 + 1] = vMax; }
-                        else if (kMod === 4) { subUv[j * 2] = uMin; subUv[j * 2 + 1] = vMin; }
+                        if (kMod === 0 || kMod === 5) { subUv[j * 2] = uMax; subUv[j * 2 + 1] = vMax; }
+                        else if (kMod === 1) { subUv[j * 2] = uMax; subUv[j * 2 + 1] = vMin; }
+                        else if (kMod === 2 || kMod === 3) { subUv[j * 2] = uMin; subUv[j * 2 + 1] = vMin; }
+                        else if (kMod === 4) { subUv[j * 2] = uMin; subUv[j * 2 + 1] = vMax; }
                       } else if (uv) {
                         subUv[j * 2] = uv[sIdx * 2];
                         subUv[j * 2 + 1] = uv[sIdx * 2 + 1];
@@ -561,6 +588,8 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                     if (!bMesh) {
                       const bGeom = createQuadGeom(def.quads, def.uvCell);
                       const bMat = child.material.clone();
+                      if (child.material.onBeforeCompile) bMat.onBeforeCompile = child.material.onBeforeCompile;
+                      if (child.material.customProgramCacheKey) bMat.customProgramCacheKey = child.material.customProgramCacheKey;
                       bMat.transparent = true;
                       bMat.depthWrite = false;
                       bMat.alphaTest = 0.05;
@@ -715,10 +744,10 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                     for (let v = 0; v < 6; v++) {
                       const k = qNum * 6 + v;
                       const kMod = v % 6;
-                      if (kMod === 0 || kMod === 5) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMin; }
-                      else if (kMod === 1) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMax; }
-                      else if (kMod === 2 || kMod === 3) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMax; }
-                      else if (kMod === 4) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMin; }
+                      if (kMod === 0 || kMod === 5) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMax; }
+                      else if (kMod === 1) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMin; }
+                      else if (kMod === 2 || kMod === 3) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMin; }
+                      else if (kMod === 4) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMax; }
                     }
                   };
                   for (const sp of signPairs) {

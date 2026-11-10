@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { JSDOM } from 'jsdom';
 
@@ -156,6 +157,16 @@ assert.ok(
   'Fragment shader must multiply totalEmissiveRadiance by vColor.rgb'
 );
 console.log('    ✓ Verified shader hook multiplies totalEmissiveRadiance by vColor.rgb for authored icon glow');
+
+const mapShader = {
+  fragmentShader: '#include <map_fragment>\n'
+};
+mat.onBeforeCompile(mapShader);
+assert.ok(
+  mapShader.fragmentShader.includes('arrowLuma'),
+  'Fragment shader must make black transparent in anim_arrows via arrowLuma'
+);
+console.log('    ✓ Verified shader hook makes black background transparent in anim_arrows');
 
 // No continuous scroll scrambling the signs: only X4's keyframed toggle from struct_arg_cross_01.xml
 // (map channel 1 u_offset 0 -> 0.25 -> 0 over 200 frames), on the arrows' own texture copy
@@ -499,8 +510,10 @@ try {
 
 const puppeteer = (await import('puppeteer')).default;
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const userProfileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'puppeteer_profile_cross_'));
 const launchOptions = {
   headless: 'new',
+  userDataDir: userProfileDir,
   args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,800', '--use-gl=angle']
 };
 if (fs.existsSync(chromePath)) {

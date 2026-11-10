@@ -316,20 +316,20 @@ export function loadColladaModel(host, url) {
                 }
                 // 4 pairs of double-sided quads for the 4 signs
                 const signPairs = [
-                  { quads: [36, 37], cellA: [0.00, 0.25, 0.25, 0.50], cellB: [0.25, 0.50, 0.25, 0.50] }, // Cross <-> Capsule
-                  { quads: [38, 39], cellA: [0.75, 1.00, 0.25, 0.50], cellB: [0.00, 0.25, 0.00, 0.25] }, // Info <-> Shopping Cart
-                  { quads: [40, 41], cellA: [0.50, 0.75, 0.25, 0.50], cellB: [0.25, 0.50, 0.00, 0.25] }, // Food <-> Bed
-                  { quads: [42, 43], cellA: [0.75, 1.00, 0.00, 0.25], cellB: [0.50, 0.75, 0.00, 0.25] }, // Tools <-> Law
+                  { quads: [36, 37], cellA: [0.00, 0.25, 0.50, 0.75], cellB: [0.25, 0.50, 0.50, 0.75] }, // Cross <-> Capsule
+                  { quads: [38, 39], cellA: [0.75, 1.00, 0.50, 0.75], cellB: [0.00, 0.25, 0.75, 1.00] }, // Info <-> Shopping Cart
+                  { quads: [40, 41], cellA: [0.50, 0.75, 0.50, 0.75], cellB: [0.25, 0.50, 0.75, 1.00] }, // Food <-> Bed
+                  { quads: [42, 43], cellA: [0.75, 1.00, 0.75, 1.00], cellB: [0.50, 0.75, 0.75, 1.00] }, // Tools <-> Law
                 ];
                 const assignCell = (targetArr, qNum, cell) => {
                   const [uMin, uMax, vMin, vMax] = cell;
                   for (let v = 0; v < 6; v++) {
                     const k = qNum * 6 + v;
                     const kMod = v % 6;
-                    if (kMod === 0 || kMod === 5) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMin; }
-                    else if (kMod === 1) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMax; }
-                    else if (kMod === 2 || kMod === 3) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMax; }
-                    else if (kMod === 4) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMin; }
+                    if (kMod === 0 || kMod === 5) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMax; }
+                    else if (kMod === 1) { targetArr[k * 2] = uMax; targetArr[k * 2 + 1] = vMin; }
+                    else if (kMod === 2 || kMod === 3) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMin; }
+                    else if (kMod === 4) { targetArr[k * 2] = uMin; targetArr[k * 2 + 1] = vMax; }
                   }
                 };
                 for (const sp of signPairs) {

@@ -38,7 +38,27 @@ npm run preview
 - `npm run dev` - start Vite dev server
 - `npm run build` - create optimized production build in `dist/` with chunk splitting
 - `npm run preview` - preview built app locally
-- `npm test` - run automated test suite across all 30 test modules
+- `npm test` - run automated test suite across all 99 test suites
+- `npm run sync:dlc-components` - sync and update DLC component definitions
+- `npm run generate:macro-refs` - rebuild macro to component reference tables
+- `npm run generate:scene-cache` - generate precomputed binary scene cache files
+
+## ⚡ Performance & Large-Plan Optimizations
+
+Engineered to smoothly handle massive industrial plans (500+ modules) without UI lockups or frame freezing:
+
+- **Asynchronous Shader Precompilation**: Precompiles materials ahead of time using `renderer.compileAsync` (`KHR_parallel_shader_compile`) against the bloom composer's render target. Module lights are held off until plan insertion completes, standardizing shader variations and preventing synchronous mid-render compilation spikes.
+- **Render Throttling & Frame Pacing (`renderHeld`)**: Instead of rendering complete scenes for every added module, the render loop throttles intermediate draws (minimum 250 ms spacing or 4x previous frame duration). This reduces first-load times on large blueprints (such as the 585-module Prod Max) from **~138 s down to ~22 s**.
+- **Concurrent Module & Part Ingestion**: Module sub-parts are fetched, decoded, and textured in parallel before file-order assembly, while pipelining the loading of upcoming modules ahead of placement.
+- **Raw UV Sharing (`cloneSharingRawUvs`)**: Detaches `userData.rawUvs` before cloning template parts so typed arrays are shared by reference rather than undergoing costly JSON stringification/parsing during Three.js `Object3D.clone()`.
+- **Precomputed Binary Scene Cache & Off-Thread Decoding**: Binary geometry caches (`generate:scene-cache`) are unpacked and decoded off the main thread via dedicated Web Workers (`scene-cache-worker`, `mesh-worker`, `bc-decode-worker`).
+- **Dynamic Resource & Memory Management**:
+  - Automatically caps active module point lights on large blueprints to maintain target framerates.
+  - Shares matching materials and shader keys across module instances.
+  - Explicitly releases discarded module geometries, unused part templates, and textures upon blueprint reset/reloading.
+- **Responsive Viewport & Freeze Diagnostics**:
+  - Continuous canvas resizing powered by `ResizeObserver`, ensuring stable rendering with graceful stacking on narrower viewports (<820 px).
+  - Built-in freeze recorder diagnostic tool (`tools/diagnostics/freeze-recorder.js`) to capture main-thread stalls, frame hitches, and compilation pauses.
 
 ## 🎯 Fit & Alignment Controls
 
@@ -111,36 +131,37 @@ The **Layout** panel provides an actionable pipeline architecture where layout r
 ```
 GoogleAntiGravity/
 ├── index.html                    # Main 3D viewport HTML5 entry point & UI controls
-├── package.json                  # Node dependencies (Three.js, Vite) & build scripts
+├── package.json                  # Monorepo workspaces & build scripts
 ├── package-lock.json             # Dependency lockfile
 ├── vite.config.js                # Vite server configuration & manual chunk code-splitting
 ├── README.md                     # Primary application guide & documentation
 ├── README1.md                    # Legacy converter notes & alternate workflow documentation
 ├── Installation.md               # Environment setup & game asset extraction guide
-├── setup_x4_vite_explorer.ps1    # Automated PowerShell environment configuration script
 ├── dae_hash_table.json           # Collada mesh hash index mapping macro names to 3D assets
-├── convert_structures.py         # Asset conversion utility for game station modules
-├── dae_vulkan_compact.py         # Mesh optimization & Vulkan vertex compaction script
-├── xmf_converter.py              # X4 raw binary .xmf geometry extractor & converter
+├── packages/                     # Monorepo Clean Architecture domain & adapter packages
+│   ├── domain/                   # Pure entities, spatial math, value objects (zero deps)
+│   ├── application/              # Use cases, interactors, and ports (inbound/outbound)
+│   ├── adapter-xml/              # Station plan XML parser, blueprint exporter, DLC patch handler
+│   ├── adapter-three/            # Three.js rendering, shaders, materials, gizmos, UV animators
+│   └── catalog/                  # Module costs, macro mappings, and bounding databases
+├── src/                          # Application presentation, composition & UI controls
+│   ├── app/                      # App components (export modals, build animator, undo history)
+│   ├── layout/                   # Layout rules, spacing deltas, and progression analyzers
+│   ├── composition-root.js       # Monorepo package wiring & dependency injection
+│   ├── main.js                   # Composition root, UI events & file upload controllers
+│   ├── viewer.js                 # Three.js rendering engine, camera, post-processing & lights
+│   ├── module-display-panel.js   # Module hierarchy, visibility, and category controls
+│   ├── samples.js                # Built-in sample station construction plans
+│   └── style.css                 # Dark glassmorphic HUD & responsive control styling
+├── tools/                        # Diagnostic and asset maintenance utilities
+│   ├── diagnostics/              # 40+ scripts for geometry, snap, and freeze analysis
+│   ├── freeze-recorder.js        # Console hitch & main-thread stall diagnostic tool
+│   ├── generate-scene-cache.js   # Precomputed binary scene cache generator
+│   └── sync-dlc-components.js    # Game DLC component synchronization
 ├── assets/                       # Extracted loose game assets, textures & binary meshes
 ├── docs/                         # Technical specifications (e.g. X4 construction plan blueprint spec)
-├── tests/                        # Automated unit and integration test suite (30 test suites)
-│   └── run-all.js                # Test runner script
-└── src/
-    ├── main.js                   # App initialization, UI bindings & file upload handlers
-    ├── viewer.js                 # Three.js scene graph, lighting, camera & render loop
-    ├── three-coordinator.js      # Three.js engine coordination & scene lifecycle management
-    ├── parser.js                 # Station construction plan XML parser
-    ├── blueprint-exporter.js     # Station XML construction blueprint exporter & DLC patch detector
-    ├── module-display-panel.js   # Module display panel, layer ordering & visibility controller
-    ├── module-bounds-hashtable.js# Fast bounding box lookups across station modules
-    ├── snap-points-db.js         # Magnetic connection & snapping point database
-    ├── modules.js                # Module definitions, macro categorization & bounding calculation
-    ├── modules-cost-db.js        # Verified module construction resource requirements database
-    ├── mesh-loader.js            # Binary mesh / Collada .dae loader with fallback resolution
-    ├── mesh-worker.js            # Dedicated Web Worker for off-thread geometry processing
-    ├── samples.js                # Built-in sample station construction plans
-    └── style.css                 # Dark glassmorphic HUD & control overlay styling
+└── tests/                        # Automated test suite (99 test suites)
+    └── run-all.js                # Test runner script
 ```
 
 ## Notes

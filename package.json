@@ -13,7 +13,8 @@
     "test": "node tests/run-all.js",
     "sync:dlc-components": "node tools/sync-dlc-components.js",
     "generate:macro-refs": "node tools/generate-macro-component-refs.js",
-    "generate:scene-cache": "node tools/generate-scene-cache.js"
+    "generate:scene-cache": "node tools/generate-scene-cache.js",
+    "generate:component-offsets": "node tools/generate-component-offsets.js"
   },
   "dependencies": {
     "@x4/adapter-three": "^1.0.0",

@@ -64,11 +64,12 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
     const isHexShield = partBase.startsWith('fx_shield') || partBase.includes('pattern_hex');
     const isPoslight = !isDecal && (partBase.includes('poslight') || partBase.includes('gradient_colour') || partBase.includes('gradientcolour') || partBase.includes('gradient_color') || partBase.includes('gradientcolor'));
     const isAnimCross = partBase.includes('anim_cross');
+    const isAnimArrows = partBase.includes('anim_arrows') || binUrl.toLowerCase().includes('anim_arrows');
     const isBillboardDisplay = (binUrl.toLowerCase().includes('habitat') || binUrl.toLowerCase().includes('hab_') || binUrl.toLowerCase().includes('cross') || binUrl.toLowerCase().includes('pier') || binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('welfare') || binUrl.toLowerCase().includes('venture') || binUrl.toLowerCase().includes('landmark')) &&
-      (partBase.includes('anim_arrows') || binUrl.toLowerCase().includes('billboard')) && !isAnimCross;
+      (isAnimArrows || binUrl.toLowerCase().includes('billboard')) && !isAnimCross;
     const isHabitatBillboard = (binUrl.toLowerCase().includes('habitat') || binUrl.toLowerCase().includes('hab_')) &&
-      (partBase.includes('anim_arrows') || binUrl.toLowerCase().includes('billboard')) && !isAnimCross;
-    const isAdTrim = (partBase.includes('anim_arrows') || isAnimCross || binUrl.toLowerCase().includes('billboard')) && !isBillboardDisplay;
+      (isAnimArrows || binUrl.toLowerCase().includes('billboard')) && !isAnimCross;
+    const isAdTrim = (isAnimArrows || isAnimCross || binUrl.toLowerCase().includes('billboard')) && !isBillboardDisplay;
     const isLiquidStorageTank = binUrl.toLowerCase().includes('storage') && binUrl.toLowerCase().includes('liquid') && partBase.includes('part_main');
     const isLightCone = partBase.includes('lightcone') || partBase.includes('fx_lightcone');
     const isLightConeOrGlow = isFxGlow || isForcefield || isHaze || isBubbles || isLightCone;
@@ -128,10 +129,10 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
         : 0.0,
       blending: (isLightConeOrGlow || isHexShield || isPoslight || isForcefield) ? THREE.AdditiveBlending : THREE.NormalBlending,
       toneMapped: (isLightCone || isBubbles) ? true : (isHexShield ? false : (isGlowingLight ? false : true)),
-      transparent: isAlpha || isFoliage || isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isAnimCross || isBillboardDisplay,
+      transparent: isAlpha || isFoliage || isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isAnimCross || isBillboardDisplay || isAnimArrows,
       opacity: isLightCone ? 0.25 : (isHexShield ? 0.2 : (isBubbles ? 0.8 : (isHaze ? 0.35 : (isForcefield ? 0.65 : (isPoslight ? 0.9 : (isLightConeOrGlow ? 0.85 : (isWater ? 0.8 : (isAnimCross ? 0.95 : 1.0)))))))),
-      alphaTest: isAnimCross ? 0.2 : (isBillboardDisplay ? 0.05 : (isDecal ? 0.1 : ((isAlpha || isFoliage) && !isLightConeOrGlow ? 0.35 : 0.0))),
-      depthWrite: (isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isAnimCross || isBillboardDisplay) ? false : true,
+      alphaTest: isAnimCross ? 0.2 : ((isBillboardDisplay || isAnimArrows) ? 0.05 : (isDecal ? 0.1 : ((isAlpha || isFoliage) && !isLightConeOrGlow ? 0.35 : 0.0))),
+      depthWrite: (isLightConeOrGlow || isDecal || isWater || isBubbles || isHexShield || isPoslight || isForcefield || isAnimCross || isBillboardDisplay || isAnimArrows) ? false : true,
       polygonOffset: isDecal || isAnimCross,
       polygonOffsetFactor: (isDecal || isAnimCross) ? -1 : 0,
       polygonOffsetUnits: (isDecal || isAnimCross) ? -1 : 0,
@@ -139,18 +140,34 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
       side: THREE.DoubleSide
     });
 
-    if (hasVertexColors) {
+    if (hasVertexColors || isAnimArrows) {
       material.onBeforeCompile = (shader) => {
-        shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <emissivemap_fragment>',
-          `#include <emissivemap_fragment>
-          #if defined( USE_COLOR_ALPHA )
-            totalEmissiveRadiance *= vColor.rgb;
-          #elif defined( USE_COLOR )
-            totalEmissiveRadiance *= vColor.rgb;
-          #endif`
-        );
+        if (hasVertexColors) {
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <emissivemap_fragment>',
+            `#include <emissivemap_fragment>
+            #if defined( USE_COLOR_ALPHA )
+              totalEmissiveRadiance *= vColor.rgb;
+            #elif defined( USE_COLOR )
+              totalEmissiveRadiance *= vColor.rgb;
+            #endif`
+          );
+        }
+        if (isAnimArrows) {
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <map_fragment>',
+            `#include <map_fragment>
+            #if defined( USE_MAP )
+              // The black background in anim_arrows is transparent so the neon glow and anim_cross stencil show through
+              float arrowLuma = max(sampledDiffuseColor.r, max(sampledDiffuseColor.g, sampledDiffuseColor.b));
+              diffuseColor.a *= smoothstep(0.02, 0.15, arrowLuma);
+            #endif`
+          );
+        }
       };
+      material.customProgramCacheKey = () =>
+        (isAnimArrows ? 'anim_arrows_cutout' : 'standard') +
+        (hasVertexColors ? '_vcolor' : '');
     }
 
     if (isAlpha || isBubbles || isHexShield) {
@@ -218,10 +235,18 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
     const isDetailMNonAnim = partBase.includes('detail_m_main') && !(binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
     const isDetailSNonAnim = partBase.includes('detail_s_main') && !(binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
     if (isDecal || isDetailL || isDetailMNonAnim || isDetailSNonAnim) {
+      const isDetailLFx = isDetailL && Boolean(material.name && (material.name.toLowerCase().includes('generic_p1_fx') || material.name.toLowerCase().includes('fx')));
       ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
         if (material[prop]) {
           material[prop] = material[prop].clone();
-          material[prop].offset.set(0, 0);
+          if (isDetailLFx) {
+            material[prop].wrapS = THREE.RepeatWrapping;
+            material[prop].wrapT = THREE.RepeatWrapping;
+            material[prop].repeat.set(1, -1);
+            material[prop].offset.set(0, 1);
+          } else {
+            material[prop].offset.set(0, 0);
+          }
           material[prop].needsUpdate = true;
         }
       });

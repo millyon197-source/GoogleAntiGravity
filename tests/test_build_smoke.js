@@ -62,8 +62,10 @@ try {
 
   const puppeteer = (await import('puppeteer')).default;
   const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  const userProfileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'puppeteer_profile_smoke_'));
   browser = await puppeteer.launch({
     headless: 'new',
+    userDataDir: userProfileDir,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--use-gl=angle'],
     ...(fs.existsSync(chromePath) ? { executablePath: chromePath } : {})
   });
