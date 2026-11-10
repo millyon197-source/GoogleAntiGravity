@@ -53,6 +53,8 @@ assert.strictEqual(mat.toneMapped, false, 'Glowing decals should be toneMapped: 
 assert.strictEqual(mockMesh.castShadow, false, 'Decals must not cast shadow planes onto hull');
 assert.strictEqual(mockMesh.receiveShadow, true, 'Decals should receive hull shadows');
 assert.strictEqual(mockMesh.visible, true, 'Decals mesh must remain visible');
+assert.strictEqual(mat.map.repeat.y, -1, 'Decals diffuse texture repeat.y must be -1 (V-flip)');
+assert.strictEqual(mat.map.offset.y, 1, 'Decals diffuse texture offset.y must be 1 (V-flip)');
 
 console.log('  ✓ [PASS] Decals material settings, alphaTest, polygonOffset and shadow bypass verified');
 console.log('\n[SUCCESS] All dock decals transparency tests passed cleanly!');

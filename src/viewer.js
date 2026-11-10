@@ -207,6 +207,7 @@ export class StationViewer {
     this.animatedTextures = [];
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
+    this.componentsToggledModuleIndex = null;
     this.meshLoader = new MeshLoader();
     this.sceneCacheDecoder = new SceneCacheDecoder(); // .x4scene files decoded off the main thread
     this.colladaCache = new Map();
@@ -1520,6 +1521,10 @@ export class StationViewer {
     if (!this.moduleComponentSelections) this.moduleComponentSelections = new Map();
     this.moduleComponentSelections.set(index, { macro, files: [...files] });
 
+    if (this.animatedTextures && this.animatedTextures.length > 0) {
+      this.animatedTextures = this.animatedTextures.filter(t => t.moduleIndex !== index);
+    }
+
     const newRoot = files.length > 0 ? await this.loadModuleMesh({ index, macro }) : null;
     const newMeshGroup = newRoot ? newRoot.getObjectByName('module_mesh_group') : new THREE.Group();
     newMeshGroup.name = 'module_mesh_group';
@@ -1560,6 +1565,66 @@ export class StationViewer {
       this.selectModuleByIndex(index, false);
     }
     return true;
+  }
+
+  shouldAnimateModule(moduleIndex) {
+    if (this.allowAllAnimations) return true;
+    if (moduleIndex === undefined || moduleIndex === null) return true;
+    if (this.componentsToggledModuleIndex === null) return false;
+    if (this.componentsToggledModuleIndex !== undefined) {
+      return this.componentsToggledModuleIndex === moduleIndex;
+    }
+    return true;
+  }
+
+  async setModuleComponentsToggled(index, toggled) {
+    if (toggled) {
+      if (this.componentsToggledModuleIndex === index) return;
+      const prev = this.componentsToggledModuleIndex;
+      this.componentsToggledModuleIndex = index;
+      if (prev !== null && prev !== undefined && prev !== index) {
+        if (this.animatedParts && this.animatedParts.length > 0) {
+          this.animatedParts = this.animatedParts.filter(p => p.moduleIndex !== prev);
+        }
+        if (this.animatedTextures && this.animatedTextures.length > 0) {
+          this.animatedTextures = this.animatedTextures.filter(t => t.moduleIndex !== prev);
+        }
+        const prevTarget = this.modulesGroup?.children?.find(c => c.userData.index === prev);
+        if (prevTarget) {
+          const macro = prevTarget.userData.macro;
+          const activeFiles = this.getModuleActiveComponentFiles(prev, macro);
+          await this.setModuleComponentFiles(prev, activeFiles);
+        }
+      }
+      const targetModule = this.modulesGroup?.children?.find(c => c.userData.index === index);
+      if (targetModule) {
+        const macro = targetModule.userData.macro;
+        const activeFiles = this.getModuleActiveComponentFiles(index, macro);
+        await this.setModuleComponentFiles(index, activeFiles);
+      }
+    } else {
+      if (this.componentsToggledModuleIndex !== index && index !== null && index !== undefined) return;
+      const prevIndex = index ?? this.componentsToggledModuleIndex;
+      this.componentsToggledModuleIndex = null;
+      if (prevIndex !== null && prevIndex !== undefined) {
+        if (this.animatedParts && this.animatedParts.length > 0) {
+          this.animatedParts = this.animatedParts.filter(p => p.moduleIndex !== prevIndex);
+        }
+        if (this.animatedTextures && this.animatedTextures.length > 0) {
+          this.animatedTextures = this.animatedTextures.filter(t => t.moduleIndex !== prevIndex);
+        }
+        const targetModule = this.modulesGroup?.children?.find(c => c.userData.index === prevIndex);
+        if (targetModule) {
+          const macro = targetModule.userData.macro;
+          const activeFiles = this.getModuleActiveComponentFiles(prevIndex, macro);
+          await this.setModuleComponentFiles(prevIndex, activeFiles);
+        }
+      }
+    }
+  }
+
+  isModuleComponentsToggled(index) {
+    return this.componentsToggledModuleIndex === index;
   }
 
   setModuleAnimationHalted(index, halted) {
@@ -1729,6 +1794,7 @@ export class StationViewer {
     this.animatedTextures = [];
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
+    this.componentsToggledModuleIndex = null;
   }
 
   clearFilterHighlights() {
@@ -4711,6 +4777,9 @@ export class StationViewer {
             curr = curr.parent;
           }
         }
+        if (modIdx !== undefined && typeof this.shouldAnimateModule === 'function' && !this.shouldAnimateModule(modIdx)) {
+          continue;
+        }
         if (modIdx !== undefined && this.haltedModuleAnimations && this.haltedModuleAnimations.has(modIdx)) {
           continue;
         }
@@ -4732,6 +4801,9 @@ export class StationViewer {
     if (this.animatedTextures && this.animatedTextures.length > 0) {
       for (const item of this.animatedTextures) {
         if (item.texture) {
+          if (item.moduleIndex !== undefined && typeof this.shouldAnimateModule === 'function' && !this.shouldAnimateModule(item.moduleIndex)) {
+            continue;
+          }
           if (item.moduleIndex !== undefined && this.haltedModuleAnimations && this.haltedModuleAnimations.has(item.moduleIndex)) {
             continue;
           }
@@ -5613,6 +5685,7 @@ export class StationViewer {
     this.animatedTextures = [];
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
+    this.componentsToggledModuleIndex = null;
     if (this.transformControls) {
       this.transformControls.dispose();
       this.scene.remove(getTransformControlsHelper(this.transformControls));

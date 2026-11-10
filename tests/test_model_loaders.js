@@ -51,6 +51,8 @@ console.log('[*] Testing @x4/adapter-three model loaders...');
 
   const alpha = await loadDdsTexture(host, 'x_alphatexture.dds');
   assert.deepStrictEqual([alpha.repeat.y, alpha.offset.y], [-1, 1], 'alphatexture flipped vertically');
+  const decal = await loadDdsTexture(host, 'paint_p1_decal_01_diff.dds');
+  assert.deepStrictEqual([decal.repeat.y, decal.offset.y], [-1, 1], 'decal flipped vertically');
   assert.strictEqual(await loadDdsTexture(host, 'broken.dds'), null, 'load error resolves null');
   assert.strictEqual(await loadDdsTexture(host, 'empty.dds'), null, 'invalid texture resolves null');
   assert.strictEqual(await loadDdsTexture(host, ''), null, 'empty url resolves null');

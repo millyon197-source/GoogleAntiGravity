@@ -181,7 +181,10 @@ export async function applyArrowReveal(host, root, moduleIndex) {
       count++;
     });
   }
-  if (count > 0 && Array.isArray(host.animatedTextures)) {
+  const canAnimate = typeof host.shouldAnimateModule === 'function'
+    ? host.shouldAnimateModule(moduleIndex)
+    : true;
+  if (canAnimate && count > 0 && Array.isArray(host.animatedTextures)) {
     host.animatedTextures.push({ texture: reveal, uvTracks: tracks, loopFrames: anim.loopFrames, moduleIndex });
   }
   return count;
@@ -308,6 +311,62 @@ export function cloneSharingRawUvs(template) {
   return copy;
 }
 
+/** Wheat farm crane holder keyframes from game animations (PROD_ARG_WHEAT_DATA.ANI, mode_active 66.67s cycle). */
+export const CRANE_HOLDER_KEYFRAMES = [
+  { t: 0.0,    v: 0.0 },
+  { t: 6.67,   v: 228.514 },
+  { t: 13.33,  v: 228.514 },
+  { t: 23.33,  v: -311.015 },
+  { t: 30.00,  v: -304.634 },
+  { t: 43.33,  v: 241.687 },
+  { t: 46.67,  v: 116.395 },
+  { t: 53.33,  v: 213.750 },
+  { t: 56.67,  v: 155.442 },
+  { t: 66.667, v: 0.0 }
+];
+
+/** Wheat farm crane arm keyframes from game animations (PROD_ARG_WHEAT_DATA.ANI, mode_active 66.67s cycle). */
+export const CRANE_ARM_KEYFRAMES = [
+  { t: 0.0,    v: 0.0 },
+  { t: 6.67,   v: 151.383 },
+  { t: 13.33,  v: 152.932 },
+  { t: 20.00,  v: 31.552 },
+  { t: 26.67,  v: 160.185 },
+  { t: 33.33,  v: -0.209 },
+  { t: 40.00,  v: 60.487 },
+  { t: 46.67,  v: 187.889 },
+  { t: 53.33,  v: 151.555 },
+  { t: 60.00,  v: 154.674 },
+  { t: 66.667, v: 0.0 }
+];
+
+/**
+ * Evaluates looped scalar keyframes with smoothstep interpolation between points.
+ * @param {Array<{t: number, v: number}>} keyframes
+ * @param {number} period
+ * @param {number} time
+ * @returns {number}
+ */
+export function interpolateKeyframes(keyframes, period, time) {
+  if (!keyframes || keyframes.length === 0) return 0;
+  const t = ((time % period) + period) % period;
+  if (t <= keyframes[0].t) return keyframes[0].v;
+  if (t >= keyframes[keyframes.length - 1].t) return keyframes[keyframes.length - 1].v;
+
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    const k0 = keyframes[i];
+    const k1 = keyframes[i + 1];
+    if (t >= k0.t && t <= k1.t) {
+      const dt = k1.t - k0.t;
+      if (dt <= 1e-6) return k0.v;
+      const u = (t - k0.t) / dt;
+      const s = u * u * (3 - 2 * u);
+      return k0.v + s * (k1.v - k0.v);
+    }
+  }
+  return keyframes[keyframes.length - 1].v;
+}
+
 /**
  * Loads and assembles all component meshes for one station module: resolves its DAE
  * components, loads each (binary fast path or Collada), applies materials, positions
@@ -316,7 +375,7 @@ export function cloneSharingRawUvs(template) {
  * @param {{ index: number, macro: string }} mod Station module descriptor.
  * @param {ModuleMeshOptions} [options]
  */
-export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componentOffsets = {}, log = consoleLog } = {}) {
+export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componentOffsets = {}, allowAnimations, log = consoleLog } = {}) {
   const { baseName, folderPath } = host.resolveModuleAssetEntry(mod.macro);
   const activeFiles = host.getModuleActiveComponentFiles(mod.index, mod.macro);
   const uniqueUrls = folderPath ? activeFiles.map(f => `${folderPath}/${f}`) : [];
@@ -578,11 +637,11 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
                 normalScale: mat.normalScale || new THREE.Vector2(1, -1), // Convert DirectX normal maps (Green Down) to Three.js OpenGL (Green Up)
                 roughnessMap: mat.roughnessMap || null,
                 metalnessMap: mat.metalnessMap || null,
-                emissiveMap: mat.emissiveMap || null,
+                emissiveMap: mat.emissiveMap || (isLightCone ? mat.map : null),
                 bumpMap: mat.bumpMap || null,
                 roughness: isLightConeOrVolumetric ? 1.0 : (mat.roughness !== undefined ? mat.roughness : 0.6),
                 metalness: isLightConeOrVolumetric ? 0.0 : (mat.metalness !== undefined ? mat.metalness : 0.2),
-                opacity: isHaze ? 0.35 : (isForcefield ? 0.65 : (isLightCone ? 0.85 : (isBubbles ? 0.95 : (isPoslight ? 0.9 : (mat.opacity !== undefined ? mat.opacity : 1.0))))),
+                opacity: isHaze ? 0.35 : (isForcefield ? 0.65 : (isLightCone ? 0.25 : (isBubbles ? 0.95 : (isPoslight ? 0.9 : (mat.opacity !== undefined ? mat.opacity : 1.0))))),
                 transparent: isDecal || isLightConeOrVolumetric || mat.transparent || false,
                 alphaTest: isDecal ? 0.1 : (isLightConeOrVolumetric ? 0.0 : (mat.alphaTest !== undefined ? mat.alphaTest : 0.0)),
                 depthWrite: (isDecal || isLightConeOrVolumetric) ? false : (mat.depthWrite !== undefined ? mat.depthWrite : true),
@@ -593,9 +652,9 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
                 side: THREE.DoubleSide,
                 visible: !isFxGlow && !isDamageArea,
                 blending: isLightConeOrVolumetric ? THREE.AdditiveBlending : (mat.blending !== undefined ? mat.blending : THREE.NormalBlending),
-                toneMapped: (isLightConeOrVolumetric || isDecal) ? false : (mat.toneMapped !== undefined ? mat.toneMapped : true),
+                toneMapped: (isLightCone || isBubbles) ? true : ((isLightConeOrVolumetric || isDecal) ? false : (mat.toneMapped !== undefined ? mat.toneMapped : true)),
                 emissive: isPoslight ? new THREE.Color(0xffffff) : (isLightConeOrVolumetric ? getRaceGlowColor(urlLower) : (mat.emissive || new THREE.Color(0x000000))),
-                emissiveIntensity: isHaze ? (host.glowingEmissiveIntensity || 2.2) * 0.8 : (isForcefield ? (host.glowingEmissiveIntensity || 2.2) * 1.5 : (isLightCone ? (host.glowingEmissiveIntensity || 2.2) * 1.5 : (isBubbles ? 4.5 : (mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : (mat.emissiveMap ? 1.0 : 0.0)))))
+                emissiveIntensity: isHaze ? (host.glowingEmissiveIntensity || 2.2) * 0.8 : (isForcefield ? (host.glowingEmissiveIntensity || 2.2) * 1.5 : (isLightCone ? 0.35 : (isBubbles ? 4.5 : (mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : (mat.emissiveMap ? 1.0 : 0.0)))))
               });
 
               // If old material had vertex colors enabled, only keep it if geometry actually supports it
@@ -603,6 +662,40 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
                 newMat.vertexColors = true;
               } else {
                 newMat.vertexColors = false;
+              }
+
+              const hasVertexColors = Boolean(newMat.vertexColors);
+              if (hasVertexColors || isLightCone) {
+                newMat.onBeforeCompile = (shader) => {
+                  let emissiveChunk = '#include <emissivemap_fragment>';
+                  if (hasVertexColors) {
+                    emissiveChunk += `
+                      #if defined( USE_COLOR_ALPHA )
+                        totalEmissiveRadiance *= vColor.rgb;
+                      #elif defined( USE_COLOR )
+                        totalEmissiveRadiance *= vColor.rgb;
+                      #endif`;
+                  }
+                  if (isLightCone) {
+                    emissiveChunk += `
+                      #ifdef USE_EMISSIVEMAP
+                        // Softly attenuate low-level compression noise and non-zero borders to absolute zero
+                        // Eliminates visible polygon plane edges while preserving the luminous light beam
+                        float coneLuma = max(texelEmissive.r, max(texelEmissive.g, texelEmissive.b));
+                        float coneFade = smoothstep(0.06, 0.30, coneLuma);
+                        totalEmissiveRadiance *= coneFade;
+                        diffuseColor.a *= coneFade;
+                      #endif`;
+                  }
+                  shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <emissivemap_fragment>',
+                    emissiveChunk
+                  );
+                };
+                newMat.customProgramCacheKey = () =>
+                  'standard' +
+                  (hasVertexColors ? '_vcolor' : '') +
+                  (isLightCone ? '_lightcone' : '');
               }
 
               newMat.name = mat.name || '';
@@ -626,6 +719,10 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
     }
   }));
 
+  const canAnimate = typeof host.shouldAnimateModule === 'function'
+    ? host.shouldAnimateModule(mod?.index)
+    : (allowAnimations !== undefined ? allowAnimations : true);
+
   // Collect the parts and register their animations in file order, whatever order they finished in
   for (const part of prepared) {
     if (!part) continue;
@@ -633,94 +730,106 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
     try {
       loadedScenes.push(scene);
 
-      if (partBase.includes('anim_crane_holder') || partBase.includes('anim_arm')) {
-        host.animatedParts.push({
-          object: scene,
-          moduleIndex: mod?.index,
-          update: (time) => {
-            scene.position.z = Math.sin(time * 0.25) * 450;
-          }
-        });
-      } else if (partBase.includes('anim_vent')) {
-        host.animatedParts.push({
-          object: scene,
-          moduleIndex: mod?.index,
-          update: (time) => {
-            scene.rotation.x = Math.sin(time * 1.5) * 0.25;
-          }
-        });
-      } else if ((url.toLowerCase().includes('anim_centrifuge') ||
-                  url.toLowerCase().includes('anim_rotor') ||
-                  url.toLowerCase().includes('anim_rotator') ||
-                  url.toLowerCase().includes('anim_fan') ||
-                  url.toLowerCase().includes('anim_stomp_wheels')) &&
-                 (partBase.includes('anim_centrifuge') ||
-                  partBase.includes('anim_rotor') ||
-                  partBase.includes('anim_rotator') ||
-                  partBase.includes('anim_fan') ||
-                  partBase.includes('anim_stomp_wheels'))) {
-        host.animatedParts.push({
-          object: scene,
-          moduleIndex: mod?.index,
-          update: (time) => {
-            // Continuous industrial rotation (0.157 rad/s)
-            scene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
-          }
-        });
-      } else if (url.toLowerCase().includes('anim_stomp') && partBase.startsWith('anim_stomp') && !partBase.includes('wheels')) {
-        const basePosY = scene.position.y;
-        host.animatedParts.push({
-          object: scene,
-          moduleIndex: mod?.index,
-          update: (time) => {
-            // Hydraulic stamping machine motion: downward crush and retract
-            const phase = (time * 2.2) % (Math.PI * 2);
-            const crush = Math.pow(Math.sin(phase), 4);
-            scene.position.y = basePosY - crush * 8.0;
-          }
-        });
-      } else if (url.toLowerCase().includes('anim_alge') && partBase.includes('anim_alge')) {
-        const baseRotZ = scene.rotation.z;
-        const algeOffset = (partBase.length * 1.3) % Math.PI;
-        host.animatedParts.push({
-          object: scene,
-          moduleIndex: mod?.index,
-          update: (time) => {
-            // Harmonic bio-flora swaying underwater
-            scene.rotation.z = baseRotZ + Math.sin(time * 1.2 + algeOffset) * 0.05;
-          }
-        });
-      } else if (url.toLowerCase().includes('detail_xs_simon')) {
-        const simonConfigs = {
-          'detail_xs_simon_01': { delta: [-334.78, 0.08, -11.66], period: 80.0 },
-          'detail_xs_simon_02': { delta: [120.0, 8.0, -80.0], period: 66.7 },
-          'detail_xs_simon_03': { delta: [-60.0, 5.0, 40.0], period: 20.0 },
-          'detail_xs_simon_04': { delta: [334.77, -0.13, -200.77], period: 53.3 },
-          'detail_xs_simon_05': { delta: [-150.0, -6.0, 70.0], period: 40.0 },
-          'detail_xs_simon_06': { delta: [110.0, 10.0, 90.0], period: 48.3 },
-          'detail_xs_simon_07': { delta: [-140.0, -8.0, -60.0], period: 33.3 },
-          'detail_xs_simon_08': { delta: [-95.10, 33.86, -453.09], period: 60.0 },
-          'detail_xs_simon_09': { delta: [-80.0, 12.0, 120.0], period: 56.7 },
-          'detail_xs_simon_10': { delta: [-120.0, -10.0, 150.0], period: 66.7 },
-          'detail_xs_simon_12': { delta: [258.41, 18.87, -0.91], period: 60.0 },
-          'detail_xs_simon_18': { delta: [-332.63, 84.43, -248.36], period: 60.0 }
-        };
-        const cfg = simonConfigs[partBase] || { delta: [60.0, 5.0, 40.0], period: 40.0 };
-        const basePos = scene.position.clone();
-        const baseRot = scene.rotation.clone();
-        host.animatedParts.push({
-          object: scene,
-          moduleIndex: mod?.index,
-          update: (time) => {
-            const phase = (time * (Math.PI * 2 / cfg.period)) % (Math.PI * 2);
-            const u = (1 - Math.cos(phase)) * 0.5;
-            scene.position.x = basePos.x + u * cfg.delta[0];
-            scene.position.y = basePos.y + u * cfg.delta[1] + Math.sin(time * 2.2) * 1.2;
-            scene.position.z = basePos.z + u * cfg.delta[2];
-            scene.rotation.z = baseRot.z + Math.sin(phase) * 0.08;
-            scene.rotation.x = baseRot.x + Math.sin(time * 2.8) * 0.03;
-          }
-        });
+      if (canAnimate && host.animatedParts) {
+        if (partBase.includes('anim_crane_holder')) {
+          const basePos = scene.position.clone();
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              scene.position.x = basePos.x + interpolateKeyframes(CRANE_HOLDER_KEYFRAMES, 66.666664, time);
+            }
+          });
+        } else if (partBase.includes('anim_arm')) {
+          const basePos = scene.position.clone();
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              scene.position.z = basePos.z + interpolateKeyframes(CRANE_ARM_KEYFRAMES, 66.666664, time);
+            }
+          });
+        } else if (partBase.includes('anim_vent')) {
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              scene.rotation.x = Math.sin(time * 1.5) * 0.25;
+            }
+          });
+        } else if ((url.toLowerCase().includes('anim_centrifuge') ||
+                    url.toLowerCase().includes('anim_rotor') ||
+                    url.toLowerCase().includes('anim_rotator') ||
+                    url.toLowerCase().includes('anim_fan') ||
+                    url.toLowerCase().includes('anim_stomp_wheels')) &&
+                   (partBase.includes('anim_centrifuge') ||
+                    partBase.includes('anim_rotor') ||
+                    partBase.includes('anim_rotator') ||
+                    partBase.includes('anim_fan') ||
+                    partBase.includes('anim_stomp_wheels'))) {
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              // Continuous industrial rotation (0.157 rad/s)
+              scene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
+            }
+          });
+        } else if (url.toLowerCase().includes('anim_stomp') && partBase.startsWith('anim_stomp') && !partBase.includes('wheels')) {
+          const basePosY = scene.position.y;
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              // Hydraulic stamping machine motion: downward crush and retract
+              const phase = (time * 2.2) % (Math.PI * 2);
+              const crush = Math.pow(Math.sin(phase), 4);
+              scene.position.y = basePosY - crush * 8.0;
+            }
+          });
+        } else if (url.toLowerCase().includes('anim_alge') && partBase.includes('anim_alge')) {
+          const baseRotZ = scene.rotation.z;
+          const algeOffset = (partBase.length * 1.3) % Math.PI;
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              // Harmonic bio-flora swaying underwater
+              scene.rotation.z = baseRotZ + Math.sin(time * 1.2 + algeOffset) * 0.05;
+            }
+          });
+        } else if (url.toLowerCase().includes('detail_xs_simon')) {
+          const simonConfigs = {
+            'detail_xs_simon_01': { delta: [-334.78, 0.08, -11.66], period: 80.0 },
+            'detail_xs_simon_02': { delta: [120.0, 8.0, -80.0], period: 66.7 },
+            'detail_xs_simon_03': { delta: [-60.0, 5.0, 40.0], period: 20.0 },
+            'detail_xs_simon_04': { delta: [334.77, -0.13, -200.77], period: 53.3 },
+            'detail_xs_simon_05': { delta: [-150.0, -6.0, 70.0], period: 40.0 },
+            'detail_xs_simon_06': { delta: [110.0, 10.0, 90.0], period: 48.3 },
+            'detail_xs_simon_07': { delta: [-140.0, -8.0, -60.0], period: 33.3 },
+            'detail_xs_simon_08': { delta: [-95.10, 33.86, -453.09], period: 60.0 },
+            'detail_xs_simon_09': { delta: [-80.0, 12.0, 120.0], period: 56.7 },
+            'detail_xs_simon_10': { delta: [-120.0, -10.0, 150.0], period: 66.7 },
+            'detail_xs_simon_12': { delta: [258.41, 18.87, -0.91], period: 60.0 },
+            'detail_xs_simon_18': { delta: [-332.63, 84.43, -248.36], period: 60.0 }
+          };
+          const cfg = simonConfigs[partBase] || { delta: [60.0, 5.0, 40.0], period: 40.0 };
+          const basePos = scene.position.clone();
+          const baseRot = scene.rotation.clone();
+          host.animatedParts.push({
+            object: scene,
+            moduleIndex: mod?.index,
+            update: (time) => {
+              const phase = (time * (Math.PI * 2 / cfg.period)) % (Math.PI * 2);
+              const u = (1 - Math.cos(phase)) * 0.5;
+              scene.position.x = basePos.x + u * cfg.delta[0];
+              scene.position.y = basePos.y + u * cfg.delta[1] + Math.sin(time * 2.2) * 1.2;
+              scene.position.z = basePos.z + u * cfg.delta[2];
+              scene.rotation.z = baseRot.z + Math.sin(phase) * 0.08;
+              scene.rotation.x = baseRot.x + Math.sin(time * 2.8) * 0.03;
+            }
+          });
+        }
       }
     } catch (e) {
       log(`  [-] Failed to load ${url}: ${e.message || e}`, 'warn');
@@ -757,13 +866,15 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       centrifugeScene.userData.partName = 'anim_centrifuge';
       const centOff = componentOffsets['prod_gen_advancedelectronics']?.['anim_centrifuge'] || [110.487, 2.7689, 0.7379];
       centrifugeScene.position.set(centOff[0], centOff[1], centOff[2]);
-      host.animatedParts.push({
-        object: centrifugeScene,
-        moduleIndex: mod?.index,
-        update: (time) => {
-          centrifugeScene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
-        }
-      });
+      if (canAnimate && host.animatedParts) {
+        host.animatedParts.push({
+          object: centrifugeScene,
+          moduleIndex: mod?.index,
+          update: (time) => {
+            centrifugeScene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
+          }
+        });
+      }
       meshGroup.add(centrifugeScene);
     }
 
@@ -798,6 +909,28 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
         } else {
           meshGroup.add(scene);
         }
+      } else {
+        meshGroup.add(scene);
+      }
+    }
+  } else if (baseName.includes('prod_arg_wheat')) {
+    const animMain = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_main');
+    const craneHolder = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_crane_holder');
+    const animArm = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_arm');
+
+    if (craneHolder && animArm) {
+      craneHolder.add(animArm);
+    }
+    if (animMain && craneHolder) {
+      animMain.add(craneHolder);
+    }
+
+    for (const scene of loadedScenes) {
+      const pName = scene.userData.partName || scene.name;
+      if (pName === 'anim_arm') {
+        if (!craneHolder) meshGroup.add(scene);
+      } else if (pName === 'anim_crane_holder') {
+        if (!animMain) meshGroup.add(scene);
       } else {
         meshGroup.add(scene);
       }

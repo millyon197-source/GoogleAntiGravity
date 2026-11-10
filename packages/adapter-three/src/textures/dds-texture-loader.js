@@ -32,7 +32,7 @@ export async function loadDdsTexture(host, url) {
         }
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        if (url.toLowerCase().includes('alphatexture')) {
+        if (url.toLowerCase().includes('alphatexture') || url.toLowerCase().includes('decal')) {
           texture.repeat.set(1, -1);
           texture.offset.set(0, 1);
         }

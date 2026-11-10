@@ -27,6 +27,9 @@ import { loadPartUvAnimations } from './uv-animations.js';
 export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
   if (!group) return;
   if (!host.animatedTextures) host.animatedTextures = [];
+  const canAnimate = (moduleIndex === undefined || moduleIndex === null || typeof host.shouldAnimateModule !== 'function')
+    ? true
+    : host.shouldAnimateModule(moduleIndex);
   const promises = [];
   const partBase = (url ? url.split('/').pop().split('\\').pop().replace(/-lod\d+\.dae$/i, '').replace(/\.dae$/i, '') : '').toLowerCase();
   const urlLower = (url || '').toLowerCase();
@@ -182,19 +185,32 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 child.userData.scanlineVOffset = { value: 0.0 };
               }
 
-              if (hasVertexColors || isAnimArrows) {
+              if (hasVertexColors || isAnimArrows || isLightCone) {
                 newMat.onBeforeCompile = (shader) => {
+                  let emissiveChunk = '#include <emissivemap_fragment>';
                   if (hasVertexColors) {
-                    shader.fragmentShader = shader.fragmentShader.replace(
-                      '#include <emissivemap_fragment>',
-                      `#include <emissivemap_fragment>
+                    emissiveChunk += `
                       #if defined( USE_COLOR_ALPHA )
                         totalEmissiveRadiance *= vColor.rgb;
                       #elif defined( USE_COLOR )
                         totalEmissiveRadiance *= vColor.rgb;
-                      #endif`
-                    );
+                      #endif`;
                   }
+                  if (isLightCone) {
+                    emissiveChunk += `
+                      #ifdef USE_EMISSIVEMAP
+                        // Softly attenuate low-level compression noise and non-zero borders to absolute zero
+                        // Eliminates visible polygon plane edges while preserving the luminous light beam
+                        float coneLuma = max(texelEmissive.r, max(texelEmissive.g, texelEmissive.b));
+                        float coneFade = smoothstep(0.06, 0.30, coneLuma);
+                        totalEmissiveRadiance *= coneFade;
+                        diffuseColor.a *= coneFade;
+                      #endif`;
+                  }
+                  shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <emissivemap_fragment>',
+                    emissiveChunk
+                  );
                   if (isAnimArrows) {
                     shader.fragmentShader = shader.fragmentShader.replace(
                       '#include <map_fragment>',
@@ -225,7 +241,8 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 newMat.customProgramCacheKey = () =>
                   (isAnimArrows ? 'anim_arrows_cutout' : 'standard') +
                   (hasVertexColors ? '_vcolor' : '') +
-                  (isCrossAnimArrows ? '_cross' : '');
+                  (isCrossAnimArrows ? '_cross' : '') +
+                  (isLightCone ? '_lightcone' : '');
               }
               newMat.name = matName;
 
@@ -257,10 +274,12 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 // Static decals, windowfont, and station structural lights/detail_l/detail_s/detail_m meshes must have dedicated non-scrolling UVs
                 const isDetailLMainFx = (partBase.includes('detail_l_main') || (child.name || '').toLowerCase().includes('detail_l_main')) &&
                                         (matName.toLowerCase().includes('generic_p1_fx') || matName.toLowerCase().includes('fx'));
+                const isActualDecal = !isWindowfont && (partBase.includes('decal') || (child.name || '').toLowerCase().includes('decal') || matName.toLowerCase().includes('decal'));
+                const needsVFlip = isDetailLMainFx || isActualDecal;
                 ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
                   if (newMat[prop]) {
                     newMat[prop] = newMat[prop].clone();
-                    if (isDetailLMainFx) {
+                    if (needsVFlip) {
                       newMat[prop].wrapS = THREE.RepeatWrapping;
                       newMat[prop].wrapT = THREE.RepeatWrapping;
                       newMat[prop].repeat.set(1, -1);
@@ -274,6 +293,7 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
               }
 
               const registerAnimTex = (prop, speedX, speedY) => {
+                if (!canAnimate) return;
                 if (!newMat[prop]) return;
                 const origTex = newMat[prop];
                 let animTex = origTex;
@@ -296,7 +316,7 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 registerAnimTex('map', 0.04, 0.015);
               }
 
-              if (isBubbles && (diffuseTex || emissiveTex)) {
+              if (canAnimate && isBubbles && (diffuseTex || emissiveTex)) {
                 const texturesToAnimate = [diffuseTex, emissiveTex].filter(Boolean);
                 for (const tex of texturesToAnimate) {
                   if (!host.animatedTextures.some(a => a.texture === tex)) {
@@ -371,7 +391,7 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                 // between a pair of atlas cells. A continuous scroll here slid the whole atlas past.
                 const uvAnim = await loadPartUvAnimations(url, partBase);
                 const atlasTracks = uvAnim && uvAnim.channels[1];
-                if (atlasTracks) {
+                if (canAnimate && atlasTracks) {
                   // Own copy of the atlas texture: its offset must not move other parts sharing it
                   const copies = new Map();
                   for (const prop of ['map', 'emissiveMap']) {
@@ -484,12 +504,14 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                     }
 
                     // Continuous vertical scrolling animation matching mapchannel 3
-                    host.animatedTextures.push({
-                      texture: bgTex,
-                      speedX: 0.0,
-                      speedY: -0.35,
-                      moduleIndex
-                    });
+                    if (canAnimate) {
+                      host.animatedTextures.push({
+                        texture: bgTex,
+                        speedX: 0.0,
+                        speedY: -0.35,
+                        moduleIndex
+                      });
+                    }
                   });
                 }
               }
@@ -819,24 +841,26 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                   // Frames 100..195: State B (Capsule, Shopping Cart, Bed, Law)
                   // Frames 195..200: Transition back to State A
                   // MapChannel 3 scanline scroll: v_offset sweeps +4 to -4 across the 200 frames
-                  if (!host.animatedParts) host.animatedParts = [];
-                  host.animatedParts.push({
-                    object: child,
-                    moduleIndex,
-                    update: (time) => {
-                      const cycleTime = time % 6.6667;
-                      const targetState = (cycleTime >= 3.25 && cycleTime < 6.583) ? 'B' : 'A';
-                      if (!child.userData.manualBillboardState && targetState !== child.userData.currentBillboardState) {
-                        if (typeof child.userData.setBillboardState === 'function') {
-                          child.userData.setBillboardState(targetState, false);
+                  if (canAnimate) {
+                    if (!host.animatedParts) host.animatedParts = [];
+                    host.animatedParts.push({
+                      object: child,
+                      moduleIndex,
+                      update: (time) => {
+                        const cycleTime = time % 6.6667;
+                        const targetState = (cycleTime >= 3.25 && cycleTime < 6.583) ? 'B' : 'A';
+                        if (!child.userData.manualBillboardState && targetState !== child.userData.currentBillboardState) {
+                          if (typeof child.userData.setBillboardState === 'function') {
+                            child.userData.setBillboardState(targetState, false);
+                          }
+                        }
+                        if (child.userData.scanlineVOffset) {
+                          const scanlineProgress = cycleTime / 6.6667;
+                          child.userData.scanlineVOffset.value = 4.0 - scanlineProgress * 8.0;
                         }
                       }
-                      if (child.userData.scanlineVOffset) {
-                        const scanlineProgress = cycleTime / 6.6667;
-                        child.userData.scanlineVOffset.value = 4.0 - scanlineProgress * 8.0;
-                      }
-                    }
-                  });
+                    });
+                  }
                 }
 
                 if (isCrossAnimCross && (!child.userData._crossBgPartitioned || !child.userData.isolatedBackgrounds || !child.userData.isolatedBackgrounds.bg_cross || !child.userData.isolatedBackgrounds.bg_cross.isMesh)) {
@@ -963,7 +987,7 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
 
                     // The gradient layer scrolls with anim_cross's own UV animation (component XML, map
                     // channel 3), in step with the arrow reveal (applyArrowReveal) that uses the same layer
-                    if (bgTex && !host.animatedTextures.some(a => a.texture === bgTex && a.moduleIndex === moduleIndex)) {
+                    if (canAnimate && bgTex && !host.animatedTextures.some(a => a.texture === bgTex && a.moduleIndex === moduleIndex)) {
                       const entry = { texture: bgTex, speedX: 0.0, speedY: -0.35, moduleIndex };
                       host.animatedTextures.push(entry);
                       loadPartUvAnimations(url, partBase).then(uvAnim => {

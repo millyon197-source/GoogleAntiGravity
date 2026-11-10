@@ -632,6 +632,10 @@ assert.strictEqual(decMesh.material.polygonOffsetUnits, -1, 'fx_decals polygonOf
 assert.strictEqual(decMesh.material.alphaTest, 0.1, 'fx_decals alphaTest must be 0.1');
 assert.strictEqual(decMesh.material.toneMapped, false, 'fx_decals glow must not be toneMapped');
 assert.strictEqual(decMesh.material.emissive.getHexString(), '33ccff', 'fx_decals emissive must be Argon cyan');
+assert.strictEqual(decMesh.material.map.repeat.y, -1, 'fx_decals diffuse map repeat.y must be -1 (V-flip)');
+assert.strictEqual(decMesh.material.map.offset.y, 1, 'fx_decals diffuse map offset.y must be 1 (V-flip)');
+assert.strictEqual(decMesh.material.emissiveMap.repeat.y, -1, 'fx_decals emissive map repeat.y must be -1 (V-flip)');
+assert.strictEqual(decMesh.material.emissiveMap.offset.y, 1, 'fx_decals emissive map offset.y must be 1 (V-flip)');
 console.log('  ✓ [PASS] fx_decals transparency, depthWrite, polygonOffset, and neon emissive glow verified');
 
 // 13f. Verify component offsets for all 26 target parts

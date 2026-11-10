@@ -1443,6 +1443,9 @@ function selectModule(index, focusCamera = false) {
     if (searchCard) searchCard.classList.remove('has-floating-pill');
     const rightSidebar = document.getElementById('right-sidebar');
     if (rightSidebar) rightSidebar.classList.remove('components-expanded');
+    if (viewer && typeof viewer.setModuleComponentsToggled === 'function') {
+      viewer.setModuleComponentsToggled(null, false);
+    }
     clearPersistentHighlights();
     viewer.deselect();
   }
@@ -1976,12 +1979,18 @@ function setupEventListeners() {
         }
       }
       if (rightSidebar) rightSidebar.classList.add('components-expanded');
+      if (viewer && typeof viewer.setModuleComponentsToggled === 'function' && selectedIndex !== null && selectedIndex !== undefined) {
+        viewer.setModuleComponentsToggled(selectedIndex, true);
+      }
     } else {
       compFloatingPill.classList.add('hidden');
       if (searchCard) {
         searchCard.classList.remove('has-floating-pill');
       }
       if (rightSidebar) rightSidebar.classList.remove('components-expanded');
+      if (viewer && typeof viewer.setModuleComponentsToggled === 'function') {
+        viewer.setModuleComponentsToggled(null, false);
+      }
     }
   }
 

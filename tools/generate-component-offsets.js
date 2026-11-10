@@ -80,7 +80,9 @@ function parseConnections(xml) {
     const body = m[3] || '';
     const name = attr(head, 'name');
     if (!name) continue;
-    const off = body.match(/<offset>([\s\S]*?)<\/offset>/)?.[1] || '';
+    // Only the connection's own direct offset, before child elements like <parts>, <animations>
+    const preParts = body.split(/<parts\b|<animations\b/)[0] || '';
+    const off = preParts.match(/<offset>([\s\S]*?)<\/offset>/)?.[1] || '';
     const p = off.match(/<position\b[^>]*>/)?.[0];
     const q = off.match(/<quaternion\b[^>]*>/)?.[0];
     const pos = p ? ['x', 'y', 'z'].map(k => parseFloat(attr(p, k)) || 0) : [0, 0, 0];
@@ -175,7 +177,10 @@ for (const bucket of Object.values(table)) {
   for (const entry of bucket) {
     const key = entry.key;
     if (LOADER_PLACED.has(key)) continue;
-    const xmlPath = path.join(root, entry.folder_path.replace(/^\/assets1\//, 'assets/').replace(/_data$/, '') + '.xml');
+    let xmlPath = path.join(root, entry.folder_path.replace(/^\//, '').replace(/_data$/, '') + '.xml');
+    if (!fs.existsSync(xmlPath)) {
+      xmlPath = path.join(root, entry.folder_path.replace(/^\/assets1\//, 'assets/').replace(/_data$/, '') + '.xml');
+    }
     if (!fs.existsSync(xmlPath)) { report.noXml.push(key); continue; }
     report.components++;
 

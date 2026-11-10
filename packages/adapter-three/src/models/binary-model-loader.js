@@ -140,19 +140,32 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
       side: THREE.DoubleSide
     });
 
-    if (hasVertexColors || isAnimArrows) {
+    if (hasVertexColors || isAnimArrows || isLightCone) {
       material.onBeforeCompile = (shader) => {
+        let emissiveChunk = '#include <emissivemap_fragment>';
         if (hasVertexColors) {
-          shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <emissivemap_fragment>',
-            `#include <emissivemap_fragment>
+          emissiveChunk += `
             #if defined( USE_COLOR_ALPHA )
               totalEmissiveRadiance *= vColor.rgb;
             #elif defined( USE_COLOR )
               totalEmissiveRadiance *= vColor.rgb;
-            #endif`
-          );
+            #endif`;
         }
+        if (isLightCone) {
+          emissiveChunk += `
+            #ifdef USE_EMISSIVEMAP
+              // Softly attenuate low-level compression noise and non-zero borders to absolute zero
+              // Eliminates visible polygon plane edges while preserving the luminous light beam
+              float coneLuma = max(texelEmissive.r, max(texelEmissive.g, texelEmissive.b));
+              float coneFade = smoothstep(0.06, 0.30, coneLuma);
+              totalEmissiveRadiance *= coneFade;
+              diffuseColor.a *= coneFade;
+            #endif`;
+        }
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <emissivemap_fragment>',
+          emissiveChunk
+        );
         if (isAnimArrows) {
           shader.fragmentShader = shader.fragmentShader.replace(
             '#include <map_fragment>',
@@ -167,7 +180,8 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
       };
       material.customProgramCacheKey = () =>
         (isAnimArrows ? 'anim_arrows_cutout' : 'standard') +
-        (hasVertexColors ? '_vcolor' : '');
+        (hasVertexColors ? '_vcolor' : '') +
+        (isLightCone ? '_lightcone' : '');
     }
 
     if (isAlpha || isBubbles || isHexShield) {
@@ -186,6 +200,7 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
     }
 
     const registerAnimBinaryTex = (prop, speedX, speedY) => {
+      if (typeof host.shouldAnimateModule === 'function' && !host.shouldAnimateModule()) return;
       if (!material[prop]) return;
       const origTex = material[prop];
       const clonedTex = origTex.clone();
@@ -236,10 +251,12 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
     const isDetailSNonAnim = partBase.includes('detail_s_main') && !(binUrl.toLowerCase().includes('dock') || binUrl.toLowerCase().includes('defence') || binUrl.toLowerCase().includes('defense'));
     if (isDecal || isDetailL || isDetailMNonAnim || isDetailSNonAnim) {
       const isDetailLFx = isDetailL && Boolean(material.name && (material.name.toLowerCase().includes('generic_p1_fx') || material.name.toLowerCase().includes('fx')));
+      const isActualDecal = !partBase.includes('windowfont') && partBase.includes('decal');
+      const needsVFlip = isDetailLFx || isActualDecal;
       ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(prop => {
         if (material[prop]) {
           material[prop] = material[prop].clone();
-          if (isDetailLFx) {
+          if (needsVFlip) {
             material[prop].wrapS = THREE.RepeatWrapping;
             material[prop].wrapT = THREE.RepeatWrapping;
             material[prop].repeat.set(1, -1);
