@@ -2652,6 +2652,48 @@ body.sample-dragging-active {
   color: #fff;
 }
 
+.display-panel-btn.layout-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  user-select: none;
+}
+
+.layout-pill-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.layout-pill-divider {
+  display: inline-block;
+  width: 1px;
+  height: 12px;
+  background: rgba(0, 245, 255, 0.3);
+}
+
+.layout-blueprint-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.layout-blueprint-toggle:hover {
+  color: #fff;
+}
+
+.layout-blueprint-toggle input[type="checkbox"] {
+  accent-color: var(--neon-cyan);
+  cursor: pointer;
+  margin: 0;
+}
+
 .display-panel-card {
   position: absolute;
   top: 64px;

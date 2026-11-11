@@ -36,22 +36,27 @@ export const DEFAULT_PLOT_CONFIG = {
 export const LAYER_CATEGORIES = ['Docks', 'Storage', 'Production', 'Habitats', 'Defense'];
 
 /**
+ * Default Order of Layout configuration (backward-compatibility reference).
+ * The Blueprint functionality is moved outside "Layout" text as a checkbox labeled "Blueprint".
+ */
+export const DEFAULT_ORDER_OF_LAYOUT = {
+  id: 'order-of-layout',
+  name: 'Order of Layout',
+  checkboxes: [
+    { id: 'layout-blueprint', name: 'Blueprint', isDefault: true, checked: true, behaviorKey: 'blueprint' },
+    { id: 'order-layers', name: 'Layers Order', isDefault: false, checked: false, behaviorKey: 'order-layers' },
+    { id: 'order-size', name: 'Component Size', isDefault: false, checked: false, behaviorKey: 'order-size' },
+    { id: 'order-cluster', name: 'Category Clusters', isDefault: false, checked: false, behaviorKey: 'order-cluster' },
+    { id: 'order-custom', name: 'Custom Order', isDefault: false, checked: false, behaviorKey: 'order-custom' }
+  ]
+};
+
+/**
  * Default values configuration.
  * Each value defines how modules are to be displayed/placed,
  * and contains up to 5 checkboxes that can be named by an edit later.
  */
 export const DEFAULT_DISPLAY_VALUES = [
-  {
-    id: 'order-of-layout',
-    name: 'Order of Layout',
-    checkboxes: [
-      { id: 'layout-blueprint', name: 'Blueprint', isDefault: true, checked: true, behaviorKey: 'blueprint' },
-      { id: 'order-layers', name: 'Layers Order', isDefault: false, checked: false, behaviorKey: 'order-layers' },
-      { id: 'order-size', name: 'Component Size', isDefault: false, checked: false, behaviorKey: 'order-size' },
-      { id: 'order-cluster', name: 'Category Clusters', isDefault: false, checked: false, behaviorKey: 'order-cluster' },
-      { id: 'order-custom', name: 'Custom Order', isDefault: false, checked: false, behaviorKey: 'order-custom' }
-    ]
-  },
   {
     id: 'layout-mode',
     name: 'Layout Mode',
@@ -354,7 +359,10 @@ export function syncLayersToDisplayValues() {
  * For Layers additions, the order of addition establishes the order of evaluation.
  */
 export function addActionableElement(decoratorId, elementIndex = 0, targetPosition = -1) {
-  const decoratorObj = displayValues.find(v => v.id === decoratorId);
+  let decoratorObj = displayValues.find(v => v.id === decoratorId);
+  if (!decoratorObj && decoratorId === 'order-of-layout') {
+    decoratorObj = DEFAULT_ORDER_OF_LAYOUT;
+  }
   if (!decoratorObj || !decoratorObj.checkboxes || !decoratorObj.checkboxes[elementIndex]) return null;
 
   const cb = decoratorObj.checkboxes[elementIndex];
@@ -839,24 +847,8 @@ export function loadDisplayPanelConfig() {
       // 1. Remove Display Shading pill from Layout panel
       parsed = parsed.filter(v => v.id !== 'display-shading' && !(v.name && v.name.toLowerCase().includes('display shading')));
 
-      // 2. Ensure Order of Layout exists and is placed under Layout (at top of list)
-      let orderVal = parsed.find(v => v.id === 'order-of-layout' || (v.name && v.name.toLowerCase() === 'order of layout'));
-      if (!orderVal) {
-        const defOrder = DEFAULT_DISPLAY_VALUES.find(v => v.id === 'order-of-layout');
-        if (defOrder) {
-          orderVal = JSON.parse(JSON.stringify(defOrder));
-          parsed.unshift(orderVal);
-        }
-      } else {
-        // Ensure Blueprint is in Order of Layout
-        const hasBp = orderVal.checkboxes && orderVal.checkboxes.some(cb =>
-          cb.id === 'layout-blueprint' || (cb.name && cb.name.toLowerCase().includes('blueprint'))
-        );
-        if (!hasBp) {
-          orderVal.checkboxes.unshift({ id: 'layout-blueprint', name: 'Blueprint', isDefault: true, checked: true, behaviorKey: 'blueprint' });
-          if (orderVal.checkboxes.length > 5) orderVal.checkboxes.pop();
-        }
-      }
+      // 2. Remove Order of Layout from Decorator Palette (functionality moved outside "Layout" text as Blueprint checkbox)
+      parsed = parsed.filter(v => v.id !== 'order-of-layout' && !(v.name && v.name.toLowerCase().includes('order of layout')));
 
       // 3. Move Blueprint out of layout-mode (remove from layout-mode since it is in Order of Layout)
       const layoutModeVal = parsed.find(v => v.id === 'layout-mode');
@@ -1021,15 +1013,75 @@ export function setAllPillsToDefault(displayValuesArray = displayValues) {
   });
 }
 
+// In-memory blueprint mode state (default to true)
+let isBlueprintState = true;
+
 /**
- * Returns true if Blueprint mode is currently checked and active in Order of Layout.
+ * Returns true if Blueprint mode is currently checked and active.
+ * Checked via the "Blueprint" checkbox outside "Layout" text, storage, or in-memory state.
  */
 export function isBlueprintModeActive() {
+  if (typeof document !== 'undefined') {
+    const bpToggle = document.getElementById('toggle-blueprint');
+    if (bpToggle) {
+      return !!bpToggle.checked;
+    }
+  }
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const states = JSON.parse(localStorage.getItem('x4_checkbox_states') || '{}');
+      if (typeof states['toggle-blueprint'] === 'boolean') {
+        return states['toggle-blueprint'];
+      }
+    } catch (_) {}
+  }
+  // Check order-of-layout in displayValues or DEFAULT_ORDER_OF_LAYOUT (backward compatibility)
   const orderVal = (typeof displayValues !== 'undefined' && Array.isArray(displayValues))
     ? displayValues.find(v => v.id === 'order-of-layout' || (v.name && v.name.toLowerCase().includes('order of layout')))
     : null;
-  if (orderVal && Array.isArray(orderVal.checkboxes)) {
-    const bpCb = orderVal.checkboxes.find(cb =>
+  const targetOrder = orderVal || DEFAULT_ORDER_OF_LAYOUT;
+  if (targetOrder && Array.isArray(targetOrder.checkboxes)) {
+    const bpCb = targetOrder.checkboxes.find(cb =>
+      cb.id === 'layout-blueprint' ||
+      cb.id === 'order-blueprint' ||
+      (cb.behaviorKey && cb.behaviorKey.toLowerCase().includes('blueprint')) ||
+      (cb.name && cb.name.toLowerCase().includes('blueprint')) ||
+      cb.isDefault
+    );
+    if (bpCb) return !!bpCb.checked;
+  }
+  return isBlueprintState;
+}
+
+/**
+ * Set the Blueprint mode active state (syncs DOM checkbox, storage, and viewer layout).
+ */
+export function setBlueprintModeActive(active, viewer = null) {
+  const isChecked = !!active;
+  isBlueprintState = isChecked;
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const states = JSON.parse(localStorage.getItem('x4_checkbox_states') || '{}');
+      states['toggle-blueprint'] = isChecked;
+      localStorage.setItem('x4_checkbox_states', JSON.stringify(states));
+    } catch (_) {}
+  }
+
+  if (typeof document !== 'undefined') {
+    const bpToggle = document.getElementById('toggle-blueprint');
+    if (bpToggle && bpToggle.checked !== isChecked) {
+      bpToggle.checked = isChecked;
+    }
+  }
+
+  // Also update order-of-layout if present in displayValues or DEFAULT_ORDER_OF_LAYOUT
+  const orderVal = (typeof displayValues !== 'undefined' && Array.isArray(displayValues))
+    ? displayValues.find(v => v.id === 'order-of-layout')
+    : null;
+  const targetOrder = orderVal || DEFAULT_ORDER_OF_LAYOUT;
+  if (targetOrder && Array.isArray(targetOrder.checkboxes)) {
+    const bpCb = targetOrder.checkboxes.find(cb =>
       cb.id === 'layout-blueprint' ||
       cb.id === 'order-blueprint' ||
       (cb.behaviorKey && cb.behaviorKey.toLowerCase().includes('blueprint')) ||
@@ -1037,24 +1089,42 @@ export function isBlueprintModeActive() {
       cb.isDefault
     );
     if (bpCb) {
-      return !!bpCb.checked;
+      bpCb.checked = isChecked;
+      if (isChecked) {
+        targetOrder.checkboxes.forEach(cb => {
+          if (cb !== bpCb) cb.checked = false;
+        });
+      }
     }
   }
 
-  const layoutVal = (typeof displayValues !== 'undefined' && Array.isArray(displayValues))
-    ? displayValues.find(v => v.id === 'layout-mode')
-    : null;
-  if (!layoutVal || !Array.isArray(layoutVal.checkboxes)) return true;
-  const bpCb = layoutVal.checkboxes.find(cb =>
-    cb.id === 'layout-blueprint' ||
-    (cb.behaviorKey && cb.behaviorKey.toLowerCase().includes('blueprint')) ||
-    (cb.name && cb.name.toLowerCase().includes('blueprint'))
-  );
-  if (bpCb) {
-    const anyNonBpChecked = layoutVal.checkboxes.some(cb => cb !== bpCb && cb.checked);
-    return !!(bpCb.checked && !anyNonBpChecked);
+  const targetViewer = viewer || activeViewerInstance;
+  if (isChecked) {
+    if (targetViewer && typeof targetViewer.applyLayoutBehavior === 'function') {
+      targetViewer.applyLayoutBehavior('blueprint', 'Blueprint');
+      if (typeof targetViewer.fitCameraToStation === 'function') {
+        targetViewer.fitCameraToStation();
+      }
+      if (typeof targetViewer.renderScene === 'function') {
+        targetViewer.renderScene();
+      }
+    }
+  } else {
+    if (targetViewer && typeof targetViewer.applyLayoutBehavior === 'function') {
+      if (targetViewer.lastLayoutArgs && !targetViewer.lastLayoutArgs.key.includes('blueprint')) {
+        targetViewer.applyLayoutBehavior(targetViewer.lastLayoutArgs.key, targetViewer.lastLayoutArgs.name, targetViewer.lastLayoutArgs.activeEntries);
+      } else {
+        targetViewer.applyLayoutBehavior('clusters', 'Category Clusters');
+      }
+      if (typeof targetViewer.renderScene === 'function') {
+        targetViewer.renderScene();
+      }
+    }
   }
-  return false;
+
+  if (typeof document !== 'undefined') {
+    renderDisplayPanel();
+  }
 }
 
 /**
@@ -1084,7 +1154,10 @@ export function isOrderOfLayoutBlueprint() {
  * @returns {object|null} Examination result containing nonDefaultEntry and behaviorValue
  */
 export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceChecked = null) {
-  const valueObj = displayValues.find(v => v.id === valueId);
+  let valueObj = displayValues.find(v => v.id === valueId);
+  if (!valueObj && valueId === 'order-of-layout') {
+    valueObj = DEFAULT_ORDER_OF_LAYOUT;
+  }
   if (!valueObj) return null;
 
   const checkboxes = valueObj.checkboxes; // Array of up to 5 checkboxes
@@ -1111,6 +1184,7 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
           if (idx !== triggeredIndex) cb.checked = false;
         });
         setAllPillsToDefault(displayValues);
+        setBlueprintModeActive(true, activeViewerInstance);
         reloadBlueprintName();
       } else if (!isBlueprint && clickedCb.checked) {
         // If a non-blueprint order checkbox is checked, uncheck Blueprint
@@ -1131,6 +1205,7 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
         if (layoutRow && Array.isArray(layoutRow.checkboxes) && !layoutRow.checkboxes.some(c => c.checked)) {
           layoutRow.checkboxes[0].checked = true;
         }
+        setBlueprintModeActive(false, activeViewerInstance);
       }
 
       // If user unchecked this checkbox and none remain checked, fallback to default (Blueprint)
@@ -1140,6 +1215,7 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
         if (def) {
           def.checked = true;
           setAllPillsToDefault(displayValues);
+          setBlueprintModeActive(true, activeViewerInstance);
           reloadBlueprintName();
         }
       }
@@ -1149,31 +1225,13 @@ export function examineFiveCheckboxes(valueId, triggeredIndex = null, forceCheck
         checkboxes.forEach((cb, idx) => {
           if (idx !== triggeredIndex) cb.checked = false;
         });
-        // Uncheck Blueprint in Order of Layout when an explicit layout mode is selected!
-        const orderRow = displayValues.find(v => v.id === 'order-of-layout');
-        if (orderRow && Array.isArray(orderRow.checkboxes)) {
-          const bp = orderRow.checkboxes.find(cb =>
-            cb.id === 'layout-blueprint' ||
-            cb.id === 'order-blueprint' ||
-            (cb.behaviorKey && cb.behaviorKey.toLowerCase().includes('blueprint')) ||
-            (cb.name && cb.name.toLowerCase().includes('blueprint')) ||
-            cb.isDefault
-          );
-          if (bp) bp.checked = false;
-          if (!orderRow.checkboxes.some(cb => cb.checked)) {
-            const nonBp = orderRow.checkboxes.find(cb => cb !== bp) || orderRow.checkboxes[1];
-            if (nonBp) nonBp.checked = true;
-          }
-        }
+        // Uncheck Blueprint checkbox when an explicit layout mode is selected!
+        setBlueprintModeActive(false, activeViewerInstance);
       } else {
         const anyChecked = checkboxes.some(cb => cb.checked);
         if (!anyChecked) {
-          // If all layout modes unchecked, fallback to Blueprint in Order of Layout
-          const orderRow = displayValues.find(v => v.id === 'order-of-layout');
-          if (orderRow && Array.isArray(orderRow.checkboxes)) {
-            const def = orderRow.checkboxes.find(cb => cb.isDefault) || orderRow.checkboxes[0];
-            if (def) def.checked = true;
-          }
+          // If all layout modes unchecked, fallback to Blueprint
+          setBlueprintModeActive(true, activeViewerInstance);
           setAllPillsToDefault(displayValues);
         }
       }
@@ -2905,12 +2963,6 @@ export function renderDisplayPanel() {
     const quickActions = document.createElement('div');
     quickActions.className = 'empty-state-actions';
 
-    const btnOrder = document.createElement('button');
-    btnOrder.className = 'btn-xs-cyber';
-    btnOrder.textContent = '+ Order of Layout';
-    btnOrder.addEventListener('click', () => addActionableElement('order-of-layout', 0));
-    quickActions.appendChild(btnOrder);
-
     const btnLayers = document.createElement('button');
     btnLayers.className = 'btn-xs-cyber';
     btnLayers.textContent = '+ Layers';
@@ -2922,6 +2974,12 @@ export function renderDisplayPanel() {
     btnMode.textContent = '+ Layout Mode';
     btnMode.addEventListener('click', () => addActionableElement('layout-mode', 1));
     quickActions.appendChild(btnMode);
+
+    const btnSpacing = document.createElement('button');
+    btnSpacing.className = 'btn-xs-cyber';
+    btnSpacing.textContent = '+ Spacing & Offset';
+    btnSpacing.addEventListener('click', () => addActionableElement('spacing-offset', 0));
+    quickActions.appendChild(btnSpacing);
 
     emptyState.appendChild(quickActions);
     dropzoneEl.appendChild(emptyState);
@@ -2977,11 +3035,26 @@ export function initModuleDisplayPanel(viewer) {
   const btnClose = document.getElementById('btn-close-display-panel');
   const btnAddValue = document.getElementById('btn-add-display-value');
 
+  // Wire up Blueprint toggle outside Layout text
+  const blueprintToggle = document.getElementById('toggle-blueprint');
+  if (blueprintToggle && !blueprintToggle._displayPanelListenerAttached) {
+    blueprintToggle._displayPanelListenerAttached = true;
+    blueprintToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    blueprintToggle.addEventListener('change', (e) => {
+      setBlueprintModeActive(e.target.checked, viewer);
+    });
+  }
+
   // Always start any load with the Plot pill minimized
   isPlotMinimized = true;
 
   if (btnToggle && panelCard) {
-    btnToggle.addEventListener('click', () => {
+    btnToggle.addEventListener('click', (e) => {
+      if (e.target && (e.target.closest('#toggle-blueprint') || e.target.closest('.layout-blueprint-toggle'))) {
+        return;
+      }
       const isHidden = panelCard.style.display === 'none' || panelCard.classList.contains('hidden');
       if (isHidden) {
         panelCard.style.display = 'flex';

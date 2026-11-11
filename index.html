@@ -369,10 +369,6 @@
             <input type="checkbox" id="toggle-wireframe">
             <span class="toggle-label">Wireframe</span>
           </label>
-          <label class="toggle-control" title="Auto-Rotate Camera View">
-            <input type="checkbox" id="toggle-autorotate">
-            <span class="toggle-label">Rotate</span>
-          </label>
           <label class="toggle-control" title="Show/Hide 3D Orientation Axes">
             <input type="checkbox" id="toggle-orientation">
             <span class="toggle-label">Axes</span>
@@ -389,10 +385,17 @@
             <input type="checkbox" id="toggle-bloom" checked>
             <span class="toggle-label">Bloom</span>
           </label>
-          <button id="btn-toggle-display-panel" class="hub-btn display-panel-btn" title="Open Module Layout & Placement Behaviors Panel">
-            <span class="hub-btn-icon">🎛️</span>
-            <span class="toggle-label">Layout</span>
-          </button>
+          <div id="btn-toggle-display-panel" class="hub-btn display-panel-btn layout-pill" title="Open Module Layout & Placement Behaviors Panel">
+            <span class="layout-pill-title">
+              <span class="hub-btn-icon">🎛️</span>
+              <span class="toggle-label">Layout</span>
+            </span>
+            <span class="layout-pill-divider"></span>
+            <label class="toggle-control layout-blueprint-toggle" title="Toggle Blueprint Layout (Hotkey: P)">
+              <input type="checkbox" id="toggle-blueprint" checked>
+              <span class="toggle-label">Blueprint</span>
+            </label>
+          </div>
         </div>
 
         <!-- Float Control: Build Sequence Animator Timeline -->

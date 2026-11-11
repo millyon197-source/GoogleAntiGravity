@@ -1,11 +1,14 @@
 import {
   DEFAULT_DISPLAY_VALUES,
+  DEFAULT_ORDER_OF_LAYOUT,
   loadDisplayPanelConfig,
   examineFiveCheckboxes,
   renameCheckbox,
   addCheckboxToValue,
   applyModuleDisplayBehavior,
-  removeSecondPillWithLayersName
+  removeSecondPillWithLayersName,
+  isBlueprintModeActive,
+  setBlueprintModeActive
 } from '../src/module-display-panel.js';
 
 console.log('--- Testing Module Display Panel ---');
@@ -29,22 +32,21 @@ if (shadingPill) {
 }
 console.log('Verified: Display Shading pill removed from Layout panel.');
 
-// Verify Order of Layout exists and contains Blueprint
+// Verify Order of Layout is moved out of Decorator Palette (under Layout)
 const orderPill = DEFAULT_DISPLAY_VALUES.find(v => v.id === 'order-of-layout');
-if (!orderPill) {
-  throw new Error('Order of Layout pill should exist under Layout!');
+if (orderPill) {
+  throw new Error('Order of Layout should be moved out of Decorator Palette!');
 }
-if (!orderPill.checkboxes.some(cb => cb.id === 'layout-blueprint' || cb.name.toLowerCase().includes('blueprint'))) {
-  throw new Error('Blueprint checkbox should be in Order of Layout!');
+if (!DEFAULT_ORDER_OF_LAYOUT || !DEFAULT_ORDER_OF_LAYOUT.checkboxes.some(cb => cb.id === 'layout-blueprint' || cb.name.toLowerCase().includes('blueprint'))) {
+  throw new Error('DEFAULT_ORDER_OF_LAYOUT should contain Blueprint checkbox!');
 }
-console.log('Verified: Order of Layout pill created under Layout with Blueprint checkbox.');
+console.log('Verified: Order of Layout moved out of Decorator Palette; Blueprint functionality preserved.');
 
-// Verify Blueprint is removed from Layout Mode
-const layoutModePill = DEFAULT_DISPLAY_VALUES.find(v => v.id === 'layout-mode');
-if (layoutModePill && layoutModePill.checkboxes.some(cb => cb.id === 'layout-blueprint' || cb.name.toLowerCase().includes('blueprint'))) {
-  throw new Error('Blueprint checkbox should be moved out of Layout Mode!');
+// Verify Blueprint is active by default
+if (!isBlueprintModeActive()) {
+  throw new Error('Blueprint mode should be active by default!');
 }
-console.log('Verified: Blueprint checkbox moved out of Layout Mode.');
+console.log('Verified: Blueprint mode is active by default.');
 
 // 2. Test examining the 5 checkboxes for Order of Layout
 console.log('\n--- Testing 5-Checkbox Examination Logic ---');

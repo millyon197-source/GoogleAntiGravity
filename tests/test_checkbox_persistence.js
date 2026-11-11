@@ -81,7 +81,7 @@ console.log('\n--- Test 1: Static Checkboxes Default States ---');
 
 const staticCheckboxes = [
   { id: 'toggle-wireframe', defaultVal: false },
-  { id: 'toggle-autorotate', defaultVal: false },
+  { id: 'toggle-blueprint', defaultVal: true },
   { id: 'toggle-orientation', defaultVal: false },
   { id: 'toggle-dimensions', defaultVal: true },
   { id: 'toggle-snaps', defaultVal: true },

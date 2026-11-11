@@ -10,7 +10,7 @@ import {
   getInitialModuleDimensions
 } from '@x4/catalog';
 import { setFefbModuleIndex } from './blueprint-exporter.js';
-import { initModuleDisplayPanel, setActiveBlueprint } from './module-display-panel.js';
+import { initModuleDisplayPanel, setActiveBlueprint, setBlueprintModeActive } from './module-display-panel.js';
 import { compositionRoot } from './composition-root.js';
 import { collapseUndoHistory, initUndoHistory, performUndo, recordMove, undoList, updateUndoButtonUI } from './app/undo-history.js';
 import { excludedMacros, getSavedCheckboxState, loadSavedExcludedMacros, saveCheckboxState, saveExcludedMacros } from './app/ui-preferences.js';
@@ -1623,17 +1623,6 @@ function setupEventListeners() {
     });
   }
 
-  const rotateToggle = document.getElementById('toggle-autorotate');
-  if (rotateToggle) {
-    const savedRotate = getSavedCheckboxState('toggle-autorotate', false);
-    rotateToggle.checked = savedRotate;
-    viewer.toggleAutoRotate(savedRotate);
-    rotateToggle.addEventListener('change', (e) => {
-      saveCheckboxState('toggle-autorotate', e.target.checked);
-      viewer.toggleAutoRotate(e.target.checked);
-    });
-  }
-
   const orientationToggle = document.getElementById('toggle-orientation');
   if (orientationToggle) {
     const savedOrientation = getSavedCheckboxState('toggle-orientation', false);
@@ -1676,6 +1665,18 @@ function setupEventListeners() {
       saveCheckboxState('toggle-bloom', e.target.checked);
       viewer.setBloomEnabled(e.target.checked);
       viewer.renderScene();
+    });
+  }
+
+  const blueprintToggle = document.getElementById('toggle-blueprint');
+  if (blueprintToggle) {
+    const savedBlueprint = getSavedCheckboxState('toggle-blueprint', true);
+    blueprintToggle.checked = savedBlueprint;
+    setBlueprintModeActive(savedBlueprint, viewer);
+    blueprintToggle.addEventListener('change', (e) => {
+      saveCheckboxState('toggle-blueprint', e.target.checked);
+      setBlueprintModeActive(e.target.checked, viewer);
+      showNotification(`Blueprint Layout: ${e.target.checked ? 'ENABLED' : 'DISABLED'}`, 'info');
     });
   }
 
@@ -1874,6 +1875,14 @@ function setupEventListeners() {
         viewer.setBloomEnabled(bloomToggle.checked);
         viewer.renderScene();
         showNotification(`FX Bloom Glow: ${bloomToggle.checked ? 'ENABLED' : 'DISABLED'}`, 'info');
+      }
+    } else if (e.key === 'p' || e.key === 'P') {
+      const blueprintToggle = document.getElementById('toggle-blueprint');
+      if (blueprintToggle) {
+        blueprintToggle.checked = !blueprintToggle.checked;
+        saveCheckboxState('toggle-blueprint', blueprintToggle.checked);
+        setBlueprintModeActive(blueprintToggle.checked, viewer);
+        showNotification(`Blueprint Layout: ${blueprintToggle.checked ? 'ENABLED' : 'DISABLED'}`, 'info');
       }
     } else if (e.key === 'r' || e.key === 'R') {
       const modeSel = document.getElementById('gizmo-mode-selector');
