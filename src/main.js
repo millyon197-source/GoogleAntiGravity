@@ -1290,6 +1290,10 @@ function selectModule(index, focusCamera = false) {
   clearPersistentHighlights();
 
   selectedIndex = index;
+    // The panel stays open across module selection: hand the animations to the module it now shows
+    if (viewer && typeof viewer.setModuleComponentsToggled === 'function') {
+      viewer.setModuleComponentsToggled(index, true);
+    }
   const activeRow = document.getElementById(`mod-row-${index}`);
   if (activeRow) {
     activeRow.classList.add('selected');

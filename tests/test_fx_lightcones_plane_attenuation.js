@@ -73,6 +73,8 @@ mat.onBeforeCompile(dummyShader);
 assert.ok(dummyShader.fragmentShader.includes('coneLuma'), 'Shader must compute coneLuma');
 assert.ok(dummyShader.fragmentShader.includes('coneFade'), 'Shader must compute coneFade');
 assert.ok(dummyShader.fragmentShader.includes('smoothstep(0.06, 0.30, coneLuma)'), 'Shader must use smoothstep(0.06, 0.30, coneLuma) edge attenuation');
+// three's emissivemap_fragment declares the sampled texel as emissiveColor; texelEmissive does not exist and fails to compile
+assert.ok(dummyShader.fragmentShader.includes('emissiveColor.r') && !dummyShader.fragmentShader.includes('texelEmissive'), 'Shader must read the emissive texel three declares (emissiveColor)');
 assert.ok(dummyShader.fragmentShader.includes('totalEmissiveRadiance *= coneFade;'), 'Shader must attenuate totalEmissiveRadiance');
 assert.ok(dummyShader.fragmentShader.includes('diffuseColor.a *= coneFade;'), 'Shader must attenuate diffuseColor.a');
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { loadPartUvAnimations } from '../materials/uv-animations.js';
+import { choosePartAnimation, createPartAnimator } from './ani-animations.js';
 import { getRaceGlowColor } from '../textures/race-colors.js';
 
 const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) : type === 'error' ? console.error(msg) : console.log(msg));
@@ -15,6 +16,8 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  * @property {(group: THREE.Object3D, url: string, moduleIndex?: number) => Promise<void>} applyTexturesToMeshGroup
  * @property {number} [glowingEmissiveIntensity] Current glow intensity setting (default 2.2).
  * @property {Array<Object>} animatedParts Mesh/part animation registry read by the render loop.
+ * @property {(folderPath: string) => Promise<Map<string, Array>>} [loadModuleAnimations] The module's .ANI clips
+ *   by part name (see ani-animations.js); parts with a clip play it instead of the hand-made motion.
  */
 
 /**
@@ -681,7 +684,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
                       #ifdef USE_EMISSIVEMAP
                         // Softly attenuate low-level compression noise and non-zero borders to absolute zero
                         // Eliminates visible polygon plane edges while preserving the luminous light beam
-                        float coneLuma = max(texelEmissive.r, max(texelEmissive.g, texelEmissive.b));
+                        float coneLuma = max(emissiveColor.r, max(emissiveColor.g, emissiveColor.b));
                         float coneFade = smoothstep(0.06, 0.30, coneLuma);
                         totalEmissiveRadiance *= coneFade;
                         diffuseColor.a *= coneFade;
@@ -730,12 +733,26 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
     try {
       loadedScenes.push(scene);
 
-      if (canAnimate && host.animatedParts) {
+      const aniSegments = (canAnimate && host.animatedParts && aniClips) ? choosePartAnimation(aniClips.get(partBase)) : null;
+      if (aniSegments) {
+        host.animatedParts.push({
+          object: scene,
+          moduleIndex: mod?.index,
+          source: 'ani',
+          update: createPartAnimator(scene, aniSegments)
+        });
+      } else if (canAnimate && host.animatedParts) {
+        // Parts without game animation data keep their hand-made motion
         if (partBase.includes('anim_crane_holder')) {
           const basePos = scene.position.clone();
           host.animatedParts.push({
             object: scene,
             moduleIndex: mod?.index,
+  // The game's own part animations (the module's .ANI file), when the host can load them
+  const aniClips = (canAnimate && folderPath && typeof host.loadModuleAnimations === 'function')
+    ? await Promise.resolve(host.loadModuleAnimations(folderPath)).catch(() => null)
+    : null;
+
             update: (time) => {
               scene.position.x = basePos.x + interpolateKeyframes(CRANE_HOLDER_KEYFRAMES, 66.666664, time);
             }
@@ -870,9 +887,11 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
         host.animatedParts.push({
           object: centrifugeScene,
           moduleIndex: mod?.index,
-          update: (time) => {
-            centrifugeScene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
-          }
+          update: centrifugeSegments
+            ? createPartAnimator(centrifugeScene, centrifugeSegments)
+            : (time) => {
+              centrifugeScene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
+            }
         });
       }
       meshGroup.add(centrifugeScene);
@@ -880,6 +899,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
 
     const simonContainerParents = {
       'detail_s_simon_container_01': 'detail_xs_simon_01',
+        const centrifugeSegments = aniClips ? choosePartAnimation(aniClips.get('anim_centrifuge')) : null;
       'detail_s_simon_container_02': 'detail_xs_simon_02',
       'detail_s_simon_container_03': 'detail_xs_simon_03',
       'detail_s_simon_container_04': 'detail_xs_simon_04',

@@ -20,6 +20,7 @@ export { loadCachedScene, loadSceneCacheManifest, SceneCacheDecoder } from './mo
 export { applyTexturesToMeshGroup } from './materials/mesh-group-materials.js';
 export { shareModuleMaterials, ownModuleMaterials, castsShadow, isSharedMaterial } from './materials/material-sharing.js';
 export { loadPartUvAnimations, applyUvTrack, sampleTrack, parseComponentUvAnimations } from './materials/uv-animations.js';
+export { parseAni, sampleChannel, choosePartAnimation, sampleSegments, createPartAnimator, aniUrlsForFolder, loadModuleAniClips } from './models/ani-animations.js';
 export { loadModuleMesh, disposeModuleGeometry, releaseUnusedTemplates, applyArrowMasks, applyArrowReveal, CRANE_HOLDER_KEYFRAMES, CRANE_ARM_KEYFRAMES, interpolateKeyframes } from './models/module-mesh-loader.js';
 export { adaptTransformControls, getTransformControlsHelper } from './gizmos/transform-controls-compat.js';
 export { restoreAuthoredVertexColors } from './models/collada-model-loader.js';

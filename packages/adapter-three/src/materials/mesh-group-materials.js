@@ -201,7 +201,7 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
                       #ifdef USE_EMISSIVEMAP
                         // Softly attenuate low-level compression noise and non-zero borders to absolute zero
                         // Eliminates visible polygon plane edges while preserving the luminous light beam
-                        float coneLuma = max(texelEmissive.r, max(texelEmissive.g, texelEmissive.b));
+                        float coneLuma = max(emissiveColor.r, max(emissiveColor.g, emissiveColor.b));
                         float coneFade = smoothstep(0.06, 0.30, coneLuma);
                         totalEmissiveRadiance *= coneFade;
                         diffuseColor.a *= coneFade;

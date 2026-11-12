@@ -27,6 +27,7 @@ import {
   loadBinaryModel,
   loadColladaModel,
   loadCachedScene,
+  loadModuleAniClips,
   SceneCacheDecoder,
   computeModuleGroupRotation,
   computeX4RotationFromModuleGroup,
@@ -1497,6 +1498,15 @@ export class StationViewer {
         folderFiles = Array.isArray(data.files) ? data.files : [];
       }
     } catch (_) { /* fall back to default list */ }
+  /**
+   * The game's part animations for a module asset folder (its .ANI file), by part name.
+   * @param {string} folderPath
+   * @returns {Promise<Map<string, Array>>}
+   */
+  loadModuleAnimations(folderPath) {
+    return loadModuleAniClips(folderPath);
+  }
+
 
     const allFiles = [...new Set([...folderFiles, ...defaultFiles])].sort();
     const active = new Set(this.getModuleActiveComponentFiles(index, macro));

@@ -1235,6 +1235,14 @@
       "hash": 1989927555,
       "folder_path": "/assets1/structures/dock/pier_ter_harbor_03_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
