@@ -177,9 +177,13 @@ export class StationLayoutEngine {
               }
             }
 
-            // Try 4: Fallback upward in Y
+            // Try 4: Fallback shift along Y (downward if near top, upward if near bottom)
             if (!resolved) {
-              posB.y = Math.min(maxY - halfYB, posB.y + dy);
+              if (posB.y + halfYB >= maxY - 1) {
+                posB.y = Math.max(minY + halfYB, posB.y - dy);
+              } else {
+                posB.y = Math.min(maxY - halfYB, posB.y + dy);
+              }
             }
 
             StationLayoutEngine.clampModulePositionToPlot(posA, sizeA, bounds);
@@ -200,7 +204,261 @@ export class StationLayoutEngine {
       if (!hadOverlapInPass) break;
     }
 
+    // Final pass: ensure every module's bounding box is strictly clamped within the plot bounds
+    for (let i = 0; i < modules.length; i++) {
+      const mod = modules[i];
+      const pos = getPos(mod);
+      const size = getSize(mod);
+      StationLayoutEngine.clampModulePositionToPlot(pos, size, bounds);
+      if (options.applyToObjects) {
+        const target = mod.module || mod;
+        if (typeof target.position?.set === 'function') target.position.set(pos.x, pos.y, pos.z);
+        else if (target.position) { target.position.x = pos.x; target.position.y = pos.y; target.position.z = pos.z; }
+      }
+    }
+
     return totalResolved;
+  }
+
+  /**
+   * When moving a module with the gizmo, insure the moved module does not overlap
+   * another module's bounding box. If it does, move the moving module outside of
+   * the overlap upon release, respecting plot boundaries.
+   *
+   * @param {object} movingModule - The module being moved (with position and size)
+   * @param {Array<object>} stationaryModules - Other modules in the station
+   * @param {PlotBounds|object} [plotBounds] - Current plot bounding box
+   * @param {object} [options] - Config { gap, fromPos, dragAxis, getSize, applyToObject }
+   * @returns {{ moved: boolean, resolved: boolean, position: { x: number, y: number, z: number } }}
+   */
+  static moveMovingModuleOutsideOverlap(movingModule, stationaryModules, plotBounds = null, options = {}) {
+    if (!movingModule || !Array.isArray(stationaryModules) || stationaryModules.length === 0) {
+      return { moved: false, resolved: true, position: null };
+    }
+
+    const bounds = StationLayoutEngine.toPlotBounds(plotBounds);
+    const { minX, maxX, minY, maxY, minZ, maxZ } = bounds;
+
+    const gap = typeof options.gap === 'number' ? options.gap : 5;
+    const getWorldBox = options.getModuleWorldBox || options.getWorldBox || null;
+
+    const getSize = options.getSize || options.getModuleSize || ((m) => {
+      if (m.initialSize) return m.initialSize;
+      if (m.userData?.initialSize) return m.userData.initialSize;
+      return { x: 100, y: 100, z: 100 };
+    });
+
+    const getPos = (m) => {
+      if (m.position && typeof m.position.x === 'number') return m.position;
+      if (typeof m.x === 'number') return m;
+      return { x: 0, y: 0, z: 0 };
+    };
+
+    const targetPos = getPos(movingModule);
+    let targetSize = getSize(movingModule);
+    let centerOffset = { x: 0, y: 0, z: 0 };
+
+    if (getWorldBox) {
+      const bM = getWorldBox(movingModule);
+      if (bM && !bM.isEmpty?.()) {
+        const s = bM.getSize ? bM.getSize(bM.min.clone?.() || {}) : { x: bM.max.x - bM.min.x, y: bM.max.y - bM.min.y, z: bM.max.z - bM.min.z };
+        const c = bM.getCenter ? bM.getCenter(bM.min.clone?.() || {}) : { x: (bM.min.x + bM.max.x) / 2, y: (bM.min.y + bM.max.y) / 2, z: (bM.min.z + bM.max.z) / 2 };
+        targetSize = { x: Math.max(1, s.x), y: Math.max(1, s.y), z: Math.max(1, s.z) };
+        centerOffset = { x: c.x - targetPos.x, y: c.y - targetPos.y, z: c.z - targetPos.z };
+      }
+    }
+
+    const halfXM = ((targetSize.x ?? targetSize[0]) || 100) / 2;
+    const halfYM = ((targetSize.y ?? targetSize[1]) || 100) / 2;
+    const halfZM = ((targetSize.z ?? targetSize[2]) || 100) / 2;
+
+    const currentPos = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
+
+    // Precompute stationary module bounding data
+    const stationaryData = stationaryModules.map(other => {
+      if (!other || other === movingModule) return null;
+      const otherPos = getPos(other);
+      let otherSize = getSize(other);
+      let otherCenter = { ...otherPos };
+      if (getWorldBox) {
+        const bO = getWorldBox(other);
+        if (bO && !bO.isEmpty?.()) {
+          const s = bO.getSize ? bO.getSize(bO.min.clone?.() || {}) : { x: bO.max.x - bO.min.x, y: bO.max.y - bO.min.y, z: bO.max.z - bO.min.z };
+          const c = bO.getCenter ? bO.getCenter(bO.min.clone?.() || {}) : { x: (bO.min.x + bO.max.x) / 2, y: (bO.min.y + bO.max.y) / 2, z: (bO.min.z + bO.max.z) / 2 };
+          otherSize = { x: Math.max(1, s.x), y: Math.max(1, s.y), z: Math.max(1, s.z) };
+          otherCenter = c;
+        }
+      }
+      return { other, otherPos, otherSize, otherCenter };
+    }).filter(Boolean);
+
+    // Find all stationary modules that overlap candidate movingModule position
+    const findOverlaps = (pos) => {
+      const candCenter = { x: pos.x + centerOffset.x, y: pos.y + centerOffset.y, z: pos.z + centerOffset.z };
+      const overlaps = [];
+      for (const item of stationaryData) {
+        if (StationLayoutEngine.doBoxesOverlap(candCenter, targetSize, item.otherCenter, item.otherSize, 0)) {
+          overlaps.push(item);
+        }
+      }
+      return overlaps;
+    };
+
+    const initialOverlaps = findOverlaps(currentPos);
+    if (initialOverlaps.length === 0) {
+      return { moved: false, resolved: true, position: currentPos };
+    }
+
+    // Module overlaps one or more stationary modules! Move movingModule outside of overlap.
+    let bestPos = { ...currentPos };
+    let resolved = false;
+
+    // Determine drag direction / bias if fromPos is provided
+    const fromPos = options.fromPos ? getPos(options.fromPos) : null;
+    const dragDir = fromPos ? {
+      x: currentPos.x - fromPos.x,
+      y: currentPos.y - fromPos.y,
+      z: currentPos.z - fromPos.z
+    } : { x: 0, y: 0, z: 0 };
+
+    let effectiveDragAxis = (options.dragAxis || '').toUpperCase();
+    if (!effectiveDragAxis && fromPos) {
+      const maxDelta = Math.max(Math.abs(dragDir.x), Math.abs(dragDir.y), Math.abs(dragDir.z));
+      if (maxDelta > 1) {
+        if (Math.abs(dragDir.x) === maxDelta) effectiveDragAxis = 'X';
+        else if (Math.abs(dragDir.z) === maxDelta) effectiveDragAxis = 'Z';
+        else if (Math.abs(dragDir.y) === maxDelta) effectiveDragAxis = 'Y';
+      }
+    }
+
+    // Iterate up to 15 passes to resolve multiple cascade overlaps if needed
+    for (let pass = 0; pass < 15; pass++) {
+      const overlaps = findOverlaps(bestPos);
+      if (overlaps.length === 0) {
+        resolved = true;
+        break;
+      }
+
+      // Generate candidate displacements outside the overlapping modules
+      const candidates = [];
+
+      for (const { otherCenter, otherSize } of overlaps) {
+        const halfXO = ((otherSize.x ?? otherSize[0]) || 100) / 2;
+        const halfYO = ((otherSize.y ?? otherSize[1]) || 100) / 2;
+        const halfZO = ((otherSize.z ?? otherSize[2]) || 100) / 2;
+
+        const bestCenter = { x: bestPos.x + centerOffset.x, y: bestPos.y + centerOffset.y, z: bestPos.z + centerOffset.z };
+
+        const overlapX = (halfXM + halfXO) - Math.abs(bestCenter.x - otherCenter.x);
+        const overlapY = (halfYM + halfYO) - Math.abs(bestCenter.y - otherCenter.y);
+        const overlapZ = (halfZM + halfZO) - Math.abs(bestCenter.z - otherCenter.z);
+
+        // Sign priorities: prefer moving in the direction of the drag, or away from other's center
+        const signX = (dragDir.x !== 0 && Math.abs(dragDir.x) > 5) ? Math.sign(dragDir.x) : (bestCenter.x >= otherCenter.x ? 1 : -1);
+        const signY = (dragDir.y !== 0 && Math.abs(dragDir.y) > 5) ? Math.sign(dragDir.y) : (bestCenter.y >= otherCenter.y ? 1 : -1);
+        const signZ = (dragDir.z !== 0 && Math.abs(dragDir.z) > 5) ? Math.sign(dragDir.z) : (bestCenter.z >= otherCenter.z ? 1 : -1);
+
+        // Candidate 1: Shift along X
+        for (const sX of [signX, -signX]) {
+          const shiftX = sX > 0
+            ? (otherCenter.x + halfXO + halfXM + gap) - bestCenter.x
+            : (otherCenter.x - halfXO - halfXM - gap) - bestCenter.x;
+          const candX = { x: bestPos.x + shiftX, y: bestPos.y, z: bestPos.z };
+          StationLayoutEngine.clampModulePositionToPlot(candX, targetSize, bounds);
+          candidates.push({ pos: candX, axis: 'X', dist: Math.abs(shiftX), overlapSpan: overlapX });
+        }
+
+        // Candidate 2: Shift along Z
+        for (const sZ of [signZ, -signZ]) {
+          const shiftZ = sZ > 0
+            ? (otherCenter.z + halfZO + halfZM + gap) - bestCenter.z
+            : (otherCenter.z - halfZO - halfZM - gap) - bestCenter.z;
+          const candZ = { x: bestPos.x, y: bestPos.y, z: bestPos.z + shiftZ };
+          StationLayoutEngine.clampModulePositionToPlot(candZ, targetSize, bounds);
+          candidates.push({ pos: candZ, axis: 'Z', dist: Math.abs(shiftZ), overlapSpan: overlapZ });
+        }
+
+        // Candidate 3: Shift along Y
+        for (const sY of [signY, -signY]) {
+          const shiftY = sY > 0
+            ? (otherCenter.y + halfYO + halfYM + gap) - bestCenter.y
+            : (otherCenter.y - halfYO - halfYM - gap) - bestCenter.y;
+          const candY = { x: bestPos.x, y: bestPos.y + shiftY, z: bestPos.z };
+          StationLayoutEngine.clampModulePositionToPlot(candY, targetSize, bounds);
+          candidates.push({ pos: candY, axis: 'Y', dist: Math.abs(shiftY), overlapSpan: overlapY });
+        }
+      }
+
+      if (candidates.length === 0) break;
+
+      // Score candidates:
+      // Primary: fewest overlaps.
+      // Secondary: strong priority for the active gizmo drag axis / direction.
+      // Tertiary: smallest distance from currentPos.
+      let bestCandidate = null;
+      let minOverlaps = Infinity;
+      let minDist = Infinity;
+
+      for (const cand of candidates) {
+        StationLayoutEngine.clampModulePositionToPlot(cand.pos, targetSize, bounds);
+        const count = findOverlaps(cand.pos).length;
+        const distFromCurrent = Math.hypot(
+          cand.pos.x - currentPos.x,
+          cand.pos.y - currentPos.y,
+          cand.pos.z - currentPos.z
+        );
+        const matchesDragAxis = effectiveDragAxis && effectiveDragAxis.includes(cand.axis);
+
+        let score = count * 100000 + (matchesDragAxis ? 0 : 50000) + distFromCurrent;
+
+        if (count < minOverlaps || (count === minOverlaps && score < minDist)) {
+          minOverlaps = count;
+          minDist = score;
+          bestCandidate = cand.pos;
+        }
+      }
+
+      if (bestCandidate) {
+        bestPos = { ...bestCandidate };
+        if (minOverlaps === 0) {
+          resolved = true;
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    // If completely surrounded and unable to clear in all directions, fallback step towards fromPos
+    if (!resolved && fromPos) {
+      const fromOverlaps = findOverlaps(fromPos).length;
+      if (fromOverlaps === 0) {
+        bestPos = { x: fromPos.x, y: fromPos.y, z: fromPos.z };
+        resolved = true;
+      }
+    }
+
+    StationLayoutEngine.clampModulePositionToPlot(bestPos, targetSize, bounds);
+
+    // Apply new position to movingModule object
+    if (options.applyToObject !== false) {
+      if (typeof movingModule.position?.set === 'function') {
+        movingModule.position.set(bestPos.x, bestPos.y, bestPos.z);
+      } else if (movingModule.position) {
+        movingModule.position.x = bestPos.x;
+        movingModule.position.y = bestPos.y;
+        movingModule.position.z = bestPos.z;
+      }
+      if (typeof movingModule.updateMatrixWorld === 'function') {
+        movingModule.updateMatrixWorld(true);
+      }
+    }
+
+    return {
+      moved: true,
+      resolved,
+      position: bestPos
+    };
   }
 
   /**
@@ -497,6 +755,34 @@ export class StationLayoutEngine {
           }
         });
       }
+    }
+
+    // Apply dock modules vertical orientation within plot BB if specified (top, center, bottom)
+    if (options.docksVerticalOrientation && ['top', 'center', 'bottom'].includes(options.docksVerticalOrientation)) {
+      placedResults.forEach(r => {
+        const cat = (options.getCategory ? options.getCategory(r.module) : '') || '';
+        if (cat.toLowerCase() === 'docks' || cat.toLowerCase() === 'dock') {
+          const s = r.initialSize || { x: 100, y: 100, z: 100 };
+          const halfY = (s.y || 100) / 2;
+          if (options.docksVerticalOrientation === 'top') {
+            r.position.y = maxY - halfY;
+          } else if (options.docksVerticalOrientation === 'center') {
+            r.position.y = centerY;
+          } else if (options.docksVerticalOrientation === 'bottom') {
+            r.position.y = minY + halfY;
+          }
+          StationLayoutEngine.clampModulePositionToPlot(r.position, s, bounds);
+          if (options.applyToObjects) {
+            if (typeof r.module.position?.set === 'function') {
+              r.module.position.set(r.position.x, r.position.y, r.position.z);
+            } else if (r.module.position) {
+              r.module.position.x = r.position.x;
+              r.module.position.y = r.position.y;
+              r.module.position.z = r.position.z;
+            }
+          }
+        }
+      });
     }
 
     StationLayoutEngine.ensureNoBoundingBoxOverlaps(placedResults, bounds, {

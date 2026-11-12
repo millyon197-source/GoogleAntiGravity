@@ -10,7 +10,7 @@ import {
   getInitialModuleDimensions
 } from '@x4/catalog';
 import { setFefbModuleIndex } from './blueprint-exporter.js';
-import { initModuleDisplayPanel, setActiveBlueprint, setBlueprintModeActive } from './module-display-panel.js';
+import { initModuleDisplayPanel, setActiveBlueprint, setBlueprintModeActive, setAllPillsToDefault } from './module-display-panel.js';
 import { compositionRoot } from './composition-root.js';
 import { collapseUndoHistory, initUndoHistory, performUndo, recordMove, undoList, updateUndoButtonUI } from './app/undo-history.js';
 import { excludedMacros, getSavedCheckboxState, loadSavedExcludedMacros, saveCheckboxState, saveExcludedMacros } from './app/ui-preferences.js';
@@ -71,10 +71,26 @@ initCenterModulesModal({
 });
 initBuildAnimator({ getViewer: () => viewer, getCurrentPlan: () => currentPlan });
 
+export async function loadBlueprintByName(name) {
+  if (!name) return false;
+  try {
+    const res = await fetch(`/api/blueprint?name=${encodeURIComponent(name)}`);
+    if (res.ok) {
+      const xml = await res.text();
+      await loadPlanFromXml(xml, name);
+      return true;
+    }
+  } catch (err) {
+    console.error(`[Main] Failed to load blueprint "${name}":`, err);
+  }
+  return false;
+}
+
 // Expose blueprint/plan actions on window (kept from before the split; handy from the dev console)
 if (typeof window !== 'undefined') {
   window.exportCurrentPlanAsBlueprint = exportCurrentPlanAsBlueprint;
   window.loadPlanFromXml = loadPlanFromXml;
+  window.loadBlueprintByName = loadBlueprintByName;
   window.selectModule = selectModule;
 }
 
@@ -270,6 +286,8 @@ async function loadPlanFromXml(xmlText, sourceSampleKey = null) {
   const planData = parseConstructionPlan(xmlText);
   currentPlan = planData;
   setActiveBlueprint(planData.id, planData.name);
+  setBlueprintModeActive(true, viewer);
+  setAllPillsToDefault();
   setFefbModuleIndex(null);
   if (viewer) {
     viewer.fefbModuleIndex = null;
@@ -1272,6 +1290,10 @@ async function renderModuleComponentsDropdown(index) {
     if (floatingPill) floatingPill.classList.remove('hidden');
     if (searchCard) searchCard.classList.add('has-floating-pill');
     if (rightSidebar) rightSidebar.classList.add('components-expanded');
+    // The panel stays open across module selection: hand the animations to the module it now shows
+    if (viewer && typeof viewer.setModuleComponentsToggled === 'function') {
+      viewer.setModuleComponentsToggled(index, true);
+    }
   } else {
     if (floatingPill) floatingPill.classList.add('hidden');
     if (searchCard) searchCard.classList.remove('has-floating-pill');
@@ -1290,10 +1312,6 @@ function selectModule(index, focusCamera = false) {
   clearPersistentHighlights();
 
   selectedIndex = index;
-    // The panel stays open across module selection: hand the animations to the module it now shows
-    if (viewer && typeof viewer.setModuleComponentsToggled === 'function') {
-      viewer.setModuleComponentsToggled(index, true);
-    }
   const activeRow = document.getElementById(`mod-row-${index}`);
   if (activeRow) {
     activeRow.classList.add('selected');

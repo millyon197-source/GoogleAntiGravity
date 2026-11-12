@@ -45,7 +45,8 @@ import {
   getInitialModuleDimensions,
   getInitialModuleBounds,
   getModuleSnapPoints,
-  createDaeAssetIndex
+  createDaeAssetIndex,
+  isPierHarbor
 } from '@x4/catalog';
 import DAE_HASH_TABLE from '../dae_hash_table.json' with { type: 'json' };
 import {
@@ -54,13 +55,25 @@ import {
   DEFAULT_PLOT_CONFIG,
   getPlotBoundingBox,
   isBlueprintModeActive,
+  setBlueprintModeActive,
   minimizePlotPill,
   getLayerPlacementCategoryOrder,
   sortModulesByLayerCategoryOrder,
   clampModulePositionToPlot,
   calculateLayeredPlacement,
   doBoxesOverlap,
-  ensureNoBoundingBoxOverlaps
+  ensureNoBoundingBoxOverlaps,
+  moveMovingModuleOutsideOverlap,
+  getDocksVerticalOrientation,
+  setDocksVerticalOrientation,
+  applyDocksVerticalOrientation,
+  isDocksVerticalAppliedToCurrentPlan,
+  resetDocksVerticalAppliedToCurrentPlan,
+  isDocks1Present,
+  getDocksPerimeterSelections,
+  setDocksPerimeterSelections,
+  clearDocksPerimeterSelections,
+  applyDocksPerimeterPlacement
 } from './module-display-panel.js';
 import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
 import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
@@ -162,6 +175,7 @@ export class StationViewer {
     this.hasGizmoMoved = false;
     this.gizmoActiveType = null;
     this.isCommittingMove = false;
+    this.lastDragAxis = null;
     this.gizmoMode = 'combined';
     this.starfield = null;
     this.gridHelper = null;
@@ -330,6 +344,7 @@ export class StationViewer {
       this._isGizmoDragging = true;
       this.gizmoActiveType = 'move';
       this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
 
       if (this.gizmoWorldOffset && this.gizmoWorldOffset.lengthSq() > 0.0001) {
         if (this.transformControls?.worldPositionStart) {
@@ -406,6 +421,7 @@ export class StationViewer {
       this._isGizmoDragging = true;
       this.gizmoActiveType = 'rotate';
       this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
 
       if (this.gizmoWorldOffset && this.gizmoWorldOffset.lengthSq() > 0.0001) {
         if (this.transformControlsRotate?.worldPositionStart) {
@@ -796,7 +812,7 @@ export class StationViewer {
     }
     if (this.composer && this.bloomEnabled !== false) {
       this.composer.render();
-    } else if (this.renderer && this.scene && this.camera) {
+    } else if (this.renderer && typeof this.renderer.render === 'function' && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }
     const end = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -1269,6 +1285,13 @@ export class StationViewer {
     this.clearFilterHighlights();
     minimizePlotPill();
 
+    // Upon loading a blueprint, do not use any Layout properties for any placement.
+    // Blueprint mode must be active, clearing any lingering procedural layout settings.
+    this.lastLayoutArgs = null;
+    this.activeAlignmentBehavior = null;
+    resetDocksVerticalAppliedToCurrentPlan();
+    setBlueprintModeActive(true, this);
+
     if (!planData.modules || planData.modules.length === 0) return;
 
     // Placeholder labels describe this load only
@@ -1291,9 +1314,9 @@ export class StationViewer {
     const total = planData.modules.length;
     let completed = 0;
 
-    // Consider the order of Layout, Layers to select which category of modules to place first
+    // Consider the order of Layout, Layers to select which category of modules to place first (only when not in Blueprint mode)
     const layerOrder = getLayerPlacementCategoryOrder();
-    const sortedModules = sortModulesByLayerCategoryOrder(planData.modules, layerOrder);
+    const sortedModules = isBlueprintModeActive() ? planData.modules : sortModulesByLayerCategoryOrder(planData.modules, layerOrder);
     const plotConfig = this.currentPlotConfig || getCurrentPlotConfig();
     const deferredLights = [];
     // Identical materials are shared across the plan (shareModuleMaterials); also used for component swaps
@@ -1432,7 +1455,12 @@ export class StationViewer {
     this.fitCameraToStation();
     this.restoreFullPlanGrid();
 
+    // Upon loading a blueprint (and while Blueprint mode is active), do NOT use any Layout properties for any placement
     if (!isBlueprintModeActive()) {
+      if (isDocks1Present()) {
+        applyDocksVerticalOrientation(getDocksVerticalOrientation(), this);
+      }
+
       if (this.activeAlignmentBehavior) {
         this.applyAlignmentBehavior(this.activeAlignmentBehavior.key, this.activeAlignmentBehavior.name, this.activeAlignmentBehavior.activeEntries);
       } else if (this.lastLayoutArgs) {
@@ -1470,6 +1498,15 @@ export class StationViewer {
    * Returns the active component file list for a module: the user's selection if one
    * exists for this module index + macro, otherwise the default hash-table files.
    */
+  /**
+   * The game's part animations for a module asset folder (its .ANI file), by part name.
+   * @param {string} folderPath
+   * @returns {Promise<Map<string, Array>>}
+   */
+  loadModuleAnimations(folderPath) {
+    return loadModuleAniClips(folderPath);
+  }
+
   getModuleActiveComponentFiles(index, macro) {
     const sel = this.moduleComponentSelections?.get(index);
     if (sel && sel.macro === macro) return [...sel.files];
@@ -1498,15 +1535,6 @@ export class StationViewer {
         folderFiles = Array.isArray(data.files) ? data.files : [];
       }
     } catch (_) { /* fall back to default list */ }
-  /**
-   * The game's part animations for a module asset folder (its .ANI file), by part name.
-   * @param {string} folderPath
-   * @returns {Promise<Map<string, Array>>}
-   */
-  loadModuleAnimations(folderPath) {
-    return loadModuleAniClips(folderPath);
-  }
-
 
     const allFiles = [...new Set([...folderFiles, ...defaultFiles])].sort();
     const active = new Set(this.getModuleActiveComponentFiles(index, macro));
@@ -2077,7 +2105,14 @@ export class StationViewer {
       return worldBox;
     }
 
-    return new THREE.Box3().setFromObject(targetModule);
+    const fallbackBox = new THREE.Box3();
+    const isPier = isPierModule(targetModule);
+    targetModule.traverse(child => {
+      if (child.isMesh && !isTextureOrEffectMesh(child) && !(isPier && isGeometryInvisibleComponent(child, true))) {
+        fallbackBox.expandByObject(child);
+      }
+    });
+    return fallbackBox.isEmpty() ? null : fallbackBox;
   }
 
   /**
@@ -2157,6 +2192,7 @@ export class StationViewer {
   getModuleLocalBounds(targetModule) {
     if (!targetModule) return null;
     
+    const isPier = isPierModule(targetModule);
     const box = new THREE.Box3();
     let hasStructuralMesh = false;
 
@@ -2164,7 +2200,10 @@ export class StationViewer {
     const invWorldMatrix = new THREE.Matrix4().copy(targetModule.matrixWorld).invert();
 
     targetModule.traverse(child => {
-      if (child.isMesh && !isTextureOrEffectMesh(child)) {
+      if (child.isMesh) {
+        if (isTextureOrEffectMesh(child) || (isPier && isGeometryInvisibleComponent(child, true))) {
+          return;
+        }
         if (child.geometry) {
           if (!child.geometry.boundingBox) {
             child.geometry.computeBoundingBox();
@@ -2179,10 +2218,25 @@ export class StationViewer {
     });
 
     if (!hasStructuralMesh) {
-      // Fallback
-      const fallbackBox = new THREE.Box3().setFromObject(targetModule);
-      fallbackBox.applyMatrix4(invWorldMatrix);
-      return fallbackBox;
+      // Safe fallback that still excludes effect/invisible/geometryinvisible meshes
+      const fallbackBox = new THREE.Box3();
+      targetModule.traverse(child => {
+        if (child.isMesh && !isTextureOrEffectMesh(child) && !(isPier && isGeometryInvisibleComponent(child, true))) {
+          if (child.geometry) {
+            if (!child.geometry.boundingBox) {
+              child.geometry.computeBoundingBox();
+            }
+            const geomBox = child.geometry.boundingBox.clone();
+            const localMat = child.matrixWorld.clone().premultiply(invWorldMatrix);
+            geomBox.applyMatrix4(localMat);
+            fallbackBox.union(geomBox);
+          }
+        }
+      });
+      if (!fallbackBox.isEmpty()) {
+        return fallbackBox;
+      }
+      return null;
     }
 
     return box;
@@ -2610,7 +2664,7 @@ export class StationViewer {
 
     if (resizeGridAndBounds) {
       // Update plot grid matching the component size, and move grid Y directly under the component
-      const compBox = new THREE.Box3().setFromObject(targetModule);
+      const compBox = this.getModuleWorldBoundingBox(targetModule) || new THREE.Box3().setFromObject(targetModule);
       const compSize = compBox.getSize(new THREE.Vector3());
       const compCenter = compBox.getCenter(new THREE.Vector3());
 
@@ -2632,6 +2686,9 @@ export class StationViewer {
   handleModuleDragging() {
     if (!this.transformControls || !this.transformControls.object) return;
     const targetModule = this.transformControls.object;
+    if (this.transformControls.axis) {
+      this.lastDragAxis = this.transformControls.axis;
+    }
 
     if (targetModule === this.multiSelectPivot) {
       const currentPivotPos = this.multiSelectPivot.position;
@@ -2649,6 +2706,9 @@ export class StationViewer {
             this.multiSelectionHelpers.forEach(h => h.update());
           }
           this.updatePlotBoxViolations();
+        if (typeof this.renderScene === 'function') {
+          this.renderScene();
+        }
           return;
         }
       }
@@ -2685,6 +2745,9 @@ export class StationViewer {
       if (dir) {
         this.moveModulesFlushToPlotBBAxis(dir, false);
         this.updatePlotBoxViolations();
+        if (typeof this.renderScene === 'function') {
+          this.renderScene();
+        }
         return;
       }
     }
@@ -2709,6 +2772,43 @@ export class StationViewer {
       this.onModuleMoved(targetModule.userData.index, planPos, false);
     }
     this.updatePlotBoxViolations();
+
+    // Check if moving module BB currently overlaps another module BB and give visual indication
+    const isOverlapping = this.checkModuleBBOverlap(targetModule);
+    if (this.selectionHelper) {
+      this.selectionHelper.userData = this.selectionHelper.userData || {};
+      this.selectionHelper.userData.isOverlapping = isOverlapping;
+      if (this.selectionHelper.material) {
+        this.selectionHelper.material.color.setHex(isOverlapping ? 0xFF1133 : 0xFFFF00);
+      }
+      this.selectionHelper.update();
+    }
+  }
+
+  /**
+   * Check if targetModule bounding box intersects any stationary module bounding box in the scene.
+   * @param {THREE.Object3D} targetModule
+   * @returns {boolean}
+   */
+  checkModuleBBOverlap(targetModule) {
+    if (!targetModule || !this.modulesGroup) return false;
+    const boxTarget = this.getModuleWorldBoundingBox(targetModule);
+    if (!boxTarget || boxTarget.isEmpty()) return false;
+
+    for (const other of this.modulesGroup.children) {
+      if (!other || other === targetModule || other.visible === false || other.userData?.index === undefined) continue;
+      if (this.selectedModules && this.selectedModules.includes(other)) continue;
+
+      const boxOther = this.getModuleWorldBoundingBox(other);
+      if (boxOther && !boxOther.isEmpty()) {
+        const eps = 0.5;
+        const overlaps = (boxTarget.max.x - boxOther.min.x > eps && boxOther.max.x - boxTarget.min.x > eps) &&
+                         (boxTarget.max.y - boxOther.min.y > eps && boxOther.max.y - boxTarget.min.y > eps) &&
+                         (boxTarget.max.z - boxOther.min.z > eps && boxOther.max.z - boxTarget.min.z > eps);
+        if (overlaps) return true;
+      }
+    }
+    return false;
   }
 
   handleModuleDragEnd() {
@@ -2716,6 +2816,7 @@ export class StationViewer {
     if (!this.transformControls || !this.transformControls.object) {
       this._isGizmoDragging = false;
       this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
       this.gizmoActiveType = null;
       return;
     }
@@ -2726,9 +2827,31 @@ export class StationViewer {
         const startPivotPos = this.pivotDragStart || this.multiSelectPivot.userData?.dragStartPos;
         const delta = new THREE.Vector3().subVectors(currentPivotPos, startPivotPos);
 
+        const plotConfig = this.currentPlotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
+        const stationaryModules = (this.modulesGroup?.children || []).filter(
+          m => !this.selectedModules.includes(m) && m.visible !== false && m.userData?.index !== undefined
+        );
+
         const moves = [];
         this.selectedModules.forEach(mod => {
           const modIndex = mod.userData.index;
+
+          const fromPosThree = mod.userData.multiDragStartPos ? {
+            x: mod.userData.multiDragStartPos.x,
+            y: mod.userData.multiDragStartPos.y,
+            z: mod.userData.multiDragStartPos.z
+          } : null;
+
+          // Insure moved module doesn't overlap another module BB on gizmo release
+          moveMovingModuleOutsideOverlap(mod, stationaryModules, plotConfig, {
+            gap: 5,
+            fromPos: fromPosThree,
+            dragAxis: this.transformControls?.axis || this.lastDragAxis || '',
+            getSize: (m) => this.getModuleInitialSize(m),
+            getModuleWorldBox: (m) => this.getModuleWorldBoundingBox(m),
+            applyToObject: true
+          });
+
           const planPos = {
             x: Math.round(mod.position.x),
             y: Math.round(mod.position.y),
@@ -2795,11 +2918,15 @@ export class StationViewer {
           this.multiSelectionHelpers.forEach(h => h.update());
         }
         this.updatePlotBoxViolations();
+        if (typeof this.renderScene === 'function') {
+          this.renderScene();
+        }
       } catch (err) {
         console.error('Error in handleModuleDragEnd for multiSelectPivot:', err);
       } finally {
         this._isGizmoDragging = false;
         this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
         this.gizmoActiveType = null;
         this.shiftSnapApplied = false;
         this.dragStartCollectiveBox = null;
@@ -2812,6 +2939,37 @@ export class StationViewer {
       const modIndex = targetModule.userData.index;
       const mod = this.currentPlan?.modules?.find(m => m.index === modIndex);
 
+      const plotConfig = this.currentPlotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
+      const stationaryModules = (this.modulesGroup?.children || []).filter(
+        m => m !== targetModule && m.visible !== false && m.userData?.index !== undefined
+      );
+
+      const fromPosThree = this.dragStartPosition ? {
+        x: this.dragStartPosition.x,
+        y: this.dragStartPosition.y,
+        z: -this.dragStartPosition.z
+      } : (targetModule.userData?.multiDragStartPos ? {
+        x: targetModule.userData.multiDragStartPos.x,
+        y: targetModule.userData.multiDragStartPos.y,
+        z: targetModule.userData.multiDragStartPos.z
+      } : (mod && mod.position ? {
+        x: mod.position.x,
+        y: mod.position.y,
+        z: -mod.position.z
+      } : null));
+
+      // Insure the moved module doesn't overlap another module BB.
+      // If it does and doesn't move out of the overlap, upon release of the gizmo,
+      // move the moving module outside of the overlap.
+      moveMovingModuleOutsideOverlap(targetModule, stationaryModules, plotConfig, {
+        gap: 5,
+        fromPos: fromPosThree,
+        dragAxis: this.transformControls?.axis || this.lastDragAxis || '',
+        getSize: (m) => this.getModuleInitialSize(m),
+        getModuleWorldBox: (m) => this.getModuleWorldBoundingBox(m),
+        applyToObject: true
+      });
+
       const planPos = {
         x: Math.round(targetModule.position.x),
         y: Math.round(targetModule.position.y),
@@ -2820,6 +2978,15 @@ export class StationViewer {
 
       targetModule.position.set(planPos.x, planPos.y, -planPos.z);
       targetModule.updateMatrixWorld(true);
+
+      if (this.selectionHelper) {
+        this.selectionHelper.userData = this.selectionHelper.userData || {};
+        this.selectionHelper.userData.isOverlapping = false;
+        if (this.selectionHelper.material) {
+          this.selectionHelper.material.color.setHex(0xFFFF00);
+        }
+        this.selectionHelper.update();
+      }
 
       const fromPos = this.dragStartPosition ? { ...this.dragStartPosition } : (mod && mod.position ? { ...mod.position } : null);
 
@@ -2881,6 +3048,7 @@ export class StationViewer {
     } finally {
       this._isGizmoDragging = false;
       this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
       this.gizmoActiveType = null;
       this.shiftSnapApplied = false;
       this.dragStartCollectiveBox = null;
@@ -2914,6 +3082,7 @@ export class StationViewer {
     if (!this.transformControlsRotate || !this.transformControlsRotate.object) {
       this._isGizmoDragging = false;
       this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
       this.gizmoActiveType = null;
       return;
     }
@@ -2981,6 +3150,7 @@ export class StationViewer {
     } finally {
       this._isGizmoDragging = false;
       this.hasGizmoMoved = false;
+      this.lastDragAxis = this.transformControls?.axis || null;
       this.gizmoActiveType = null;
     }
   }
@@ -4306,7 +4476,7 @@ export class StationViewer {
 
     // Compute collective bounding box and center
     const collectiveBox = new THREE.Box3();
-    modules.forEach(m => collectiveBox.union(new THREE.Box3().setFromObject(m)));
+    modules.forEach(m => collectiveBox.union(this.getModuleWorldBoundingBox ? (this.getModuleWorldBoundingBox(m) || new THREE.Box3().setFromObject(m)) : new THREE.Box3().setFromObject(m)));
     const collectiveCenter = collectiveBox.getCenter(new THREE.Vector3());
 
     // Setup multiSelectPivot at collective center
@@ -4854,6 +5024,8 @@ export class StationViewer {
           this.pulseDir *= -1;
         }
         helperMat.opacity = this.pulseVal;
+        const isOverlapping = !!this.selectionHelper.userData?.isOverlapping;
+        helperMat.color.setHex(isOverlapping ? 0xFF1133 : 0xFFFF00);
       }
       this.selectionHelper.update();
     }
@@ -5357,6 +5529,9 @@ export class StationViewer {
       getModuleSize: (mod) => this.getModuleInitialSize(mod),
       applyToObjects: true
     });
+    if (isDocks1Present()) {
+      applyDocksVerticalOrientation(getDocksVerticalOrientation(), this);
+    }
   }
 
   applyShadingBehavior(key, name) {
@@ -5416,7 +5591,38 @@ export class StationViewer {
     // When Layers order or behavior changes, re-apply active layout to place modules in updated Layers category order
     if (this.lastLayoutArgs) {
       this.applyLayoutBehavior(this.lastLayoutArgs.key, this.lastLayoutArgs.name, this.lastLayoutArgs.activeEntries);
+    } else if (isDocks1Present() && (!isBlueprintModeActive() || isDocksVerticalAppliedToCurrentPlan())) {
+      const perimeterSelections = getDocksPerimeterSelections();
+      if (perimeterSelections.size > 0) {
+        applyDocksPerimeterPlacement(perimeterSelections, this);
+      } else {
+        applyDocksVerticalOrientation(getDocksVerticalOrientation(), this);
+      }
     }
+  }
+
+  setDocksVerticalOrientation(val) {
+    return setDocksVerticalOrientation(val, this);
+  }
+
+  applyDocksVerticalOrientation(val) {
+    return applyDocksVerticalOrientation(val, this);
+  }
+
+  getDocksPerimeterSelections() {
+    return getDocksPerimeterSelections();
+  }
+
+  setDocksPerimeterSelections(selections) {
+    return setDocksPerimeterSelections(selections, this);
+  }
+
+  clearDocksPerimeterSelections() {
+    return clearDocksPerimeterSelections(this);
+  }
+
+  applyDocksPerimeterPlacement(selections) {
+    return applyDocksPerimeterPlacement(selections, this);
   }
 
   applyCustomDisplayBehavior(valueId, key, name) {
@@ -5719,13 +5925,69 @@ export class StationViewer {
   }
 }
 
+export function isPierModule(macroOrModule) {
+  if (!macroOrModule) return false;
+  const macro = typeof macroOrModule === 'string'
+    ? macroOrModule
+    : (macroOrModule.userData?.macro || macroOrModule.macro || macroOrModule.name || '');
+  const m = String(macro).toLowerCase();
+  return m.includes('pier') || (typeof isPierHarbor === 'function' && isPierHarbor(m));
+}
+
+export function isGeometryInvisibleComponent(child, isPier = false) {
+  if (!child) return false;
+  if (child.userData && (child.userData.isGeometryInvisible || child.userData.isBBox)) return true;
+
+  let curr = child;
+  while (curr) {
+    if (curr.userData && (curr.userData.isGeometryInvisible || curr.userData.isBBox)) return true;
+    if (curr.userData && curr.userData.partName) {
+      const pn = String(curr.userData.partName).toLowerCase();
+      if (pn.includes('geometryinvisible') || pn.includes('bounding_box') || pn.includes('bbox')) return true;
+    }
+    if (curr.name) {
+      const cn = String(curr.name).toLowerCase();
+      if (cn.includes('geometryinvisible') || cn.includes('geometry_invisible')) return true;
+      if (isPier && (cn.includes('bounding_box') || cn.includes('boundingbox') || cn.includes('bbox') || cn.includes('invisible'))) return true;
+    }
+    curr = curr.parent;
+  }
+
+  const namesToCheck = [];
+  if (child.name) namesToCheck.push(child.name.toLowerCase());
+  if (child.parent && child.parent.name) namesToCheck.push(child.parent.name.toLowerCase());
+  if (child.userData) {
+    if (child.userData.partName) namesToCheck.push(String(child.userData.partName).toLowerCase());
+    if (child.userData.sourceUrl) namesToCheck.push(String(child.userData.sourceUrl).toLowerCase());
+  }
+  if (child.material) {
+    if (Array.isArray(child.material)) {
+      child.material.forEach(m => { if (m.name) namesToCheck.push(m.name.toLowerCase()); });
+    } else if (child.material.name) {
+      namesToCheck.push(child.material.name.toLowerCase());
+    }
+  }
+
+  const invisibleKeywords = ['geometryinvisible', 'geometry_invisible', 'invisible'];
+  if (isPier) {
+    invisibleKeywords.push('bounding_box', 'boundingbox', 'bbox', 'collision', 'collision_box', 'collisionbox');
+  }
+
+  return namesToCheck.some(name => invisibleKeywords.some(kw => name.includes(kw)));
+}
+
 function isTextureOrEffectMesh(child) {
   if (!child || !child.isMesh) return false;
-  if (child.userData && child.userData.isSnapPoint) return true;
+  if (child.userData && (child.userData.isSnapPoint || child.userData.isGeometryInvisible || child.userData.isBBox)) return true;
+  if (isGeometryInvisibleComponent(child)) return true;
   
   const namesToCheck = [];
   if (child.name) namesToCheck.push(child.name.toLowerCase());
   if (child.parent && child.parent.name) namesToCheck.push(child.parent.name.toLowerCase());
+  if (child.userData) {
+    if (child.userData.partName) namesToCheck.push(String(child.userData.partName).toLowerCase());
+    if (child.userData.sourceUrl) namesToCheck.push(String(child.userData.sourceUrl).toLowerCase());
+  }
   if (child.material) {
     if (Array.isArray(child.material)) {
       child.material.forEach(m => {
@@ -5740,7 +6002,8 @@ function isTextureOrEffectMesh(child) {
     'decal', 'fx_', 'light', 'exhaust', 'flare', 'glow', 
     'sprite', 'alpha', 'anim_', 'arrow', 'cross', 'elevator',
     'poslight', 'sign', 'billboard', 'lens', 'corona',
-    'bbox', 'boundingbox', 'bounding_box', 'collision', 'collision_box', 'collisionbox'
+    'bbox', 'boundingbox', 'bounding_box', 'collision', 'collision_box', 'collisionbox',
+    'geometryinvisible', 'geometry_invisible', 'invisible'
   ];
 
   return namesToCheck.some(name => 

@@ -764,9 +764,12 @@ export function loadBlueprintPlotConfig(planId, planName) {
 /**
  * Set the currently active blueprint, restoring its custom plot configuration if stored.
  */
-export function setActiveBlueprint(planId, planName) {
+export function setActiveBlueprint(planId, planName, viewer = null) {
   activeBlueprintId = planId || null;
   activeBlueprintName = planName || null;
+  if (viewer) {
+    activeViewerInstance = viewer;
+  }
 
   const savedBpConfig = loadBlueprintPlotConfig(planId, planName);
   if (savedBpConfig) {
@@ -774,6 +777,11 @@ export function setActiveBlueprint(planId, planName) {
   } else {
     setPlotConfig(DEFAULT_PLOT_CONFIG, true);
   }
+
+  // Upon loading a blueprint, do not use any Layout properties for any placement.
+  resetDocksVerticalAppliedToCurrentPlan();
+  setBlueprintModeActive(true, viewer);
+  setAllPillsToDefault();
 }
 
 /**
@@ -1057,6 +1065,9 @@ export function isBlueprintModeActive() {
  * Set the Blueprint mode active state (syncs DOM checkbox, storage, and viewer layout).
  */
 export function setBlueprintModeActive(active, viewer = null) {
+  if (viewer) {
+    activeViewerInstance = viewer;
+  }
   const isChecked = !!active;
   isBlueprintState = isChecked;
 
@@ -1102,11 +1113,13 @@ export function setBlueprintModeActive(active, viewer = null) {
   if (isChecked) {
     if (targetViewer && typeof targetViewer.applyLayoutBehavior === 'function') {
       targetViewer.applyLayoutBehavior('blueprint', 'Blueprint');
-      if (typeof targetViewer.fitCameraToStation === 'function') {
-        targetViewer.fitCameraToStation();
-      }
-      if (typeof targetViewer.renderScene === 'function') {
-        targetViewer.renderScene();
+      if (!targetViewer.planLoading) {
+        if (typeof targetViewer.fitCameraToStation === 'function') {
+          targetViewer.fitCameraToStation();
+        }
+        if (typeof targetViewer.renderScene === 'function') {
+          targetViewer.renderScene();
+        }
       }
     }
   } else {
@@ -1116,7 +1129,7 @@ export function setBlueprintModeActive(active, viewer = null) {
       } else {
         targetViewer.applyLayoutBehavior('clusters', 'Category Clusters');
       }
-      if (typeof targetViewer.renderScene === 'function') {
+      if (!targetViewer.planLoading && typeof targetViewer.renderScene === 'function') {
         targetViewer.renderScene();
       }
     }
@@ -1624,6 +1637,827 @@ export function ensureNoBoundingBoxOverlaps(modules, plotConfig = null, options 
 }
 
 /**
+ * When using the gizmo to move a module, insure the moved module doesn't overlap
+ * another module BB. If it does and doesn't move out of the overlap, open release
+ * of the gizmo, move the moving module outside of the overlap.
+ *
+ * @param {object} movingModule - The module (Three.js Object3D or plan module) being moved
+ * @param {Array<object>} stationaryModules - Other modules in the station
+ * @param {object} [plotConfig] - Current plot boundaries / config
+ * @param {object} [options] - Options { gap, fromPos, dragAxis, getSize, applyToObject }
+ * @returns {{ moved: boolean, resolved: boolean, position: { x: number, y: number, z: number } }}
+ */
+export function moveMovingModuleOutsideOverlap(movingModule, stationaryModules, plotConfig = null, options = {}) {
+  const pConfig = plotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG;
+  const opts = {
+    ...options,
+    getSize: options.getSize || options.getModuleSize || ((m) => {
+      if (m.initialSize) return m.initialSize;
+      if (m.userData?.initialSize) return m.userData.initialSize;
+      const macro = m.userData?.macro || m.macro || m.key || '';
+      const arr = getInitialModuleSize(macro);
+      return { x: arr[0], y: arr[1], z: arr[2] };
+    })
+  };
+  return StationLayoutEngine.moveMovingModuleOutsideOverlap(movingModule, stationaryModules, pConfig, opts);
+}
+
+export const DOCKS_VERTICAL_STORAGE_KEY = 'x4_docks_vertical_orientation';
+let currentDocksVerticalOrientation = null;
+let isDocksVerticalApplied = false;
+
+/**
+ * Check if docks vertical orientation has already been applied to the current plan.
+ */
+export function isDocksVerticalAppliedToCurrentPlan() {
+  return isDocksVerticalApplied;
+}
+
+/**
+ * Reset vertical orientation application flag when a new blueprint/plan is loaded.
+ */
+export function resetDocksVerticalAppliedToCurrentPlan() {
+  isDocksVerticalApplied = false;
+}
+
+/**
+ * Mark docks vertical orientation as applied or not for current plan.
+ */
+export function setDocksVerticalAppliedToCurrentPlan(applied = true) {
+  isDocksVerticalApplied = !!applied;
+}
+
+/**
+ * Get current vertical orientation for dock modules within plot bounding box.
+ * @returns {'top'|'center'|'bottom'}
+ */
+export function getDocksVerticalOrientation() {
+  if (currentDocksVerticalOrientation && ['top', 'center', 'bottom'].includes(currentDocksVerticalOrientation)) {
+    return currentDocksVerticalOrientation;
+  }
+  if (typeof localStorage !== 'undefined') {
+    const saved = localStorage.getItem(DOCKS_VERTICAL_STORAGE_KEY);
+    if (saved && ['top', 'center', 'bottom'].includes(saved)) {
+      currentDocksVerticalOrientation = saved;
+      return saved;
+    }
+  }
+  return 'top';
+}
+
+/**
+ * Set vertical orientation for dock modules within plot bounding box and re-apply layout/orientation.
+ * @param {'top'|'center'|'bottom'} val
+ * @param {object} [viewer]
+ */
+export function setDocksVerticalOrientation(val, viewer = null) {
+  if (!['top', 'center', 'bottom'].includes(val)) return;
+  currentDocksVerticalOrientation = val;
+  isDocksVerticalApplied = true;
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(DOCKS_VERTICAL_STORAGE_KEY, val);
+  }
+  const v = viewer || activeViewerInstance || (typeof window !== 'undefined' ? window.viewer : null);
+  if (v) {
+    const perimeterSelections = getDocksPerimeterSelections();
+    if (perimeterSelections.size > 0) {
+      applyDocksPerimeterPlacement(perimeterSelections, v);
+    } else {
+      applyDocksVerticalOrientation(val, v);
+    }
+    if (!isBlueprintModeActive() && typeof v.applyAlignmentBehavior === 'function' && v.activeAlignmentBehavior) {
+      v.applyAlignmentBehavior(v.activeAlignmentBehavior.key, v.activeAlignmentBehavior.name, v.activeAlignmentBehavior.activeEntries);
+    }
+  }
+}
+
+export const DOCKS_PERIMETER_STORAGE_KEY = 'x4_docks_perimeter_selections';
+let currentDocksPerimeterSelections = new Set();
+
+/**
+ * Get current active Perimeter multi-selections (Set of 'lanes' | 'stacked' | 'spread').
+ * @returns {Set<string>}
+ */
+export function getDocksPerimeterSelections() {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(DOCKS_PERIMETER_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          currentDocksPerimeterSelections = new Set(parsed.filter(x => ['lanes', 'stacked', 'spread'].includes(x)));
+          return new Set(currentDocksPerimeterSelections);
+        }
+      }
+    } catch (_) {}
+  }
+  return new Set(currentDocksPerimeterSelections);
+}
+
+/**
+ * Set active Perimeter multi-selections and apply to docks placement.
+ * @param {Array<string>|Set<string>} selections
+ * @param {object} [viewer]
+ */
+export function setDocksPerimeterSelections(selections, viewer = null) {
+  const arr = Array.isArray(selections) ? selections : (selections instanceof Set ? Array.from(selections) : []);
+  const valid = arr.filter(x => ['lanes', 'stacked', 'spread'].includes(x));
+  currentDocksPerimeterSelections = new Set(valid);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(DOCKS_PERIMETER_STORAGE_KEY, JSON.stringify(valid));
+  }
+  const v = viewer || activeViewerInstance || (typeof window !== 'undefined' ? window.viewer : null);
+  if (v) {
+    applyDocksPerimeterPlacement(currentDocksPerimeterSelections, v);
+  }
+}
+
+/**
+ * Clear all Perimeter multi-selections and reset docks placement.
+ * @param {object} [viewer]
+ */
+export function clearDocksPerimeterSelections(viewer = null) {
+  currentDocksPerimeterSelections.clear();
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(DOCKS_PERIMETER_STORAGE_KEY);
+  }
+  const v = viewer || activeViewerInstance || (typeof window !== 'undefined' ? window.viewer : null);
+  if (v) {
+    applyDocksPerimeterPlacement(new Set(), v);
+  }
+}
+
+/**
+ * Helper to identify pier modules.
+ */
+export function isPierModule(moduleOrMacro) {
+  if (!moduleOrMacro) return false;
+  const macro = (typeof moduleOrMacro === 'string' ? moduleOrMacro : (moduleOrMacro.userData?.macro || moduleOrMacro.macro || '')).toLowerCase();
+  return macro.includes('pier');
+}
+
+/**
+ * Helper to identify geometryinvisible and clearance components of modules.
+ */
+export function isGeometryInvisibleComponent(child, isPier = false) {
+  if (!child) return false;
+  if (child.userData && (child.userData.isGeometryInvisible || child.userData.isBBox)) return true;
+
+  let curr = child;
+  while (curr) {
+    if (curr.userData && (curr.userData.isGeometryInvisible || curr.userData.isBBox)) return true;
+    if (curr.userData && curr.userData.partName) {
+      const pn = String(curr.userData.partName).toLowerCase();
+      if (pn.includes('geometryinvisible') || pn.includes('bounding_box') || pn.includes('bbox')) return true;
+    }
+    if (curr.name) {
+      const cn = String(curr.name).toLowerCase();
+      if (cn.includes('geometryinvisible') || cn.includes('geometry_invisible')) return true;
+      if (isPier && (cn.includes('bounding_box') || cn.includes('boundingbox') || cn.includes('bbox') || cn.includes('invisible'))) return true;
+    }
+    curr = curr.parent;
+  }
+
+  const namesToCheck = [];
+  if (child.name) namesToCheck.push(child.name.toLowerCase());
+  if (child.parent && child.parent.name) namesToCheck.push(child.parent.name.toLowerCase());
+  if (child.userData) {
+    if (child.userData.partName) namesToCheck.push(String(child.userData.partName).toLowerCase());
+    if (child.userData.sourceUrl) namesToCheck.push(String(child.userData.sourceUrl).toLowerCase());
+  }
+  if (child.material) {
+    if (Array.isArray(child.material)) {
+      child.material.forEach(m => { if (m.name) namesToCheck.push(m.name.toLowerCase()); });
+    } else if (child.material.name) {
+      namesToCheck.push(child.material.name.toLowerCase());
+    }
+  }
+
+  const invisibleKeywords = ['geometryinvisible', 'geometry_invisible', 'invisible'];
+  if (isPier) {
+    invisibleKeywords.push('bounding_box', 'boundingbox', 'bbox', 'collision', 'collision_box', 'collisionbox');
+  }
+
+  for (const name of namesToCheck) {
+    for (const kw of invisibleKeywords) {
+      if (name.includes(kw)) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Computes the world bounding box of all invisible / clearance geometries for a dock or pier.
+ */
+export function getDockInvisibleWorldBoundingBox(moduleObj, viewer = null) {
+  if (!moduleObj) return null;
+  const isPier = isPierModule(moduleObj);
+  let box = null;
+  let hasInvis = false;
+
+  const createBox = () => {
+    return {
+      min: { x: Infinity, y: Infinity, z: Infinity },
+      max: { x: -Infinity, y: -Infinity, z: -Infinity },
+      isEmpty() { return this.min.x > this.max.x; },
+      intersectsBox(other) {
+        return this.max.x >= other.min.x && this.min.x <= other.max.x &&
+               this.max.y >= other.min.y && this.min.y <= other.max.y &&
+               this.max.z >= other.min.z && this.min.z <= other.max.z;
+      },
+      union(other) {
+        this.min.x = Math.min(this.min.x, other.min.x);
+        this.min.y = Math.min(this.min.y, other.min.y);
+        this.min.z = Math.min(this.min.z, other.min.z);
+        this.max.x = Math.max(this.max.x, other.max.x);
+        this.max.y = Math.max(this.max.y, other.max.y);
+        this.max.z = Math.max(this.max.z, other.max.z);
+      }
+    };
+  };
+
+  if (typeof moduleObj.traverse === 'function') {
+    moduleObj.traverse(child => {
+      if (child.isMesh) {
+        const checkFn = (viewer && typeof viewer.isGeometryInvisibleComponent === 'function')
+          ? viewer.isGeometryInvisibleComponent
+          : isGeometryInvisibleComponent;
+        if (checkFn(child, true) || (child.userData && (child.userData.isGeometryInvisible || child.userData.isBBox))) {
+          if (child.geometry) {
+            if (!child.geometry.boundingBox && typeof child.geometry.computeBoundingBox === 'function') {
+              child.geometry.computeBoundingBox();
+            }
+            if (child.geometry.boundingBox) {
+              if (typeof child.updateMatrixWorld === 'function') child.updateMatrixWorld(true);
+              const geomBox = child.geometry.boundingBox.clone ? child.geometry.boundingBox.clone() : { ...child.geometry.boundingBox };
+              if (typeof geomBox.applyMatrix4 === 'function' && child.matrixWorld) {
+                geomBox.applyMatrix4(child.matrixWorld);
+              } else {
+                const px = (child.position?.x ?? 0) + (moduleObj.position?.x ?? 0);
+                const py = (child.position?.y ?? 0) + (moduleObj.position?.y ?? 0);
+                const pz = (child.position?.z ?? 0) + (moduleObj.position?.z ?? 0);
+                geomBox.min = { x: geomBox.min.x + px, y: geomBox.min.y + py, z: geomBox.min.z + pz };
+                geomBox.max = { x: geomBox.max.x + px, y: geomBox.max.y + py, z: geomBox.max.z + pz };
+              }
+              if (!box) box = createBox();
+              box.union(geomBox);
+              hasInvis = true;
+            }
+          }
+        }
+      }
+    });
+  }
+
+  if (!hasInvis && moduleObj.userData?.invisibleBoundingBox) {
+    return moduleObj.userData.invisibleBoundingBox;
+  }
+
+  return (hasInvis && box && !box.isEmpty()) ? box : null;
+}
+
+/**
+ * Insures no docks invisible geometries bounding boxes overlap.
+ */
+export function ensureNoDocksInvisibleOverlap(dockModules, plotBounds, viewer = null) {
+  if (!dockModules || dockModules.length < 2) return;
+  const gap = 50;
+
+  for (let iter = 0; iter < 10; iter++) {
+    let anyResolved = false;
+
+    for (let i = 0; i < dockModules.length; i++) {
+      for (let j = i + 1; j < dockModules.length; j++) {
+        const modA = dockModules[i];
+        const modB = dockModules[j];
+        if (typeof modA.updateMatrixWorld === 'function') modA.updateMatrixWorld(true);
+        if (typeof modB.updateMatrixWorld === 'function') modB.updateMatrixWorld(true);
+
+        const boxA = getDockInvisibleWorldBoundingBox(modA, viewer);
+        const boxB = getDockInvisibleWorldBoundingBox(modB, viewer);
+
+        if (boxA && boxB && boxA.intersectsBox(boxB)) {
+          const overlapX = Math.min(boxA.max.x, boxB.max.x) - Math.max(boxA.min.x, boxB.min.x);
+          const overlapZ = Math.min(boxA.max.z, boxB.max.z) - Math.max(boxA.min.z, boxB.min.z);
+
+          // For approach lanes, separate along horizontal axis (X or Z)
+          if (overlapX <= overlapZ) {
+            const shiftAmountX = overlapX + gap;
+            const dirX = (modA.position?.x ?? 0) <= (modB.position?.x ?? 0) ? -1 : 1;
+            if (modA.position) modA.position.x += dirX * (shiftAmountX / 2);
+            if (modB.position) modB.position.x -= dirX * (shiftAmountX / 2);
+          } else {
+            const shiftAmountZ = overlapZ + gap;
+            const dirZ = (modA.position?.z ?? 0) <= (modB.position?.z ?? 0) ? -1 : 1;
+            if (modA.position) modA.position.z += dirZ * (shiftAmountZ / 2);
+            if (modB.position) modB.position.z -= dirZ * (shiftAmountZ / 2);
+          }
+
+          if (typeof modA.updateMatrixWorld === 'function') modA.updateMatrixWorld(true);
+          if (typeof modB.updateMatrixWorld === 'function') modB.updateMatrixWorld(true);
+          anyResolved = true;
+        }
+      }
+    }
+
+    if (!anyResolved) break;
+  }
+}
+
+/**
+ * Apply docks perimeter placement (clear, lanes, stacked, spread).
+ * @param {Array<string>|Set<string>} [selections]
+ * @param {object} [viewer]
+ */
+export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
+  const v = viewer || activeViewerInstance || (typeof window !== 'undefined' ? window.viewer : null);
+  if (!v || !v.modulesGroup || !v.modulesGroup.children || v.modulesGroup.children.length === 0) return;
+
+  const selSet = selections instanceof Set
+    ? selections
+    : (Array.isArray(selections) ? new Set(selections) : getDocksPerimeterSelections());
+
+  // Clear removes all multi-selected checks and reverts to base vertical orientation
+  if (selSet.has('clear') || selSet.size === 0) {
+    applyDocksVerticalOrientation(getDocksVerticalOrientation(), v);
+    return;
+  }
+
+  isDocksVerticalApplied = true;
+
+  const dockModules = [];
+  v.modulesGroup.children.forEach(mod => {
+    if (!mod || mod.visible === false) return;
+    const cat = (moduleCategoryOf(mod) || '').toLowerCase();
+    const macro = (mod.userData?.macro || mod.macro || '').toLowerCase();
+    const isDockOrPier = cat === 'docks' || cat === 'dock' || cat === 'pier' || macro.includes('dock') || macro.includes('pier');
+    if (isDockOrPier) {
+      dockModules.push(mod);
+    }
+  });
+
+  if (dockModules.length === 0) return;
+
+  const plotBounds = getPlotBoundingBox(v.currentPlotConfig || getCurrentPlotConfig());
+  const isXLongest = plotBounds.widthX >= plotBounds.depthZ;
+  const orient = getDocksVerticalOrientation();
+  const centerY = plotBounds.centerY !== undefined ? plotBounds.centerY : (plotBounds.maxY + plotBounds.minY) / 2;
+  const gap = 15;
+
+  const getModSize = (m) => (v.getModuleInitialSize ? v.getModuleInitialSize(m) : null) || defaultModuleSize(m) || { x: 100, y: 100, z: 100 };
+
+  // stacked places the largest docks along the longest dimension displaced vertically by the docks' BB
+  if (selSet.has('stacked')) {
+    dockModules.sort((a, b) => {
+      const sa = getModSize(a);
+      const sb = getModSize(b);
+      const volA = (sa.x || 100) * (sa.y || 100) * (sa.z || 100);
+      const volB = (sb.x || 100) * (sb.y || 100) * (sb.z || 100);
+      return volB - volA;
+    });
+  }
+
+  if (selSet.has('spread')) {
+    // spread has the docks spread out evenly as possible to a side each with multiples beyond the four walls stacking vertically
+    // Wall indices: 0: +Z, 1: +X, 2: -Z, 3: -X
+    // If stacked is also selected, longest dimension walls come first
+    const wallOrder = (selSet.has('stacked') && isXLongest)
+      ? [0, 2, 1, 3] // +Z and -Z run along X
+      : (selSet.has('stacked') ? [1, 3, 0, 2] : [0, 1, 2, 3]);
+
+    const wallDocks = [[], [], [], []];
+
+    dockModules.forEach((mod, i) => {
+      const wallIdx = wallOrder[i % 4];
+      const tier = Math.floor(i / 4);
+      const s = getModSize(mod);
+      const halfX = (s.x || 100) / 2;
+      const halfY = (s.y || 100) / 2;
+      const halfZ = (s.z || 100) / 2;
+
+      let x = plotBounds.centerX;
+      let z = plotBounds.centerZ;
+
+      if (wallIdx === 0) {
+        // +Z wall
+        z = plotBounds.maxZ - halfZ;
+      } else if (wallIdx === 1) {
+        // +X wall
+        x = plotBounds.maxX - halfX;
+      } else if (wallIdx === 2) {
+        // -Z wall
+        z = plotBounds.minZ + halfZ;
+      } else if (wallIdx === 3) {
+        // -X wall
+        x = plotBounds.minX + halfX;
+      }
+
+      let y;
+      if (tier === 0) {
+        if (orient === 'bottom') y = plotBounds.minY + halfY;
+        else if (orient === 'top') y = plotBounds.maxY - halfY;
+        else y = centerY;
+      } else {
+        const prevMod = wallDocks[wallIdx][tier - 1];
+        const prevS = getModSize(prevMod);
+        const prevHalfY = (prevS.y || 100) / 2;
+        if (orient === 'bottom') {
+          y = prevMod.position.y + prevHalfY + halfY + gap;
+        } else if (orient === 'top') {
+          y = prevMod.position.y - (prevHalfY + halfY + gap);
+        } else {
+          y = prevMod.position.y + prevHalfY + halfY + gap;
+        }
+      }
+
+      const pos = { x, y, z };
+      clampModulePositionToPlot(pos, s, plotBounds);
+      if (typeof mod.position?.set === 'function') {
+        mod.position.set(pos.x, pos.y, pos.z);
+      } else if (mod.position) {
+        mod.position.x = pos.x;
+        mod.position.y = pos.y;
+        mod.position.z = pos.z;
+      }
+      wallDocks[wallIdx].push(mod);
+    });
+  } else if (selSet.has('stacked')) {
+    // stacked places the largest docks along the longest dimension displaced vertically by the docks' BB
+    const N = dockModules.length;
+    let prevY = null;
+    let prevHalfY = 0;
+
+    dockModules.forEach((mod, i) => {
+      const s = getModSize(mod);
+      const halfX = (s.x || 100) / 2;
+      const halfY = (s.y || 100) / 2;
+      const halfZ = (s.z || 100) / 2;
+
+      let x = plotBounds.centerX;
+      let z = plotBounds.centerZ;
+
+      if (isXLongest) {
+        // Along the X dimension
+        z = plotBounds.maxZ - halfZ;
+        const t = N === 1 ? 0.5 : (i + 0.5) / N;
+        x = plotBounds.minX + halfX + t * (plotBounds.widthX - s.x);
+      } else {
+        // Along the Z dimension
+        x = plotBounds.maxX - halfX;
+        const t = N === 1 ? 0.5 : (i + 0.5) / N;
+        z = plotBounds.minZ + halfZ + t * (plotBounds.depthZ - s.z);
+      }
+
+      let y;
+      if (i === 0) {
+        if (orient === 'bottom') y = plotBounds.minY + halfY;
+        else if (orient === 'top') y = plotBounds.maxY - halfY;
+        else y = centerY;
+      } else {
+        if (orient === 'bottom') {
+          y = prevY + prevHalfY + halfY + gap;
+        } else if (orient === 'top') {
+          y = prevY - (prevHalfY + halfY + gap);
+        } else {
+          y = prevY + prevHalfY + halfY + gap;
+        }
+      }
+
+      const pos = { x, y, z };
+      clampModulePositionToPlot(pos, s, plotBounds);
+      if (typeof mod.position?.set === 'function') {
+        mod.position.set(pos.x, pos.y, pos.z);
+      } else if (mod.position) {
+        mod.position.x = pos.x;
+        mod.position.y = pos.y;
+        mod.position.z = pos.z;
+      }
+
+      prevY = pos.y;
+      prevHalfY = halfY;
+    });
+  } else {
+    // Neither spread nor stacked: apply base vertical orientation
+    dockModules.forEach(mod => {
+      const s = getModSize(mod);
+      const halfY = (s.y || 100) / 2;
+      let newY;
+      if (orient === 'top') newY = plotBounds.maxY - halfY;
+      else if (orient === 'center') newY = centerY;
+      else if (orient === 'bottom') newY = plotBounds.minY + halfY;
+      if (newY !== undefined) {
+        const pos = { x: mod.position?.x ?? 0, y: newY, z: mod.position?.z ?? 0 };
+        clampModulePositionToPlot(pos, s, plotBounds);
+        if (typeof mod.position?.set === 'function') mod.position.set(pos.x, pos.y, pos.z);
+        else if (mod.position) mod.position.y = pos.y;
+      }
+    });
+  }
+
+  // Insure no physical bounding box overlap
+  ensureNoBoundingBoxOverlaps(v.modulesGroup.children, plotBounds, {
+    gap: 15,
+    getModuleSize: (m) => getModSize(m),
+    applyToObjects: true
+  });
+
+  // lanes insure no docks invisible geometries BB overlap
+  if (selSet.has('lanes')) {
+    ensureNoDocksInvisibleOverlap(dockModules, plotBounds, v);
+  }
+
+  // Clamp inside plot bounds and sync plan coordinates
+  v.modulesGroup.children.forEach(mod => {
+    if (!mod || mod.visible === false) return;
+    const s = getModSize(mod);
+    clampModulePositionToPlot(mod.position, s, plotBounds);
+
+    const planMod = v.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+    if (planMod && mod.position) {
+      planMod.position.x = Math.round(mod.position.x);
+      planMod.position.y = Math.round(mod.position.y);
+      planMod.position.z = Math.round(-mod.position.z);
+    }
+  });
+
+  if (typeof v.updatePlotBoxViolations === 'function') v.updatePlotBoxViolations();
+  if (typeof v.renderScene === 'function') v.renderScene();
+  else if (typeof v.render === 'function') v.render();
+}
+
+/**
+ * Creates the Perimeter multi-selection dropdown group DOM element.
+ * Options: clear, lanes, stacked, spread
+ */
+export function createPerimeterMultiSelectGroup(idPrefix, viewer = null) {
+  const container = document.createElement('div');
+  container.className = 'layer-perimeter-dropdown-group';
+
+  const label = document.createElement('label');
+  label.className = 'layer-perimeter-label';
+  label.textContent = 'Perimeter';
+  label.htmlFor = `${idPrefix}-perimeter-toggle`;
+  container.appendChild(label);
+
+  const multiselect = document.createElement('div');
+  multiselect.className = 'cyber-multiselect';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.id = `${idPrefix}-perimeter-toggle`;
+  toggleBtn.className = 'cyber-multiselect-toggle';
+  toggleBtn.setAttribute('aria-label', 'Perimeter');
+  toggleBtn.title = 'Perimeter placement options: clear, lanes, stacked, spread';
+
+  const menu = document.createElement('div');
+  menu.className = 'cyber-multiselect-menu hidden';
+
+  const options = ['clear', 'lanes', 'stacked', 'spread'];
+  const activeSelections = getDocksPerimeterSelections();
+
+  function updateToggleText() {
+    const selArr = Array.from(activeSelections);
+    if (selArr.length === 0) {
+      toggleBtn.textContent = 'Select... ▾';
+    } else {
+      toggleBtn.textContent = selArr.join(', ') + ' ▾';
+    }
+  }
+
+  updateToggleText();
+
+  const checkboxes = {};
+
+  options.forEach(opt => {
+    const item = document.createElement('div');
+    item.className = 'cyber-multiselect-item' + (opt === 'clear' ? ' cyber-multiselect-clear' : '');
+    if (item.dataset) {
+      item.dataset.value = opt;
+    }
+    if (typeof item.setAttribute === 'function') {
+      item.setAttribute('data-value', opt);
+    }
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = `${idPrefix}-perimeter-${opt}`;
+    cb.value = opt;
+    cb.checked = activeSelections.has(opt);
+    checkboxes[opt] = cb;
+
+    const optLabel = document.createElement('label');
+    optLabel.htmlFor = cb.id;
+    optLabel.textContent = opt;
+
+    item.appendChild(cb);
+    item.appendChild(optLabel);
+
+    const handleOptionToggle = (e) => {
+      if (e) e.stopPropagation();
+      const v = viewer || activeViewerInstance || (typeof window !== 'undefined' ? window.viewer : null);
+      if (opt === 'clear') {
+        // Clear removes all multi-selected checks
+        cb.checked = false;
+        options.forEach(k => {
+          if (checkboxes[k]) checkboxes[k].checked = false;
+        });
+        activeSelections.clear();
+        currentDocksPerimeterSelections.clear();
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(DOCKS_PERIMETER_STORAGE_KEY);
+        }
+        updateToggleText();
+        applyDocksPerimeterPlacement(activeSelections, v);
+      } else {
+        if (cb.checked) {
+          activeSelections.add(opt);
+          currentDocksPerimeterSelections.add(opt);
+        } else {
+          activeSelections.delete(opt);
+          currentDocksPerimeterSelections.delete(opt);
+        }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(DOCKS_PERIMETER_STORAGE_KEY, JSON.stringify(Array.from(activeSelections)));
+        }
+        updateToggleText();
+        applyDocksPerimeterPlacement(activeSelections, v);
+      }
+    };
+
+    cb.addEventListener('click', (e) => e.stopPropagation());
+    cb.addEventListener('change', handleOptionToggle);
+    item.addEventListener('click', (e) => {
+      if (e) e.stopPropagation();
+      if (e.target !== cb) {
+        cb.checked = !cb.checked;
+        handleOptionToggle(e);
+      }
+    });
+
+    menu.appendChild(item);
+  });
+
+  toggleBtn.addEventListener('click', (e) => {
+    if (e) e.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+
+  if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    document.addEventListener('click', (e) => {
+      if (typeof multiselect.contains === 'function' && !multiselect.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+  }
+
+  multiselect.appendChild(toggleBtn);
+  multiselect.appendChild(menu);
+  container.appendChild(multiselect);
+
+  return container;
+}
+
+/**
+ * Position dock modules to top, center, or bottom of plot bounding box.
+ * @param {'top'|'center'|'bottom'} [orientation]
+ * @param {object} [viewer]
+ */
+export function applyDocksVerticalOrientation(orientation = null, viewer = null) {
+  const v = viewer || activeViewerInstance || (typeof window !== 'undefined' ? window.viewer : null);
+  const orient = orientation || getDocksVerticalOrientation();
+  isDocksVerticalApplied = true;
+  if (!v || !v.modulesGroup || !v.modulesGroup.children || v.modulesGroup.children.length === 0) return;
+  const plotBounds = getPlotBoundingBox(v.currentPlotConfig || getCurrentPlotConfig());
+  const centerY = plotBounds.centerY !== undefined ? plotBounds.centerY : (plotBounds.maxY + plotBounds.minY) / 2;
+
+  let anyMoved = false;
+  v.modulesGroup.children.forEach(mod => {
+    const cat = (moduleCategoryOf(mod) || '').toLowerCase();
+    const macro = (mod.userData?.macro || mod.macro || '').toLowerCase();
+    const isDockOrPier = cat === 'docks' || cat === 'dock' || cat === 'pier' || macro.includes('dock') || macro.includes('pier');
+    if (isDockOrPier) {
+      const s = (v.getModuleInitialSize ? v.getModuleInitialSize(mod) : null) || defaultModuleSize(mod) || { x: 100, y: 100, z: 100 };
+      const halfY = (s.y || 100) / 2;
+      let newY;
+      if (orient === 'top') {
+        newY = plotBounds.maxY - halfY;
+      } else if (orient === 'center') {
+        newY = centerY;
+      } else if (orient === 'bottom') {
+        newY = plotBounds.minY + halfY;
+      }
+      if (newY !== undefined) {
+        const curX = mod.position?.x ?? 0;
+        const curZ = mod.position?.z ?? 0;
+        const pos = { x: curX, y: newY, z: curZ };
+        clampModulePositionToPlot(pos, s, plotBounds);
+        if (typeof mod.position?.set === 'function') {
+          mod.position.set(pos.x, pos.y, pos.z);
+        } else if (mod.position) {
+          mod.position.y = pos.y;
+        }
+        anyMoved = true;
+      }
+    }
+  });
+
+  if (anyMoved) {
+    ensureNoBoundingBoxOverlaps(v.modulesGroup.children, plotBounds, {
+      gap: 15,
+      getModuleSize: (m) => (v.getModuleInitialSize ? v.getModuleInitialSize(m) : null) || defaultModuleSize(m),
+      applyToObjects: true
+    });
+
+    // Insure any Layout Orientations don't have any module BB overlap or extend outside the plot BB
+    v.modulesGroup.children.forEach(mod => {
+      if (!mod || mod.visible === false) return;
+      if (typeof mod.updateMatrixWorld === 'function') {
+        mod.updateMatrixWorld(true);
+      }
+      const worldBox = typeof v.getModuleWorldBoundingBox === 'function' ? v.getModuleWorldBoundingBox(mod) : null;
+      if (worldBox && !worldBox.isEmpty()) {
+        const boxW = worldBox.max.x - worldBox.min.x;
+        const boxH = worldBox.max.y - worldBox.min.y;
+        const boxD = worldBox.max.z - worldBox.min.z;
+        const eps = 0.01;
+        let shiftX = 0;
+        let shiftY = 0;
+        let shiftZ = 0;
+
+        if (boxW <= plotBounds.widthX) {
+          if (worldBox.max.x > plotBounds.maxX) shiftX = plotBounds.maxX - worldBox.max.x;
+          else if (worldBox.min.x < plotBounds.minX) shiftX = plotBounds.minX - worldBox.min.x;
+        } else {
+          shiftX = plotBounds.centerX - ((worldBox.min.x + worldBox.max.x) / 2);
+        }
+
+        if (boxH <= plotBounds.heightY) {
+          if (worldBox.max.y > plotBounds.maxY) shiftY = plotBounds.maxY - worldBox.max.y;
+          else if (worldBox.min.y < plotBounds.minY) shiftY = plotBounds.minY - worldBox.min.y;
+        } else {
+          shiftY = plotBounds.centerY - ((worldBox.min.y + worldBox.max.y) / 2);
+        }
+
+        if (boxD <= plotBounds.depthZ) {
+          if (worldBox.max.z > plotBounds.maxZ) shiftZ = plotBounds.maxZ - worldBox.max.z;
+          else if (worldBox.min.z < plotBounds.minZ) shiftZ = plotBounds.minZ - worldBox.min.z;
+        } else {
+          shiftZ = plotBounds.centerZ - ((worldBox.min.z + worldBox.max.z) / 2);
+        }
+
+        if (Math.abs(shiftX) > eps || Math.abs(shiftY) > eps || Math.abs(shiftZ) > eps) {
+          if (typeof mod.position?.set === 'function') {
+            mod.position.set(mod.position.x + shiftX, mod.position.y + shiftY, mod.position.z + shiftZ);
+          } else if (mod.position) {
+            mod.position.x = (mod.position.x || 0) + shiftX;
+            mod.position.y = (mod.position.y || 0) + shiftY;
+            mod.position.z = (mod.position.z || 0) + shiftZ;
+          }
+          if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+        }
+      } else {
+        const s = (v.getModuleInitialSize ? v.getModuleInitialSize(mod) : null) || defaultModuleSize(mod) || { x: 100, y: 100, z: 100 };
+        clampModulePositionToPlot(mod.position, s, plotBounds);
+      }
+
+      // Synchronize plan coordinates
+      const planMod = v.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+      if (planMod && mod.position) {
+        planMod.position.x = Math.round(mod.position.x);
+        planMod.position.y = Math.round(mod.position.y);
+        planMod.position.z = Math.round(-mod.position.z);
+      }
+    });
+
+    if (typeof v.updatePlotBoxViolations === 'function') {
+      v.updatePlotBoxViolations();
+    }
+    if (typeof v.renderScene === 'function') {
+      v.renderScene();
+    } else if (typeof v.render === 'function') {
+      v.render();
+    }
+  }
+}
+
+/**
+ * Check if "Layers - Docks-1" is currently present in the active Actionable Decorators.
+ * @returns {boolean}
+ */
+export function isDocks1Present() {
+  if (typeof activeActionableElements === 'undefined' || !Array.isArray(activeActionableElements)) {
+    return false;
+  }
+  return activeActionableElements.some(e =>
+    e.decoratorId === 'layers' &&
+    ((e.elementName && /docks-1/i.test(e.elementName)) ||
+     ((e.category || '').toLowerCase() === 'docks' && Number(e.layerNumber) === 1) ||
+     (e.id && /layers[:\-_]docks[-_]?1/i.test(e.id)))
+  );
+}
+
+/**
  * Calculate layer-by-layer component placement honoring:
  * 1. Multiple selections in Alignment Anchor defining start of placement.
  * 2. Component bounding box dimensions (width X, height Y, depth Z).
@@ -1652,6 +2486,10 @@ export function calculateLayeredPlacement(modules, alignmentAnchor = null, plotC
     }
   }
 
+  const docksOrientation = options.docksVerticalOrientation !== undefined
+    ? options.docksVerticalOrientation
+    : (isDocks1Present() ? getDocksVerticalOrientation() : null);
+
   return StationLayoutEngine.calculateLayeredPlacement(modules, {
     plotBounds: plotConfig || getCurrentPlotConfig() || DEFAULT_PLOT_CONFIG,
     categoryOrder: layerOrder || getLayerPlacementCategoryOrder(),
@@ -1660,6 +2498,7 @@ export function calculateLayeredPlacement(modules, alignmentAnchor = null, plotC
     alignmentAnchor,
     defaultAlignmentKeys,
     gap: options.gap,
+    docksVerticalOrientation: docksOrientation,
     applyToObjects: options.applyToObjects
   });
 }
@@ -2411,6 +3250,72 @@ export function createActionableElementCard(item, activeIndex, totalActive) {
       renderDisplayPanel();
     });
 
+    const isDocks1 = (item.elementName && /docks-1/i.test(item.elementName)) ||
+                     ((item.category || '').toLowerCase() === 'docks' && Number(item.layerNumber) === 1) ||
+                     (item.id && /layers[:\-_]docks[-_]?1/i.test(item.id));
+
+    if (isDocks1) {
+      const orientationText = document.createElement('span');
+      orientationText.className = 'layer-orientation-text';
+      orientationText.textContent = 'Orientation:';
+      extraRow.appendChild(orientationText);
+
+      const vertGroup = document.createElement('div');
+      vertGroup.className = 'layer-vertical-dropdown-group';
+
+      const vertLabel = document.createElement('label');
+      vertLabel.className = 'layer-vertical-label';
+      vertLabel.htmlFor = 'actionable-docks-vertical-select';
+      vertLabel.textContent = 'Vertical';
+      vertGroup.appendChild(vertLabel);
+
+      const vertSelect = document.createElement('select');
+      vertSelect.id = 'actionable-docks-vertical-select';
+      vertSelect.className = 'cyber-select-orientation cyber-select-vertical';
+      vertSelect.title = 'Vertical orientation for Dock modules within plot bounding box';
+      if (typeof vertSelect.setAttribute === 'function') {
+        vertSelect.setAttribute('aria-label', 'Vertical');
+      }
+
+      const vertOptions = ['top', 'center', 'bottom'];
+      const currentOrientation = getDocksVerticalOrientation();
+      vertOptions.forEach(optVal => {
+        const opt = document.createElement('option');
+        opt.value = optVal;
+        opt.textContent = optVal;
+        if (optVal === currentOrientation) {
+          opt.selected = true;
+        }
+        opt.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setDocksVerticalOrientation(optVal, activeViewerInstance);
+        });
+        vertSelect.appendChild(opt);
+      });
+
+      const applyOrientationSelection = (e) => {
+        if (e) e.stopPropagation();
+        const chosen = vertSelect.value;
+        if (chosen && ['top', 'center', 'bottom'].includes(chosen)) {
+          setDocksVerticalOrientation(chosen, activeViewerInstance);
+        }
+      };
+
+      vertSelect.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!isDocksVerticalAppliedToCurrentPlan()) {
+          applyOrientationSelection(e);
+        }
+      });
+      vertSelect.addEventListener('change', applyOrientationSelection);
+      vertSelect.addEventListener('input', applyOrientationSelection);
+      vertGroup.appendChild(vertSelect);
+      extraRow.appendChild(vertGroup);
+
+      const perimeterGroup = createPerimeterMultiSelectGroup('actionable-docks', activeViewerInstance);
+      extraRow.appendChild(perimeterGroup);
+    }
+
     extraRow.appendChild(selectEl);
     cardEl.appendChild(extraRow);
   }
@@ -2666,11 +3571,81 @@ export function createUnifiedLayersCard(allLayers, activeIndex) {
     nameSpan.textContent = layer.elementName;
     leftGroup.appendChild(nameSpan);
 
+    const isDocks1 = (layer.elementName && /docks-1/i.test(layer.elementName)) ||
+                     ((layer.category || '').toLowerCase() === 'docks' && Number(layer.layerNumber) === 1) ||
+                     (layer.id && /layers[:\-_]docks[-_]?1/i.test(layer.id));
+
+    if (isDocks1) {
+      const orientationText = document.createElement('span');
+      orientationText.className = 'layer-orientation-text';
+      orientationText.textContent = 'Orientation:';
+      leftGroup.appendChild(orientationText);
+
+      // Slide Vertical drop-down just outside the Orientation label
+      const vertGroup = document.createElement('div');
+      vertGroup.className = 'layer-vertical-dropdown-group';
+
+      const vertLabel = document.createElement('label');
+      vertLabel.className = 'layer-vertical-label';
+      vertLabel.htmlFor = 'docks-vertical-select';
+      vertLabel.textContent = 'Vertical';
+      vertGroup.appendChild(vertLabel);
+
+      const vertSelect = document.createElement('select');
+      vertSelect.id = 'docks-vertical-select';
+      vertSelect.className = 'cyber-select-orientation cyber-select-vertical';
+      vertSelect.title = 'Vertical orientation for Dock modules within plot bounding box';
+      if (typeof vertSelect.setAttribute === 'function') {
+        vertSelect.setAttribute('aria-label', 'Vertical');
+      }
+
+      const vertOptions = ['top', 'center', 'bottom'];
+      const currentOrientation = getDocksVerticalOrientation();
+      vertOptions.forEach(optVal => {
+        const opt = document.createElement('option');
+        opt.value = optVal;
+        opt.textContent = optVal;
+        if (optVal === currentOrientation) {
+          opt.selected = true;
+        }
+        opt.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setDocksVerticalOrientation(optVal, activeViewerInstance);
+        });
+        vertSelect.appendChild(opt);
+      });
+
+      const applyOrientationSelection = (e) => {
+        if (e) e.stopPropagation();
+        const chosen = vertSelect.value;
+        if (chosen && ['top', 'center', 'bottom'].includes(chosen)) {
+          setDocksVerticalOrientation(chosen, activeViewerInstance);
+        }
+      };
+
+      vertSelect.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!isDocksVerticalAppliedToCurrentPlan()) {
+          applyOrientationSelection(e);
+        }
+      });
+      vertSelect.addEventListener('change', applyOrientationSelection);
+      vertSelect.addEventListener('input', applyOrientationSelection);
+      vertGroup.appendChild(vertSelect);
+
+      leftGroup.appendChild(vertGroup);
+    }
+
     itemEl.appendChild(leftGroup);
 
-    // Right group: Category switch dropdown + Remove button
+    // Right group: Perimeter multi-selection + Category switch dropdown + Remove button
     const rightGroup = document.createElement('div');
     rightGroup.className = 'unified-layer-right';
+
+    if (isDocks1) {
+      const perimeterGroup = createPerimeterMultiSelectGroup('docks', activeViewerInstance);
+      rightGroup.appendChild(perimeterGroup);
+    }
 
     const selectEl = document.createElement('select');
     selectEl.className = 'cyber-select-layer cyber-select-layer-mini';

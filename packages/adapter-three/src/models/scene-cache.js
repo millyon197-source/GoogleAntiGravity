@@ -54,8 +54,9 @@ export function isSceneCacheCandidate(url) {
   const part = u.split('/').pop().replace(/-lod\d+\.dae$/, '');
   return part.startsWith('fx') || part.startsWith('anim') ||
     part.includes('billboard') || part.includes('ads') || part.includes('sign') ||
+    part.startsWith('detail_') ||
     u.includes('billboard') || u.includes('ad_signs') || u.includes('/fx_') || u.includes('/anim_') ||
-    /detail_[msl]_main/.test(u) || u.includes('simon') ||
+    /detail_[a-z0-9]+_main/.test(u) || u.includes('simon') ||
     (u.includes('part_main') && u.includes('/production/'));
 }
 

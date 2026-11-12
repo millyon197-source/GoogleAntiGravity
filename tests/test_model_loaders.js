@@ -223,6 +223,13 @@ function binaryHost() {
   await loadModuleMesh(host, { macro: 'test_mod_macro', index: 6 }, { log: (msg, type) => logged.push([msg, type]) });
   assert.ok(calls.dae.includes('/x/test_mod_data/part_main-lod0.dae'), 'part_main falls back to its .dae');
   assert.ok(logged.some(([m, t]) => t === 'warn' && m.includes('part_main-lod0.dae') && m.includes('HTTP 404')), 'missing .bin reported as a warning');
+  // detail_xs_main components always route through Collada / scene cache, never attempting .bin
+  calls.bin.length = 0; calls.dae.length = 0;
+  host.resolveModuleAssetEntry = () => ({ baseName: 'pier_ter_harbor_03', folderPath: '/assets1/structures/dock/pier_ter_harbor_03_data', defaultFiles: ['detail_xs_main-lod0.dae'] });
+  host.getModuleActiveComponentFiles = () => ['detail_xs_main-lod0.dae'];
+  await loadModuleMesh(host, { macro: 'pier_ter_harbor_03_macro', index: 12 }, options);
+  assert.deepStrictEqual(calls.bin, [], 'detail_xs_main must route directly to Collada/scene-cache, never requesting a .bin');
+  assert.ok(calls.dae.includes('/assets1/structures/dock/pier_ter_harbor_03_data/detail_xs_main-lod0.dae'), 'detail_xs_main routes to .dae');
   console.log('  ✓ loadModuleMesh: binary/Collada/scene-cache routing, offsets, logging and material application via plain host');
 }
 

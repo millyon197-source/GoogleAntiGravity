@@ -3942,6 +3942,154 @@ body.sample-dragging-active {
   color: #00f5ff;
 }
 
+.layer-orientation-text {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(0, 245, 255, 0.78);
+  margin-left: 6px;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+
+.layer-vertical-dropdown-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  margin-right: 4px;
+}
+
+.layer-vertical-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #a0aec0;
+  user-select: none;
+  cursor: pointer;
+}
+
+.layer-perimeter-dropdown-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 6px;
+}
+
+.layer-perimeter-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #a0aec0;
+  user-select: none;
+  cursor: pointer;
+}
+
+.cyber-multiselect {
+  position: relative;
+  display: inline-block;
+}
+
+.cyber-multiselect-toggle {
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  background: rgba(6, 12, 28, 0.85);
+  border: 1px solid rgba(0, 245, 255, 0.35);
+  border-radius: 3px;
+  color: #00f5ff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cyber-multiselect-toggle:hover {
+  border-color: rgba(0, 245, 255, 0.7);
+  background: rgba(10, 20, 45, 0.95);
+}
+
+.cyber-multiselect-toggle:focus {
+  outline: none;
+  border-color: #00f5ff;
+  box-shadow: 0 0 6px rgba(0, 245, 255, 0.4);
+}
+
+.cyber-multiselect-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: rgba(6, 12, 28, 0.96);
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 8px rgba(0, 245, 255, 0.2);
+  z-index: 1000;
+  padding: 4px 0;
+  min-width: 105px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cyber-multiselect-menu.hidden {
+  display: none !important;
+}
+
+.cyber-multiselect-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  color: #cbd5e0;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s ease;
+}
+
+.cyber-multiselect-item:hover {
+  background: rgba(0, 245, 255, 0.15);
+  color: #00f5ff;
+}
+
+.cyber-multiselect-item input[type="checkbox"] {
+  accent-color: #00f5ff;
+  cursor: pointer;
+}
+
+.cyber-multiselect-clear {
+  border-top: 1px solid rgba(0, 245, 255, 0.15);
+  margin-top: 2px;
+  padding-top: 4px;
+  color: #fc8181;
+}
+
+.cyber-multiselect-clear:hover {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.15);
+}
+
+.cyber-select-orientation {
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  background: rgba(6, 12, 28, 0.85);
+  border: 1px solid rgba(0, 245, 255, 0.35);
+  border-radius: 3px;
+  color: #00f5ff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cyber-select-orientation:hover {
+  border-color: rgba(0, 245, 255, 0.7);
+  background: rgba(10, 20, 45, 0.95);
+}
+
+.cyber-select-orientation:focus {
+  outline: none;
+  border-color: #00f5ff;
+  box-shadow: 0 0 6px rgba(0, 245, 255, 0.4);
+}
+
 /* Insertion indicator on layer items during dragover */
 .unified-layer-item.drag-placement-top {
   border-top: 3px solid var(--neon-cyan) !important;

@@ -16,18 +16,35 @@ export class PlotBounds {
    */
   constructor(config = {}) {
     this.enabled = config.enabled !== false;
-    this.x = PlotBounds.normalizeAxis(config.x);
-    this.y = PlotBounds.normalizeAxis(config.y);
-    this.z = PlotBounds.normalizeAxis(config.z);
 
-    // Three.js world coordinates in meters (1 km = 1,000 meters)
-    // Three.js Z axis is inverted relative to X4 game coordinate definitions
-    this.minX = -this.x.minus * 1000;
-    this.maxX = this.x.plus * 1000;
-    this.minY = -this.y.minus * 1000;
-    this.maxY = this.y.plus * 1000;
-    this.minZ = -this.z.plus * 1000;
-    this.maxZ = this.z.minus * 1000;
+    if (
+      typeof config.minX === 'number' && typeof config.maxX === 'number' &&
+      typeof config.minY === 'number' && typeof config.maxY === 'number' &&
+      typeof config.minZ === 'number' && typeof config.maxZ === 'number'
+    ) {
+      this.minX = config.minX;
+      this.maxX = config.maxX;
+      this.minY = config.minY;
+      this.maxY = config.maxY;
+      this.minZ = config.minZ;
+      this.maxZ = config.maxZ;
+      this.x = config.x ? PlotBounds.normalizeAxis(config.x) : { plus: Math.max(0, Math.round(this.maxX / 1000)), minus: Math.max(0, Math.round(-this.minX / 1000)) };
+      this.y = config.y ? PlotBounds.normalizeAxis(config.y) : { plus: Math.max(0, Math.round(this.maxY / 1000)), minus: Math.max(0, Math.round(-this.minY / 1000)) };
+      this.z = config.z ? PlotBounds.normalizeAxis(config.z) : { plus: Math.max(0, Math.round(-this.minZ / 1000)), minus: Math.max(0, Math.round(this.maxZ / 1000)) };
+    } else {
+      this.x = PlotBounds.normalizeAxis(config.x);
+      this.y = PlotBounds.normalizeAxis(config.y);
+      this.z = PlotBounds.normalizeAxis(config.z);
+
+      // Three.js world coordinates in meters (1 km = 1,000 meters)
+      // Three.js Z axis is inverted relative to X4 game coordinate definitions
+      this.minX = -this.x.minus * 1000;
+      this.maxX = this.x.plus * 1000;
+      this.minY = -this.y.minus * 1000;
+      this.maxY = this.y.plus * 1000;
+      this.minZ = -this.z.plus * 1000;
+      this.maxZ = this.z.minus * 1000;
+    }
 
     this.widthX = Math.max(1000, this.maxX - this.minX);
     this.heightY = Math.max(1000, this.maxY - this.minY);

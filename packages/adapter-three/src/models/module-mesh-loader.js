@@ -415,6 +415,9 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           uLower.includes('detail_m_main') ||
           uLower.includes('detail_l_main') ||
           uLower.includes('detail_s_main') ||
+          uLower.includes('detail_xs_main') ||
+          uLower.includes('detail_xl_main') ||
+          /detail_[a-z0-9]+_main/.test(uLower) ||
           uLower.includes('simon') ||
           (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production')));
 
@@ -462,6 +465,10 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
         scene.name = partBase;
         scene.userData.partName = partBase;
         scene.userData.sourceUrl = url;
+        if (partBase.includes('geometryinvisible') || partBase.includes('bounding_box') || partBase.includes('bbox')) {
+          scene.userData.isBBox = true;
+          scene.userData.isGeometryInvisible = true;
+        }
         if (mod && mod.index !== undefined) {
           scene.userData.moduleIndex = mod.index;
         }
@@ -560,6 +567,12 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
               child.visible = false;    
               child.castShadow = false;
               child.receiveShadow = false;
+            }
+
+            if (isBBox) {
+              child.userData = child.userData || {};
+              child.userData.isBBox = true;
+              child.userData.isGeometryInvisible = true;
             }
 
             if (isForcefield || isHaze || isLightCone || isBubbles || isPoslight || isSmoke || isFire || isVapor) {
@@ -726,6 +739,11 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
     ? host.shouldAnimateModule(mod?.index)
     : (allowAnimations !== undefined ? allowAnimations : true);
 
+  // The game's own part animations (the module's .ANI file), when the host can load them
+  const aniClips = (canAnimate && folderPath && typeof host.loadModuleAnimations === 'function')
+    ? await Promise.resolve(host.loadModuleAnimations(folderPath)).catch(() => null)
+    : null;
+
   // Collect the parts and register their animations in file order, whatever order they finished in
   for (const part of prepared) {
     if (!part) continue;
@@ -748,11 +766,6 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           host.animatedParts.push({
             object: scene,
             moduleIndex: mod?.index,
-  // The game's own part animations (the module's .ANI file), when the host can load them
-  const aniClips = (canAnimate && folderPath && typeof host.loadModuleAnimations === 'function')
-    ? await Promise.resolve(host.loadModuleAnimations(folderPath)).catch(() => null)
-    : null;
-
             update: (time) => {
               scene.position.x = basePos.x + interpolateKeyframes(CRANE_HOLDER_KEYFRAMES, 66.666664, time);
             }
@@ -884,6 +897,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       const centOff = componentOffsets['prod_gen_advancedelectronics']?.['anim_centrifuge'] || [110.487, 2.7689, 0.7379];
       centrifugeScene.position.set(centOff[0], centOff[1], centOff[2]);
       if (canAnimate && host.animatedParts) {
+        const centrifugeSegments = aniClips ? choosePartAnimation(aniClips.get('anim_centrifuge')) : null;
         host.animatedParts.push({
           object: centrifugeScene,
           moduleIndex: mod?.index,
@@ -899,7 +913,6 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
 
     const simonContainerParents = {
       'detail_s_simon_container_01': 'detail_xs_simon_01',
-        const centrifugeSegments = aniClips ? choosePartAnimation(aniClips.get('anim_centrifuge')) : null;
       'detail_s_simon_container_02': 'detail_xs_simon_02',
       'detail_s_simon_container_03': 'detail_xs_simon_03',
       'detail_s_simon_container_04': 'detail_xs_simon_04',

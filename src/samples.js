@@ -3,6 +3,30 @@
  */
 
 export const SAMPLES = {
+  docks: `<?xml version="1.0" encoding="UTF-8"?>
+<plans>
+  <plan id="player_1792884213" name="Docks" description="">
+    <entry index="1" macro="dockarea_arg_m_02_tradestation_01_macro">
+      <offset>
+        <position x="-6399.964" y="-149.342" z="-5081.581"/>
+      </offset>
+    </entry>
+    <entry index="2" macro="dockarea_arg_m_station_02_hightech_macro" connection="connectionsnap001">
+      <predecessor index="1" connection="connectionsnap002"/>
+      <offset>
+        <position x="-5599.964" y="-149.342" z="-5081.581"/>
+      </offset>
+    </entry>
+    <entry index="3" macro="pier_arg_harbor_04_macro" connection="con_snap_01">
+      <predecessor index="2" connection="connectionsnap002"/>
+      <offset>
+        <position x="-5399.964" y="-149.342" z="-5081.581"/>
+        <rotation yaw="179.99988"/>
+      </offset>
+    </entry>
+  </plan>
+</plans>`,
+
   refineryComplex: `<?xml version="1.0" encoding="UTF-8"?>
 <plans>
   <plan id="6E731F75-D302-42C5-B8CF-02E0BF2FBC43_1754199066" name="Methane Miner" description="Methane mining station">

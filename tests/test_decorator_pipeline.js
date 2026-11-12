@@ -390,6 +390,9 @@ globalThis.document = {
         this.children.push(child);
         if (child.id) mockElements.set(child.id, child);
       },
+      setAttribute(attr, val) {
+        this[attr] = val;
+      },
       addEventListener() {},
       removeEventListener() {},
       contains() { return false; },

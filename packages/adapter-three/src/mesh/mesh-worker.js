@@ -80,13 +80,22 @@ async function loadAndParseMesh(binUrl, jsonUrl) {
   // Fetch binary blob & optional JSON sidecar concurrently
   const fetchBinPromise = fetch(binUrl).then(res => {
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching binary: ${binUrl}`);
+    const ct = (res.headers && res.headers.get('content-type')) || '';
+    if (ct.includes('text/html')) {
+      throw new Error(`File not found (server returned HTML document instead of .bin): ${binUrl}`);
+    }
     return res.arrayBuffer();
   });
 
   let jsonMetadata = null;
   if (jsonUrl) {
     jsonMetadata = await fetch(jsonUrl)
-      .then(res => res.ok ? res.json() : null)
+      .then(res => {
+        if (!res.ok) return null;
+        const ct = (res.headers && res.headers.get('content-type')) || '';
+        if (ct.includes('text/html')) return null;
+        return res.json();
+      })
       .catch(() => null);
   }
 
@@ -105,6 +114,9 @@ async function loadAndParseMesh(binUrl, jsonUrl) {
   const m3 = dataView.getUint8(3);
 
   if (m0 !== MAGIC_BYTES_0 || m1 !== MAGIC_BYTES_1 || m2 !== MAGIC_BYTES_2 || m3 !== MAGIC_BYTES_3) {
+    if (m0 === 0x3C) { // '<' indicates HTML page like index.html returned on 404
+      throw new Error(`File not found (server returned HTML document instead of .bin): ${binUrl}`);
+    }
     throw new Error('Invalid magic header. Expected "VKDA".');
   }
 

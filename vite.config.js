@@ -34,6 +34,48 @@ export default defineConfig({
             }
             res.statusCode = 200;
             res.end('ok');
+          } else if (req.url.startsWith('/api/blueprint')) {
+            const url = new URL(req.url, 'http://localhost');
+            const name = url.searchParams.get('name') || '';
+            const baseName = path.basename(name);
+            const withExt = baseName.toLowerCase().endsWith('.xml') ? baseName : `${baseName}.xml`;
+            const egosoftDir = 'C:/Users/Zeus/OneDrive/Documents/Egosoft/X4/47624366/constructionplan';
+            const userPath = path.join(egosoftDir, withExt);
+            const fixturePath = path.resolve(__dirname, 'tests/fixtures', withExt);
+            const relPath = path.resolve(__dirname, withExt);
+
+            let foundPath = null;
+            if (fs.existsSync(userPath)) {
+              foundPath = userPath;
+            } else if (fs.existsSync(fixturePath)) {
+              foundPath = fixturePath;
+            } else if (fs.existsSync(relPath)) {
+              foundPath = relPath;
+            }
+
+            if (foundPath) {
+              res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+              res.statusCode = 200;
+              res.end(fs.readFileSync(foundPath, 'utf8'));
+            } else {
+              res.statusCode = 404;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: `Blueprint "${name}" not found` }));
+            }
+          } else if (req.url.startsWith('/api/constructionplans') || req.url.startsWith('/api/blueprints')) {
+            const egosoftDir = 'C:/Users/Zeus/OneDrive/Documents/Egosoft/X4/47624366/constructionplan';
+            res.setHeader('Content-Type', 'application/json');
+            try {
+              let files = [];
+              if (fs.existsSync(egosoftDir)) {
+                files = fs.readdirSync(egosoftDir).filter(f => f.toLowerCase().endsWith('.xml'));
+              }
+              res.statusCode = 200;
+              res.end(JSON.stringify({ directory: egosoftDir, files }));
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: err.message, files: [] }));
+            }
           } else if (req.url.startsWith('/api/module-asset-files')) {
             // Lists the .dae component files inside a module's asset folder
             // (e.g. /assets1/structures/production/prod_gen_energycells_data)

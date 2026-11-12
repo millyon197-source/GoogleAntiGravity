@@ -4,6 +4,11 @@
  */
 export { XmlBlueprintParser, parseConstructionPlan, quaternionToEulerYXZ } from './xml-blueprint-parser.js';
 export {
+  resolveBlueprintXmlPath,
+  readBlueprintXml,
+  USER_CONSTRUCTION_PLANS_DIR
+} from './blueprint-file-resolver.js';
+export {
   XmlBlueprintExporter,
   generatePlanXML,
   detectDlcPatches,
