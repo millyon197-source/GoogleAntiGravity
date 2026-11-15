@@ -7,6 +7,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import { SNAP_POINTS_DB, getModuleSnapPoints } from '../src/snap-points-db.js';
 import DAE_HASH_TABLE from '../dae_hash_table.json' with { type: 'json' };
+import MACRO_COMPONENT_REFS from '../packages/catalog/src/macro-component-refs.json' with { type: 'json' };
 
 console.log('[*] Testing Split DLC snap points against the game component files and meshes...');
 
@@ -15,12 +16,13 @@ const partMainOffsets = JSON.parse(fs.readFileSync('src/part-main-offsets.json',
 const round2 = (n) => (Math.round(n * 100) / 100) || 0;
 
 const splitMacros = Object.keys(SNAP_POINTS_DB).filter(k => k.includes('_spl_'));
-assert.strictEqual(splitMacros.length, 26, 'all 26 Split modules with snap connections are in the table');
+assert.strictEqual(splitMacros.length, 27, 'all 27 Split modules with snap connections are in the table');
 
 let checked = 0;
 let worst = 0;
 for (const macro of splitMacros) {
-  const base = macro.replace(/_macro$/, '');
+  // A module built on another module's component (prod_spl_medicalsupplies -> prod_gen_...) uses its files
+  const base = MACRO_COMPONENT_REFS[macro.replace(/_macro$/, '')] || macro.replace(/_macro$/, '');
   const entry = entries.find(e => e.key === base);
   assert.ok(entry, `${base} is in the DAE asset index`);
   const componentFile = '.' + entry.folder_path.replace(/_data$/, '') + '.xml';
@@ -39,7 +41,8 @@ for (const macro of splitMacros) {
   }
   assert.deepStrictEqual(getModuleSnapPoints(macro), gameSnaps, `${base} snaps match its component file`);
 
-  // 2. On the part_main hull
+  // 2. On the part_main hull (Split modules with their own model; a borrowed one is checked with its owner)
+  if (base !== macro.replace(/_macro$/, '')) { checked++; continue; }
   const meta = JSON.parse(fs.readFileSync(`.${entry.folder_path}/part_main-lod0.json`, 'utf8'));
   const buf = fs.readFileSync(`.${entry.folder_path}/part_main-lod0.bin`);
   const stride = meta.vertexStrideBytes / 4;

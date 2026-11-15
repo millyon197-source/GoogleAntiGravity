@@ -5583,6 +5583,16 @@ Object.assign(SNAP_POINTS_DB, {
     { "name": "ConnectionSnap001", "pos": [0, 0, 500] },
     { "name": "ConnectionSnap002", "pos": [0, 0, -500] }
   ],
+  "prod_ter_scrap_recycler_macro": [
+    { "name": "ConnectionSnap_01", "pos": [400, 0, 0] },
+    { "name": "ConnectionSnap_02", "pos": [0, 0, 400] },
+    { "name": "ConnectionSnap_03", "pos": [-400, 0, 0] },
+    { "name": "ConnectionSnap_04", "pos": [0, 200, 0] },
+    { "name": "ConnectionSnap_05", "pos": [0, -3400, 0] }
+  ],
+  "prod_spl_medicalsupplies_macro": [
+    { "name": "ConnectionSnap001", "pos": [-200, -800, -200] }
+  ],
   "pier_ter_harbor_03_macro": [
     { "name": "ConnectionSnap001", "pos": [200, 0, 0] },
     { "name": "ConnectionSnap003", "pos": [0, 200, 0] },
