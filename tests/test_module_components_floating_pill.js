@@ -86,22 +86,11 @@ btnMinimize.addEventListener('click', (e) => {
   syncModuleComponentsFloatingPill();
 });
 
+// The Components button only opens Module Component mode; only Minimize closes it (no click-outside)
 navPillBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  floatingPill.classList.toggle('hidden');
-  syncModuleComponentsFloatingPill();
-});
-
-document.addEventListener('pointerdown', (e) => {
-  if (!floatingPill || floatingPill.classList.contains('hidden')) return;
-  if (
-    floatingPill.contains(e.target) ||
-    (navPillBtn && navPillBtn.contains(e.target)) ||
-    (e.target && (e.target.tagName === 'OPTION' || e.target.tagName === 'SELECT'))
-  ) {
-    return;
-  }
-  floatingPill.classList.add('hidden');
+  if (!floatingPill.classList.contains('hidden')) return;
+  floatingPill.classList.remove('hidden');
   syncModuleComponentsFloatingPill();
 });
 
@@ -133,14 +122,20 @@ floatingItem.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 assert.strictEqual(floatingPill.classList.contains('hidden'), false, 'Floating pill should remain visible when clicking inside floating list');
 console.log('  ✓ [PASS] Interacting inside Module Components does not change displayed visibility');
 
-// Test 2d: Clicking outside minimizes the floating pill
+// Test 2d: Only Minimize leaves Module Component mode: clicking outside or the Components button again keeps it
 const outsideEl = document.createElement('div');
 document.body.appendChild(outsideEl);
-const pointerEvent = new Event('pointerdown', { bubbles: true });
-outsideEl.dispatchEvent(pointerEvent);
-assert.strictEqual(floatingPill.classList.contains('hidden'), true, 'Floating pill should be hidden when clicking outside');
-assert.strictEqual(rightSidebar.classList.contains('components-expanded'), false, 'Right sidebar should restore other pills when clicking outside');
-console.log('  ✓ [PASS] Clicking outside correctly minimizes floating pill and restores right hand column pills');
+outsideEl.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+outsideEl.dispatchEvent(new Event('click', { bubbles: true }));
+assert.strictEqual(floatingPill.classList.contains('hidden'), false, 'Clicking outside must not minimize Module Component mode');
+navPillBtn.click();
+assert.strictEqual(floatingPill.classList.contains('hidden'), false, 'Clicking the Components button again must not minimize Module Component mode');
+assert.strictEqual(rightSidebar.classList.contains('components-expanded'), true, 'Other pills stay hidden while in Module Component mode');
+btnMinimize.click();
+assert.strictEqual(floatingPill.classList.contains('hidden'), true, 'Minimize leaves Module Component mode');
+assert.strictEqual(rightSidebar.classList.contains('components-expanded'), false, 'Minimize restores the other pills');
+navPillBtn.click();
+console.log('  ✓ [PASS] Only the Minimize button leaves Module Component mode');
 
 // 3. Check CSS rules for hiding other pills and full list display
 const css = fs.readFileSync(path.resolve(__dirname, '../src/style.css'), 'utf8');

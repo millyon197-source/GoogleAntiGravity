@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import zlib from 'zlib';
 import { fileURLToPath } from 'url';
+import { textureCandidatePaths, textureRelativePath } from './texture-sources.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -98,29 +99,26 @@ export default defineConfig({
               res.statusCode = 500;
               res.end(JSON.stringify({ error: err.message, files: [] }));
             }
-          } else if (req.url.startsWith('/textures/') || req.url.startsWith('/assets1/textures/') || req.url.startsWith('/assets/textures/')) {
-            const relUrl = req.url.replace(/^\/(?:assets1?\/)?textures\//, '').split('?')[0];
+          } else if (req.url.startsWith('/textures/') || req.url.startsWith('/assets1/textures/') || req.url.startsWith('/assets/textures/') || req.url.startsWith('/assets/assets/textures/')) {
+            // assets1/ first, then assets/ (textures/ and assets/textures/), then the Steam install;
+            // each as .dds or .gz (texture-sources.js). A .gz is decompressed into assets1/ once.
+            const relUrl = textureRelativePath(req.url);
             const localPath = path.resolve(__dirname, 'assets1/textures', relUrl);
-            const localGzPath = localPath.replace(/\.dds$/i, '.gz');
-            const gameTexturesBase = 'C:\\SteamLibrary\\steamapps\\common\\X4 Foundations\\assets\\textures';
-            const steamGzPath = path.resolve(gameTexturesBase, relUrl.replace(/\.dds$/i, '.gz'));
-
-            if (fs.existsSync(localPath)) {
-              res.setHeader('Content-Type', 'image/x-dds');
-              fs.createReadStream(localPath).pipe(res);
-              return;
-            }
-
-            const candidateGz = fs.existsSync(localGzPath) ? localGzPath : (fs.existsSync(steamGzPath) ? steamGzPath : null);
-            if (candidateGz) {
+            for (const candidate of textureCandidatePaths(req.url, __dirname)) {
+              if (!fs.existsSync(candidate.path)) continue;
+              if (!candidate.gzip) {
+                res.setHeader('Content-Type', 'image/x-dds');
+                fs.createReadStream(candidate.path).pipe(res);
+                return;
+              }
               try {
-                const decomp = zlib.gunzipSync(fs.readFileSync(candidateGz));
+                const decomp = zlib.gunzipSync(fs.readFileSync(candidate.path));
                 fs.mkdirSync(path.dirname(localPath), { recursive: true });
                 fs.writeFileSync(localPath, decomp);
                 res.setHeader('Content-Type', 'image/x-dds');
                 res.end(decomp);
                 return;
-              } catch (_) {}
+              } catch (_) { /* corrupt archive: try the next place */ }
             }
             next();
           } else {

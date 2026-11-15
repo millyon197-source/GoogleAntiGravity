@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resolveTextureForModel } from '../textures/texture-resolver.js';
+import { resolveBinaryModelTextures } from '../textures/binary-model-materials.js';
 import { getRaceGlowColor, getRaceHullColor } from '../textures/race-colors.js';
 
 /**
@@ -76,7 +76,8 @@ export function loadBinaryModel(host, binUrl, jsonUrl) {
     const isDamageArea = partBase.includes('damagearea') || partBase.includes('triggerpart');
     const isBBox = partBase.includes('geometryinvisible') || partBase.includes('bbox') || partBase.includes('collision');
     
-    const texUrls = resolveTextureForModel(binUrl);
+    // The .bin has no material names: rules on the file name, else its DAE material (host.textureLookups)
+    const texUrls = resolveBinaryModelTextures(binUrl, host.textureLookups);
     const isGlowingLight = isLightConeOrGlow || isEscalator || isDetailM || isDetailS || isAdTrim || isBillboardDisplay || (isDecal && texUrls.emissive) || partBase.includes('poslight') || partBase.includes('light') ||
                            partBase.includes('beacon') || partBase.includes('fx');
 

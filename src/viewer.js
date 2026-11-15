@@ -73,10 +73,13 @@ import {
   getDocksPerimeterSelections,
   setDocksPerimeterSelections,
   clearDocksPerimeterSelections,
-  applyDocksPerimeterPlacement
+  applyDocksPerimeterPlacement,
+  keepModulesInsidePlot
 } from './module-display-panel.js';
 import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
+import TEXTURE_LOOKUPS from './texture-lookups.json' with { type: 'json' };
 import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
+import PIER_LANE_BOXES from './pier-lane-boxes.json' with { type: 'json' };
 
 function sendLogToVSC(msg, type = 'log') {
   if (type === 'warn') {
@@ -220,6 +223,10 @@ export class StationViewer {
     this.glowingEmissiveIntensity = 2.2;
     this.textureCache = new Map();
     this.animatedTextures = [];
+    // Textures for what the resolver rules leave untextured (scripts/generate_texture_lookups.mjs)
+    this.textureLookups = TEXTURE_LOOKUPS;
+    // Pier lane volumes from the pier XML, for piers without a lane model (generate_pier_lanes.js)
+    this.pierLaneBoxes = PIER_LANE_BOXES;
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
     this.componentsToggledModuleIndex = null;
@@ -1254,6 +1261,10 @@ export class StationViewer {
    * @param {Object} planData
    */
   async loadStationPlan(planData) {
+    // A newer load supersedes this one: it stops at its next step and discards what it built, so two
+    // plans loading at once (e.g. a blueprint opened while the startup plan is still loading) never mix
+    const loadId = (this.planLoadId || 0) + 1;
+    this.planLoadId = loadId;
     this.planLoading = true;
     this.renderSkippedWhileLoading = false;
     // Part templates this plan's modules are cloned from (filled by loadModuleMesh); once the plan is in,
@@ -1262,22 +1273,52 @@ export class StationViewer {
     this.templatesInUse = templatesInUse;
     let loadSucceeded = false;
     try {
-      const result = await this.loadStationPlanContents(planData);
+      const result = await this.loadStationPlanContents(planData, loadId);
+      if (this.planLoadId !== loadId) return { superseded: true };
       if (this.templatesInUse === templatesInUse) await releaseUnusedTemplates(this, templatesInUse);
       loadSucceeded = true;
       return result;
     } finally {
-      this.planLoading = false;
-      if (this.renderSkippedWhileLoading) {
-        this.renderSkippedWhileLoading = false;
-        this.renderScene();
+      // The newer load owns the loading state from here
+      if (this.planLoadId === loadId) {
+        this.planLoading = false;
+        if (this.renderSkippedWhileLoading) {
+          this.renderSkippedWhileLoading = false;
+          this.renderScene();
+        }
+        // The station has been drawn: free the JavaScript copies of texture data already on the GPU
+        if (loadSucceeded) this.releaseUploadedTextureData();
       }
-      // The station has been drawn: free the JavaScript copies of texture data already on the GPU
-      if (loadSucceeded) this.releaseUploadedTextureData();
     }
   }
 
-  async loadStationPlanContents(planData) {
+  /** Whether the plan load with this id has been superseded by a newer one. */
+  isPlanLoadSuperseded(loadId) {
+    return loadId !== undefined && this.planLoadId !== loadId;
+  }
+
+  /**
+   * Throws away a module group a superseded load built but never placed: its animation entries and
+   * its geometry.
+   */
+  discardUnplacedModuleGroup(group) {
+    if (!group) return;
+    const objects = new Set();
+    const textures = new Set();
+    group.traverse(child => {
+      objects.add(child);
+      const mats = Array.isArray(child.material) ? child.material : (child.material ? [child.material] : []);
+      for (const mat of mats) {
+        for (const value of Object.values(mat)) if (value && value.isTexture) textures.add(value);
+      }
+    });
+    if (this.animatedParts?.length) this.animatedParts = this.animatedParts.filter(p => !objects.has(p.object));
+    if (this.animatedTextures?.length) this.animatedTextures = this.animatedTextures.filter(t => !textures.has(t.texture));
+    if (group.parent) group.parent.remove(group);
+    disposeModuleGeometry(group);
+  }
+
+  async loadStationPlanContents(planData, loadId) {
     this.clear();
     this.currentPlan = planData;
     this.hiddenMacros.clear();
@@ -1332,6 +1373,13 @@ export class StationViewer {
       pending.catch(() => {}); // awaited (and any error raised) when its turn comes
       meshLoads.set(i, pending);
     };
+    // Superseded: drop the modules still loading ahead, and stop
+    const abandon = () => {
+      for (const pending of meshLoads.values()) {
+        pending.then(group => this.discardUnplacedModuleGroup(group), () => {});
+      }
+      meshLoads.clear();
+    };
 
     for (let moduleIndex = 0; moduleIndex < sortedModules.length; moduleIndex++) {
       const mod = sortedModules[moduleIndex];
@@ -1349,6 +1397,11 @@ export class StationViewer {
 
       let moduleGroup = await meshLoads.get(moduleIndex);
       meshLoads.delete(moduleIndex);
+      if (this.isPlanLoadSuperseded(loadId)) {
+        this.discardUnplacedModuleGroup(moduleGroup);
+        abandon();
+        return;
+      }
       let isDae = false;
       if (!moduleGroup) {
         // Without the game assets every module is a placeholder; the missing-assets pop-up explains that once
@@ -1409,6 +1462,11 @@ export class StationViewer {
         }
       });
       await this.precompileShaders(moduleGroup);
+      if (this.isPlanLoadSuperseded(loadId)) {
+        this.discardUnplacedModuleGroup(moduleGroup);
+        abandon();
+        return;
+      }
       this.modulesGroup.add(moduleGroup);
       this.buildModuleSnapPoints(moduleGroup, mod.macro);
 
@@ -1441,6 +1499,7 @@ export class StationViewer {
         this.renderHeld = false;
       }
     }
+    if (this.isPlanLoadSuperseded(loadId)) return;
 
     // Increase visual depth to maximum depth (far clipping plane) to avoid clipping large station plans
     this.camera.far = 1000000;
@@ -1615,11 +1674,38 @@ export class StationViewer {
     return true;
   }
 
+  /**
+   * Module Component mode shows only its module: every other module is hidden, remembering whether
+   * each was visible so leaving the mode restores the station exactly as it was.
+   * @param {number} index the module the mode shows
+   */
+  isolateModuleForComponents(index) {
+    if (!this.modulesGroup) return;
+    if (!this.componentsIsolation) this.componentsIsolation = new Map();
+    for (const mod of this.modulesGroup.children) {
+      if (!this.componentsIsolation.has(mod)) this.componentsIsolation.set(mod, mod.visible);
+      mod.visible = mod.userData?.index === index;
+    }
+    if (typeof this.renderScene === 'function') this.renderScene();
+  }
+
+  /** Puts back the module visibility Module Component mode changed. */
+  restoreComponentsIsolation() {
+    if (!this.componentsIsolation) return;
+    for (const [mod, wasVisible] of this.componentsIsolation) {
+      if (mod.parent) mod.visible = wasVisible;
+    }
+    this.componentsIsolation = null;
+    if (typeof this.updatePlotBoxViolations === 'function') this.updatePlotBoxViolations();
+    if (typeof this.renderScene === 'function') this.renderScene();
+  }
+
   async setModuleComponentsToggled(index, toggled) {
     if (toggled) {
       if (this.componentsToggledModuleIndex === index) return;
       const prev = this.componentsToggledModuleIndex;
       this.componentsToggledModuleIndex = index;
+      this.isolateModuleForComponents(index);
       if (prev !== null && prev !== undefined && prev !== index) {
         if (this.animatedParts && this.animatedParts.length > 0) {
           this.animatedParts = this.animatedParts.filter(p => p.moduleIndex !== prev);
@@ -1644,6 +1730,7 @@ export class StationViewer {
       if (this.componentsToggledModuleIndex !== index && index !== null && index !== undefined) return;
       const prevIndex = index ?? this.componentsToggledModuleIndex;
       this.componentsToggledModuleIndex = null;
+      this.restoreComponentsIsolation();
       if (prevIndex !== null && prevIndex !== undefined) {
         if (this.animatedParts && this.animatedParts.length > 0) {
           this.animatedParts = this.animatedParts.filter(p => p.moduleIndex !== prevIndex);
@@ -1821,6 +1908,8 @@ export class StationViewer {
     // Clear selection
     this.deselect();
     this.clearFilterHighlights();
+    // The modules Module Component mode hid are going with the plan
+    this.componentsIsolation = null;
 
     // Remove all modules
     while (this.modulesGroup.children.length > 0) {
@@ -3596,6 +3685,15 @@ export class StationViewer {
       }
     });
 
+    // In Module Component mode the visibility just worked out is what leaving the mode restores;
+    // until then only the mode's module shows
+    if (this.componentsIsolation && this.componentsToggledModuleIndex !== null && this.componentsToggledModuleIndex !== undefined) {
+      for (const child of this.modulesGroup.children) {
+        this.componentsIsolation.set(child, child.visible);
+        child.visible = child.userData?.index === this.componentsToggledModuleIndex;
+      }
+    }
+
     // Update selection helper position in case it was on a hidden module
     if (this.selectionHelper) {
       this.selectionHelper.update();
@@ -3990,6 +4088,11 @@ export class StationViewer {
 
     // Only respond to primary (left) mouse clicks for module selection/deselection
     if (event.button !== 0) {
+      return;
+    }
+
+    // Module Component mode: left-clicks leave the selection and its BB displays as they are
+    if (this.componentsToggledModuleIndex !== null && this.componentsToggledModuleIndex !== undefined) {
       return;
     }
 
@@ -5591,6 +5694,12 @@ export class StationViewer {
     // When Layers order or behavior changes, re-apply active layout to place modules in updated Layers category order
     if (this.lastLayoutArgs) {
       this.applyLayoutBehavior(this.lastLayoutArgs.key, this.lastLayoutArgs.name, this.lastLayoutArgs.activeEntries);
+      // A layout (not plain Blueprint, which clears lastLayoutArgs) relocated the modules: keep each
+      // one's own BB, lanes excluded, inside the plot
+      if (this.lastLayoutArgs) {
+        keepModulesInsidePlot(modules, getPlotBoundingBox(this.currentPlotConfig || getCurrentPlotConfig()), this);
+        this.updatePlotBoxViolations();
+      }
     } else if (isDocks1Present() && (!isBlueprintModeActive() || isDocksVerticalAppliedToCurrentPlan())) {
       const perimeterSelections = getDocksPerimeterSelections();
       if (perimeterSelections.size > 0) {

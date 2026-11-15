@@ -1,0 +1,506 @@
+{
+ "pier_arg_harbor_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1600,
+    0,
+    0
+   ],
+   "halfSize": [
+    2200,
+    1000,
+    3800
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_arg_harbor_02": [
+  {
+   "part": "bounding_box",
+   "center": [
+    3000,
+    0,
+    0
+   ],
+   "halfSize": [
+    3000,
+    1000,
+    1000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_arg_harbor_03": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1300,
+    0,
+    0
+   ],
+   "halfSize": [
+    1500,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_arg_harbor_04": [
+  {
+   "part": "geometryinvisible",
+   "center": [
+    2000,
+    0,
+    0
+   ],
+   "halfSize": [
+    2000,
+    1000,
+    1000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_arg_single_01_tradestation_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    0,
+    0,
+    1700
+   ],
+   "halfSize": [
+    1000,
+    1000,
+    2100
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_bor_harbor_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    -1700,
+    0,
+    0
+   ],
+   "halfSize": [
+    2300,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_bor_harbor_02": [
+  {
+   "part": "bounding_box",
+   "center": [
+    -2900,
+    0,
+    0
+   ],
+   "halfSize": [
+    3100,
+    1000,
+    1000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_bor_harbor_03": [
+  {
+   "part": "bounding_box",
+   "center": [
+    -2400,
+    0,
+    0
+   ],
+   "halfSize": [
+    2600,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_bor_harbor_04": [
+  {
+   "part": "bounding_box",
+   "center": [
+    0,
+    2000,
+    0
+   ],
+   "halfSize": [
+    4000,
+    2000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_par_harbor_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1600,
+    0,
+    0
+   ],
+   "halfSize": [
+    2200,
+    1000,
+    3800
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_par_harbor_02": [
+  {
+   "part": "bounding_box",
+   "center": [
+    3000,
+    0,
+    0
+   ],
+   "halfSize": [
+    3000,
+    1000,
+    1000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_par_harbor_03": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1300,
+    0,
+    0
+   ],
+   "halfSize": [
+    1500,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_spl_harbor_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1000,
+    0,
+    0
+   ],
+   "halfSize": [
+    3000,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_spl_harbor_02": [
+  {
+   "part": "bounding_box",
+   "center": [
+    2900,
+    0,
+    0
+   ],
+   "halfSize": [
+    3100,
+    1000,
+    1200
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_spl_harbor_03": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1300,
+    0,
+    0
+   ],
+   "halfSize": [
+    1500,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_tel_harbor_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1600,
+    0,
+    0
+   ],
+   "halfSize": [
+    2200,
+    1000,
+    3800
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_tel_harbor_02": [
+  {
+   "part": "bounding_box",
+   "center": [
+    3000,
+    0,
+    0
+   ],
+   "halfSize": [
+    3000,
+    1000,
+    1000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_tel_harbor_03": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1300,
+    0,
+    0
+   ],
+   "halfSize": [
+    1500,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_ter_harbor_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1600,
+    0,
+    0
+   ],
+   "halfSize": [
+    2200,
+    1000,
+    3800
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_ter_harbor_02": [
+  {
+   "part": "bounding_box",
+   "center": [
+    2900,
+    0,
+    0
+   ],
+   "halfSize": [
+    3100,
+    1000,
+    1200
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_ter_harbor_03": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1300,
+    0,
+    0
+   ],
+   "halfSize": [
+    1500,
+    1000,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_ter_harbor_04": [
+  {
+   "part": "bounding_box",
+   "center": [
+    0,
+    2000.69,
+    0
+   ],
+   "halfSize": [
+    4000,
+    1999.31,
+    4000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_ter_harbor_05": [
+  {
+   "part": "bounding_box",
+   "center": [
+    1700,
+    0,
+    0
+   ],
+   "halfSize": [
+    1900,
+    1000,
+    1200
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "pier_ter_tradestation_01": [
+  {
+   "part": "bounding_box",
+   "center": [
+    0,
+    0,
+    0
+   ],
+   "halfSize": [
+    4000,
+    1000,
+    5000
+   ],
+   "quaternion": [
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ]
+}

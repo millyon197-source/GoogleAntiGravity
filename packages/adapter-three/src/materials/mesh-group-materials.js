@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resolveTextureForModel } from '../textures/texture-resolver.js';
+import { resolveTexturesWithLookups } from '../textures/binary-model-materials.js';
 import { getRaceGlowColor, getRaceHullColor } from '../textures/race-colors.js';
 import { loadPartUvAnimations } from './uv-animations.js';
 
@@ -91,7 +91,8 @@ export async function applyTexturesToMeshGroup(host, group, url, moduleIndex) {
         promises.push((async () => {
           const rawMatName = mat ? (mat.name || '') : '';
           const matName = (rawMatName && rawMatName !== 'theresonlyone') ? rawMatName : (child.name || '');
-          const texUrls = resolveTextureForModel(url, matName);
+          // Resolver rules, else textures named after the material (host.textureLookups)
+          const texUrls = resolveTexturesWithLookups(url, matName, host.textureLookups);
           if (texUrls.diffuse) {
             const [diffuseTex, normalTex, roughnessTex, metalnessTex, emissiveTex] = await Promise.all([
               host.loadDdsTexture(texUrls.diffuse),

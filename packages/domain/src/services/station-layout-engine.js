@@ -89,6 +89,10 @@ export class StationLayoutEngine {
       return { x: 100, y: 100, z: 100 };
     });
 
+    // Modules the caller has placed deliberately (e.g. stacked docks): never moved or clamped here;
+    // the other module of an overlapping pair gives way
+    const isFixed = typeof options.isFixed === 'function' ? options.isFixed : () => false;
+
     const getPos = (m) => {
       if (m.position && typeof m.position.x === 'number') return m.position;
       if (typeof m.x === 'number') return m;
@@ -120,6 +124,9 @@ export class StationLayoutEngine {
           const halfYB = (sizeB.y || 100) / 2;
           const halfZB = (sizeB.z || 100) / 2;
 
+          const fixedA = !!isFixed(modA);
+          const fixedB = !!isFixed(modB);
+          if (fixedA && fixedB) continue;
           if (StationLayoutEngine.doBoxesOverlap(posA, sizeA, posB, sizeB, gap)) {
             hadOverlapInPass = true;
             totalResolved++;
@@ -136,12 +143,12 @@ export class StationLayoutEngine {
 
             // Try 1: Separate along X
             const targetXB = posB.x + signX * dx;
-            if (targetXB + halfXB <= maxX && targetXB - halfXB >= minX) {
+            if (!fixedB && targetXB + halfXB <= maxX && targetXB - halfXB >= minX) {
               posB.x = targetXB;
               resolved = true;
             } else {
               const targetXA = posA.x - signX * dx;
-              if (targetXA + halfXA <= maxX && targetXA - halfXA >= minX) {
+              if (!fixedA && targetXA + halfXA <= maxX && targetXA - halfXA >= minX) {
                 posA.x = targetXA;
                 resolved = true;
               }
@@ -150,12 +157,12 @@ export class StationLayoutEngine {
             // Try 2: If X cannot accommodate without exceeding plot, separate along Z
             if (!resolved) {
               const targetZB = posB.z + signZ * dz;
-              if (targetZB + halfZB <= maxZ && targetZB - halfZB >= minZ) {
+              if (!fixedB && targetZB + halfZB <= maxZ && targetZB - halfZB >= minZ) {
                 posB.z = targetZB;
                 resolved = true;
               } else {
                 const targetZA = posA.z - signZ * dz;
-                if (targetZA + halfZA <= maxZ && targetZA - halfZA >= minZ) {
+                if (!fixedA && targetZA + halfZA <= maxZ && targetZA - halfZA >= minZ) {
                   posA.z = targetZA;
                   resolved = true;
                 }
@@ -165,12 +172,12 @@ export class StationLayoutEngine {
             // Try 3: If Z cannot accommodate, separate along Y (new layer)
             if (!resolved) {
               const targetYB = posB.y + (signY || 1) * dy;
-              if (targetYB + halfYB <= maxY && targetYB - halfYB >= minY) {
+              if (!fixedB && targetYB + halfYB <= maxY && targetYB - halfYB >= minY) {
                 posB.y = targetYB;
                 resolved = true;
               } else {
                 const targetYA = posA.y - (signY || 1) * dy;
-                if (targetYA + halfYA <= maxY && targetYA - halfYA >= minY) {
+                if (!fixedA && targetYA + halfYA <= maxY && targetYA - halfYA >= minY) {
                   posA.y = targetYA;
                   resolved = true;
                 }
@@ -179,15 +186,17 @@ export class StationLayoutEngine {
 
             // Try 4: Fallback shift along Y (downward if near top, upward if near bottom)
             if (!resolved) {
-              if (posB.y + halfYB >= maxY - 1) {
-                posB.y = Math.max(minY + halfYB, posB.y - dy);
+              // Fallback moves B, or A when B is fixed
+              const [pos, half] = fixedB ? [posA, halfYA] : [posB, halfYB];
+              if (pos.y + half >= maxY - 1) {
+                pos.y = Math.max(minY + half, pos.y - dy);
               } else {
-                posB.y = Math.min(maxY - halfYB, posB.y + dy);
+                pos.y = Math.min(maxY - half, pos.y + dy);
               }
             }
 
-            StationLayoutEngine.clampModulePositionToPlot(posA, sizeA, bounds);
-            StationLayoutEngine.clampModulePositionToPlot(posB, sizeB, bounds);
+            if (!fixedA) StationLayoutEngine.clampModulePositionToPlot(posA, sizeA, bounds);
+            if (!fixedB) StationLayoutEngine.clampModulePositionToPlot(posB, sizeB, bounds);
 
             if (options.applyToObjects) {
               const targetA = modA.module || modA;
@@ -207,6 +216,7 @@ export class StationLayoutEngine {
     // Final pass: ensure every module's bounding box is strictly clamped within the plot bounds
     for (let i = 0; i < modules.length; i++) {
       const mod = modules[i];
+      if (isFixed(mod)) continue;
       const pos = getPos(mod);
       const size = getSize(mod);
       StationLayoutEngine.clampModulePositionToPlot(pos, size, bounds);

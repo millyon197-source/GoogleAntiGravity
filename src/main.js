@@ -303,6 +303,8 @@ async function loadPlanFromXml(xmlText, sourceSampleKey = null) {
   try {
     // Load into 3D viewer (await async mesh loading)
     await viewer.loadStationPlan(planData);
+    // Another plan was opened while this one loaded: that load owns the scene and panels now
+    if (currentPlan !== planData) return;
 
     // Apply any restored excluded macros to hide them in 3D
     if (excludedMacros.size > 0) {
@@ -1116,8 +1118,14 @@ async function renderModuleComponentsDropdown(index) {
 
   if (!folderPath || components.length === 0) {
     if (section) section.classList.add('hidden');
-    if (floatingPill) floatingPill.classList.add('hidden');
     if (navPillBtn) navPillBtn.classList.add('hidden');
+    // Module Component mode stays open (only Minimize leaves it), showing that this module has none
+    if (isModuleComponentsModeOpen()) {
+      if (floatingFolderEl) floatingFolderEl.textContent = 'No components for this module';
+      if (floatingCountEl) floatingCountEl.textContent = '0/0';
+      return;
+    }
+    if (floatingPill) floatingPill.classList.add('hidden');
     if (dropdown) dropdown.open = false;
     return;
   }
@@ -1301,7 +1309,36 @@ async function renderModuleComponentsDropdown(index) {
   }
 }
 
+/** Whether Module Component mode (the floating Module Components pill) is open. */
+function isModuleComponentsModeOpen() {
+  const pill = document.getElementById('module-components-floating-pill');
+  const dropdown = document.getElementById('det-components-dropdown');
+  return !!((pill && !pill.classList.contains('hidden')) || (dropdown && dropdown.open));
+}
+
+/**
+ * Leaves Module Component mode and returns to the previous viewer. Only the pill's Minimize button
+ * does this; a plan being cleared or replaced also ends it, since its module is gone.
+ */
+function closeModuleComponentsMode() {
+  const pill = document.getElementById('module-components-floating-pill');
+  const dropdown = document.getElementById('det-components-dropdown');
+  if (dropdown) dropdown.open = false;
+  if (pill) pill.classList.add('hidden');
+  const searchCard = document.querySelector('.search-card');
+  if (searchCard) searchCard.classList.remove('has-floating-pill');
+  const rightSidebar = document.getElementById('right-sidebar');
+  if (rightSidebar) rightSidebar.classList.remove('components-expanded');
+  if (viewer && typeof viewer.setModuleComponentsToggled === 'function') {
+    viewer.setModuleComponentsToggled(null, false);
+  }
+}
+
 function selectModule(index, focusCamera = false) {
+  // In Module Component mode the module stays selected (Escape, closing the details card, macro
+  // cycling...): only the Minimize button leaves the mode. Selecting another module is allowed.
+  if ((index === null || index === undefined) && isModuleComponentsModeOpen()) return;
+
   // Deselect previous
   if (selectedIndex !== null) {
     const prevRow = document.getElementById(`mod-row-${selectedIndex}`);
@@ -2032,41 +2069,23 @@ function setupEventListeners() {
   if (btnMinimizeCompPill) {
     btnMinimizeCompPill.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (compDropdown) compDropdown.open = false;
-      compFloatingPill.classList.add('hidden');
-      syncModuleComponentsFloatingPill();
+      closeModuleComponentsMode();
     });
   }
 
   if (compNavPillBtn) {
     compNavPillBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      // Opens Module Component mode; only the Minimize button closes it
+      if (isModuleComponentsModeOpen()) return;
       if (compDropdown) {
-        compDropdown.open = !compDropdown.open;
+        compDropdown.open = true;
       } else {
-        compFloatingPill.classList.toggle('hidden');
+        compFloatingPill.classList.remove('hidden');
       }
       syncModuleComponentsFloatingPill();
     });
   }
-
-  // Clicking outside the floating pill minimizes it
-  document.addEventListener('pointerdown', (e) => {
-    if (!compFloatingPill || compFloatingPill.classList.contains('hidden')) return;
-    const section = document.getElementById('det-components-section');
-    if (
-      compFloatingPill.contains(e.target) ||
-      (compNavPillBtn && compNavPillBtn.contains(e.target)) ||
-      (compDropdown && compDropdown.contains(e.target)) ||
-      (section && section.contains(e.target)) ||
-      (e.target && (e.target.tagName === 'OPTION' || e.target.tagName === 'SELECT'))
-    ) {
-      return;
-    }
-    if (compDropdown) compDropdown.open = false;
-    compFloatingPill.classList.add('hidden');
-    syncModuleComponentsFloatingPill();
-  });
 
   // 7. Clickable stats boxes
   const statBoxes = document.querySelectorAll('.category-select-btn');
@@ -2232,6 +2251,9 @@ function clearAllPanels(silent = false) {
     modules: [],
     connections: []
   };
+
+  // The plan and its modules are going: Module Component mode ends with them
+  closeModuleComponentsMode();
 
   currentPlan = null;
   selectedIndex = null;

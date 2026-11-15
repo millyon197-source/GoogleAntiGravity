@@ -6,6 +6,7 @@ import {
   getModuleCategory
 } from '@x4/catalog';
 import { PlotBounds, StationLayoutEngine } from '@x4/domain';
+import PIER_LANE_DIRECTIONS from './pier-lane-directions.json' with { type: 'json' };
 
 const STORAGE_KEY = 'x4_module_display_panel_config';
 const PLOT_STORAGE_KEY = 'x4_layout_plot_config';
@@ -1965,6 +1966,400 @@ export function ensureNoDocksInvisibleOverlap(dockModules, plotBounds, viewer = 
   }
 }
 
+const LANE_FACTIONS = ['_arg_', '_par_', '_tel_', '_spl_', '_ter_', '_bor_'];
+
+/**
+ * Horizontal lane direction of a pier in X4 component space ({x, z}, unit), or null when the pier
+ * has none (hubs with bays all around). Data: src/pier-lane-directions.json (generate_pier_lanes.js).
+ * @param {string} macro
+ */
+export function getPierLaneDirection(macro) {
+  const key = String(macro || '').toLowerCase().trim().replace(/_macro$/, '');
+  if (!key.startsWith('pier_')) return null;
+  if (key in PIER_LANE_DIRECTIONS) return PIER_LANE_DIRECTIONS[key];
+  // Same pier shape under another faction's name
+  for (const fac of LANE_FACTIONS) {
+    if (!key.includes(fac)) continue;
+    for (const alt of LANE_FACTIONS) {
+      const altKey = key.replace(fac, alt);
+      if (alt !== fac && altKey in PIER_LANE_DIRECTIONS) return PIER_LANE_DIRECTIONS[altKey];
+    }
+  }
+  return null;
+}
+
+function rotateVectorByQuaternion(v, q) {
+  // v' = q v q^-1, expanded
+  const ix = q.w * v.x + q.y * v.z - q.z * v.y;
+  const iy = q.w * v.y + q.z * v.x - q.x * v.z;
+  const iz = q.w * v.z + q.x * v.y - q.y * v.x;
+  const iw = -q.x * v.x - q.y * v.y - q.z * v.z;
+  return {
+    x: ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y,
+    y: iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z,
+    z: iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x
+  };
+}
+
+/**
+ * Horizontal scene (three.js) direction a placed pier's lanes run, or null.
+ * @param {object} mod pier module group
+ */
+export function getPierLaneWorldDirection(mod) {
+  const lane = getPierLaneDirection(mod?.userData?.macro || mod?.macro);
+  if (!lane) return null;
+  // X4 component space -> module mesh space mirrors X (same mirror as the component offsets)
+  const local = { x: -lane.x, y: 0, z: lane.z };
+  const q = mod.quaternion;
+  const v = q ? rotateVectorByQuaternion(local, q) : local;
+  const len = Math.hypot(v.x, v.z);
+  // A pier pitched or rolled onto its side has no horizontal lane to turn
+  if (len < 0.2) return null;
+  return { x: v.x / len, z: v.z / len };
+}
+
+/**
+ * Outward normal ({x, z}) of the plot wall nearest a scene position.
+ */
+export function nearestPlotWallNormal(pos, plotBounds) {
+  const walls = [
+    { d: plotBounds.maxX - pos.x, n: { x: 1, z: 0 } },
+    { d: pos.x - plotBounds.minX, n: { x: -1, z: 0 } },
+    { d: plotBounds.maxZ - pos.z, n: { x: 0, z: 1 } },
+    { d: pos.z - plotBounds.minZ, n: { x: 0, z: -1 } }
+  ];
+  return walls.reduce((best, w) => (w.d < best.d - 1e-6 ? w : best)).n;
+}
+
+/**
+ * Yaw every pier so its docking lanes point out of the plot bounding box, through the plot wall
+ * nearest the pier, and record the new rotation in the plan.
+ * @param {Array<object>} modules module groups (non-piers are ignored)
+ * @param {object} plotBounds
+ * @param {object} [viewer]
+ * @param {(mod: object) => ({x: number, z: number}|null)} [wallNormalFor] the wall a module's lanes
+ *   must go through when it has been assigned one; otherwise the plot wall nearest it
+ * @returns {number} how many piers were turned
+ */
+export function orientPierLanesOutward(modules, plotBounds, viewer = null, wallNormalFor = null) {
+  let turned = 0;
+  (modules || []).forEach(mod => {
+    if (!mod || mod.visible === false || !isPierModule(mod)) return;
+    const dir = getPierLaneWorldDirection(mod);
+    if (!dir) return;
+    const out = (wallNormalFor && wallNormalFor(mod)) || nearestPlotWallNormal(mod.position || { x: 0, z: 0 }, plotBounds);
+    // Rotation about +Y by theta takes the vector at angle atan2(x, z) to angle + theta
+    let theta = Math.atan2(out.x, out.z) - Math.atan2(dir.x, dir.z);
+    theta = Math.atan2(Math.sin(theta), Math.cos(theta));
+    if (Math.abs(theta) < 1e-4) return;
+
+    if (typeof mod.rotateOnWorldAxis === 'function' && mod.up?.constructor) {
+      const yAxis = new mod.up.constructor(0, 1, 0);
+      mod.rotateOnWorldAxis(yAxis, theta);
+    } else if (mod.rotation) {
+      mod.rotation.y = (mod.rotation.y || 0) + theta;
+    }
+    if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+    turned++;
+
+    const index = mod.userData?.index;
+    const planMod = viewer?.currentPlan?.modules?.find(m => m.index === index);
+    const rot = (planMod && typeof viewer.getModuleCalculatedRotation === 'function')
+      ? viewer.getModuleCalculatedRotation(index, { decimals: 3 })
+      : null;
+    if (planMod && rot) {
+      planMod.rotation = { ...(planMod.rotation || {}), yaw: rot.yaw, pitch: rot.pitch, roll: rot.roll };
+    }
+  });
+  return turned;
+}
+
+/** World box of a module as rendered (lanes excluded), or its catalog size around its position. */
+function moduleWorldBox(mod, viewer) {
+  if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+  const b = typeof viewer?.getModuleWorldBoundingBox === 'function' ? viewer.getModuleWorldBoundingBox(mod) : null;
+  if (b && !(typeof b.isEmpty === 'function' && b.isEmpty())) {
+    return { min: { x: b.min.x, y: b.min.y, z: b.min.z }, max: { x: b.max.x, y: b.max.y, z: b.max.z } };
+  }
+  const s = (viewer?.getModuleInitialSize ? viewer.getModuleInitialSize(mod) : null) || defaultModuleSize(mod) || { x: 100, y: 100, z: 100 };
+  const p = mod.position || { x: 0, y: 0, z: 0 };
+  return {
+    min: { x: p.x - s.x / 2, y: p.y - s.y / 2, z: p.z - s.z / 2 },
+    max: { x: p.x + s.x / 2, y: p.y + s.y / 2, z: p.z + s.z / 2 }
+  };
+}
+
+function translateModule(mod, dx, dy, dz) {
+  if (!mod.position) return;
+  if (typeof mod.position.set === 'function') mod.position.set(mod.position.x + dx, mod.position.y + dy, mod.position.z + dz);
+  else { mod.position.x += dx; mod.position.y += dy; mod.position.z += dz; }
+  if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+}
+
+/**
+ * Perimeter placement for dock types the station has more than one of (e.g. four
+ * pier_arg_harbor_01): each type goes to the smallest plot wall that still has room for it, its
+ * modules stacked vertically on that wall, each separated from the next by its own BB height plus
+ * `gap`. Piers' lanes point out through that wall. Stacks start at the top, bottom or middle of the
+ * plot per the docks vertical orientation; a type taller than the plot continues in further columns
+ * along the wall. Types sharing a wall sit side by side, centred along it.
+ *
+ * Boxes are the modules as rendered (lane and invisible clearance volumes excluded).
+ * @param {Array<object>} dockModules
+ * @param {object} plotBounds getPlotBoundingBox result
+ * @param {object} [viewer]
+ * @param {{ orient?: 'top'|'center'|'bottom', gap?: number }} [options]
+ * @returns {Set<object>} the modules placed in stacks
+ */
+export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, { orient = 'top', gap = 15 } = {}) {
+  const stacked = new Set();
+  const byMacro = new Map();
+  for (const mod of dockModules || []) {
+    if (!mod || mod.visible === false) continue;
+    const macro = String(mod.userData?.macro || mod.macro || '').toLowerCase();
+    if (!macro) continue;
+    if (!byMacro.has(macro)) byMacro.set(macro, []);
+    byMacro.get(macro).push(mod);
+  }
+  const groups = [...byMacro.values()].filter(g => g.length > 1);
+  if (groups.length === 0) return stacked;
+
+  const pb = plotBounds;
+  const centerY = pb.centerY !== undefined ? pb.centerY : (pb.minY + pb.maxY) / 2;
+  const plotHeight = pb.maxY - pb.minY;
+  // Smallest wall first; a tie keeps this order
+  const walls = [
+    { normal: { x: 1, z: 0 }, along: 'z', length: pb.maxZ - pb.minZ },
+    { normal: { x: -1, z: 0 }, along: 'z', length: pb.maxZ - pb.minZ },
+    { normal: { x: 0, z: 1 }, along: 'x', length: pb.maxX - pb.minX },
+    { normal: { x: 0, z: -1 }, along: 'x', length: pb.maxX - pb.minX }
+  ].map((w, i) => ({ ...w, order: i, used: 0, columns: [] }))
+    .sort((a, b) => a.length - b.length || a.order - b.order);
+
+  // Put a module against a wall at its middle, lanes out through it, and measure it there
+  const presentToWall = (mod, wall) => {
+    if (mod.position) {
+      const x = wall.along === 'x' ? pb.centerX : (wall.normal.x > 0 ? pb.maxX : pb.minX);
+      const z = wall.along === 'z' ? pb.centerZ : (wall.normal.z > 0 ? pb.maxZ : pb.minZ);
+      translateModule(mod, x - mod.position.x, 0, z - mod.position.z);
+    }
+    orientPierLanesOutward([mod], pb, viewer, () => wall.normal);
+    const b = moduleWorldBox(mod, viewer);
+    return { along: wall.along === 'x' ? b.max.x - b.min.x : b.max.z - b.min.z, height: b.max.y - b.min.y };
+  };
+
+  // A stack is one shape repeated: every module of a type gets the same level rotation (the first
+  // one's heading, no pitch or roll), so piers' lanes are horizontal and can face the wall
+  for (const group of groups) {
+    const q = group[0].quaternion;
+    if (!q || !group[0].rotation || typeof group[0].rotation.set !== 'function') continue;
+    const xAxis = rotateVectorByQuaternion({ x: 1, y: 0, z: 0 }, q);
+    const heading = Math.hypot(xAxis.x, xAxis.z) > 1e-6 ? Math.atan2(-xAxis.z, xAxis.x) : 0;
+    for (const mod of group) {
+      mod.rotation.set(0, heading, 0);
+      if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+    }
+  }
+
+  // Largest footprint first, so the big types get the walls they fit on
+  const footprint = (g) => { const b = moduleWorldBox(g[0], viewer); return Math.max(b.max.x - b.min.x, b.max.z - b.min.z); };
+  groups.sort((a, b) => footprint(b) - footprint(a));
+
+  for (const group of groups) {
+    let chosen = null;
+    for (const wall of walls) {
+      const sizes = group.map(m => presentToWall(m, wall));
+      const along = Math.max(...sizes.map(s => s.along));
+      const height = Math.max(...sizes.map(s => s.height));
+      const perColumn = Math.max(1, Math.floor((plotHeight + gap) / (height + gap)));
+      const columnCount = Math.ceil(group.length / perColumn);
+      const need = columnCount * along + (columnCount - 1) * gap + (wall.used > 0 ? gap : 0);
+      if (wall.used + need <= wall.length + 1e-6) {
+        chosen = { wall, along, perColumn, need };
+        break;
+      }
+    }
+    if (!chosen) {
+      // Fits on no wall: the longest one, overflowing it (keepModulesInsidePlot pulls it back in)
+      const wall = walls[walls.length - 1];
+      const sizes = group.map(m => presentToWall(m, wall));
+      const along = Math.max(...sizes.map(s => s.along));
+      const height = Math.max(...sizes.map(s => s.height));
+      const perColumn = Math.max(1, Math.floor((plotHeight + gap) / (height + gap)));
+      const columnCount = Math.ceil(group.length / perColumn);
+      chosen = { wall, along, perColumn, need: columnCount * along + (columnCount - 1) * gap + (wall.used > 0 ? gap : 0) };
+    } else {
+      // The last wall tried was not necessarily this one: face the modules to the chosen wall
+      group.forEach(m => presentToWall(m, chosen.wall));
+    }
+    const { wall, along, perColumn } = chosen;
+    for (let i = 0; i < group.length; i += perColumn) wall.columns.push({ mods: group.slice(i, i + perColumn), along });
+    wall.used += chosen.need;
+    group.forEach(m => stacked.add(m));
+  }
+
+  // Lay each wall's columns out side by side, centred along the wall, stacked vertically
+  for (const wall of walls) {
+    if (wall.columns.length === 0) continue;
+    const wallMid = wall.along === 'x' ? pb.centerX : pb.centerZ;
+    let cursor = wallMid - wall.used / 2;
+    for (const column of wall.columns) {
+      const heights = column.mods.map(m => { const b = moduleWorldBox(m, viewer); return b.max.y - b.min.y; });
+      const stackHeight = heights.reduce((a, h) => a + h, 0) + gap * (column.mods.length - 1);
+      // Bottom of the first module, then upwards (top: downwards from the plot top)
+      let y = orient === 'bottom' ? pb.minY : (orient === 'center' ? centerY - stackHeight / 2 : pb.maxY);
+      column.mods.forEach((mod, k) => {
+        const b = moduleWorldBox(mod, viewer);
+        // Outer face on the wall, start of the box at the column's place along the wall
+        let dx = 0, dz = 0;
+        if (wall.along === 'z') {
+          dx = wall.normal.x > 0 ? pb.maxX - b.max.x : pb.minX - b.min.x;
+          dz = cursor - b.min.z;
+        } else {
+          dz = wall.normal.z > 0 ? pb.maxZ - b.max.z : pb.minZ - b.min.z;
+          dx = cursor - b.min.x;
+        }
+        let dy;
+        if (orient === 'top') {
+          dy = y - b.max.y;
+          y -= heights[k] + gap;
+        } else {
+          dy = y - b.min.y;
+          y += heights[k] + gap;
+        }
+        translateModule(mod, dx, dy, dz);
+      });
+      cursor += column.along + gap;
+    }
+  }
+
+  // Record the stacked modules' rotations in the plan (positions are synced by the caller)
+  if (typeof viewer?.getModuleCalculatedRotation === 'function') {
+    for (const mod of stacked) {
+      const planMod = viewer.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+      const rot = planMod ? viewer.getModuleCalculatedRotation(mod.userData.index, { decimals: 3 }) : null;
+      if (planMod && rot) planMod.rotation = { ...(planMod.rotation || {}), yaw: rot.yaw, pitch: rot.pitch, roll: rot.roll };
+    }
+  }
+  return stacked;
+}
+
+/**
+ * Moves modules out of the space the stacked docks take: any visible module whose box (as rendered,
+ * lanes excluded) overlaps a stacked module's box moves the shortest distance along X, Y or Z that
+ * clears every stack, `gap` apart, with its box still inside the plot. A module with no such move
+ * (a plot too full to make room) stays where it is.
+ * @param {Set<object>} stacked
+ * @param {Array<object>} modules
+ * @param {object} plotBounds
+ * @param {object} [viewer]
+ * @param {number} [gap]
+ * @returns {number} how many modules were moved
+ */
+export function clearStackedDocksSpace(stacked, modules, plotBounds, viewer = null, gap = 15) {
+  if (!stacked || stacked.size === 0) return 0;
+  const pb = plotBounds;
+  const stackBoxes = [...stacked].map(m => moduleWorldBox(m, viewer));
+  const overlaps = (a, b) =>
+    Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > -gap + 1e-6 &&
+    Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > -gap + 1e-6 &&
+    Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > -gap + 1e-6;
+  const shifted = (b, d) => ({
+    min: { x: b.min.x + d.x, y: b.min.y + d.y, z: b.min.z + d.z },
+    max: { x: b.max.x + d.x, y: b.max.y + d.y, z: b.max.z + d.z }
+  });
+  const inside = (b) => b.min.x >= pb.minX - 1e-6 && b.max.x <= pb.maxX + 1e-6 &&
+    b.min.y >= pb.minY - 1e-6 && b.max.y <= pb.maxY + 1e-6 &&
+    b.min.z >= pb.minZ - 1e-6 && b.max.z <= pb.maxZ + 1e-6;
+
+  let moved = 0;
+  for (const mod of modules || []) {
+    if (!mod || mod.visible === false || stacked.has(mod)) continue;
+    const box = moduleWorldBox(mod, viewer);
+    if (!stackBoxes.some(s => overlaps(box, s))) continue;
+    // Candidate moves: just past each overlapping stack box, on each side, along each axis
+    const candidates = [];
+    for (const s of stackBoxes) {
+      if (!overlaps(box, s)) continue;
+      for (const axis of ['x', 'y', 'z']) {
+        candidates.push({ ...{ x: 0, y: 0, z: 0 }, [axis]: s.max[axis] + gap - box.min[axis] });
+        candidates.push({ ...{ x: 0, y: 0, z: 0 }, [axis]: s.min[axis] - gap - box.max[axis] });
+      }
+    }
+    candidates.sort((a, b) => (Math.abs(a.x) + Math.abs(a.y) + Math.abs(a.z)) - (Math.abs(b.x) + Math.abs(b.y) + Math.abs(b.z)));
+    const move = candidates.find(d => { const nb = shifted(box, d); return inside(nb) && !stackBoxes.some(s => overlaps(nb, s)); });
+    if (!move) continue;
+    translateModule(mod, move.x, move.y, move.z);
+    moved++;
+    const planMod = viewer?.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+    if (planMod && planMod.position && mod.position) {
+      planMod.position.x = Math.round(mod.position.x);
+      planMod.position.y = Math.round(mod.position.y);
+      planMod.position.z = Math.round(-mod.position.z);
+    }
+  }
+  return moved;
+}
+
+/**
+ * Moves every visible module the least distance that brings its own bounding box inside the plot BB
+ * (a box larger than the plot along an axis is centred on it instead), then writes the positions to
+ * the plan. The box is the module as rendered (viewer.getModuleWorldBoundingBox): its rotation and
+ * its actual geometry around the origin count, while lane and other invisible clearance volumes
+ * (geometryinvisible, bounding_box) and effects do not. Without a rendered box the module's catalog
+ * size centred on its position is used.
+ * @param {Array<object>} modules
+ * @param {object} plotBounds getPlotBoundingBox result
+ * @param {object} [viewer]
+ * @returns {number} how many modules were moved
+ */
+export function keepModulesInsidePlot(modules, plotBounds, viewer = null) {
+  let moved = 0;
+  const eps = 0.01;
+  // Shift that brings [lo, hi] inside [min, max]; centres it when it cannot fit
+  const shiftInto = (lo, hi, min, max) => {
+    if (hi - lo > max - min) return (min + max) / 2 - (lo + hi) / 2;
+    if (hi > max) return max - hi;
+    if (lo < min) return min - lo;
+    return 0;
+  };
+
+  (modules || []).forEach(mod => {
+    if (!mod || mod.visible === false) return;
+    if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+    const worldBox = typeof viewer?.getModuleWorldBoundingBox === 'function' ? viewer.getModuleWorldBoundingBox(mod) : null;
+    if (worldBox && !(typeof worldBox.isEmpty === 'function' && worldBox.isEmpty())) {
+      const shiftX = shiftInto(worldBox.min.x, worldBox.max.x, plotBounds.minX, plotBounds.maxX);
+      const shiftY = shiftInto(worldBox.min.y, worldBox.max.y, plotBounds.minY, plotBounds.maxY);
+      const shiftZ = shiftInto(worldBox.min.z, worldBox.max.z, plotBounds.minZ, plotBounds.maxZ);
+      if (Math.abs(shiftX) > eps || Math.abs(shiftY) > eps || Math.abs(shiftZ) > eps) {
+        if (typeof mod.position?.set === 'function') {
+          mod.position.set(mod.position.x + shiftX, mod.position.y + shiftY, mod.position.z + shiftZ);
+        } else if (mod.position) {
+          mod.position.x = (mod.position.x || 0) + shiftX;
+          mod.position.y = (mod.position.y || 0) + shiftY;
+          mod.position.z = (mod.position.z || 0) + shiftZ;
+        }
+        if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+        moved++;
+      }
+    } else if (mod.position) {
+      const s = (viewer?.getModuleInitialSize ? viewer.getModuleInitialSize(mod) : null) || defaultModuleSize(mod) || { x: 100, y: 100, z: 100 };
+      const before = { x: mod.position.x, y: mod.position.y, z: mod.position.z };
+      clampModulePositionToPlot(mod.position, s, plotBounds);
+      if (before.x !== mod.position.x || before.y !== mod.position.y || before.z !== mod.position.z) moved++;
+    }
+
+    const planMod = viewer?.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+    if (planMod && planMod.position && mod.position) {
+      planMod.position.x = Math.round(mod.position.x);
+      planMod.position.y = Math.round(mod.position.y);
+      planMod.position.z = Math.round(-mod.position.z);
+    }
+  });
+  return moved;
+}
+
 /**
  * Apply docks perimeter placement (clear, lanes, stacked, spread).
  * @param {Array<string>|Set<string>} [selections]
@@ -2155,31 +2550,29 @@ export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
     });
   }
 
-  // Insure no physical bounding box overlap
+  // Piers' docking lanes always point out of the plot
+  orientPierLanesOutward(dockModules, plotBounds, v);
+
+  // Dock types the station has several of: stacked vertically on the smallest wall that fits them
+  const stacked = stackRepeatedDockTypes(dockModules, plotBounds, v, { orient, gap });
+
+  // Insure no physical bounding box overlap; the stacks stay as placed and other modules give way
   ensureNoBoundingBoxOverlaps(v.modulesGroup.children, plotBounds, {
     gap: 15,
     getModuleSize: (m) => getModSize(m),
-    applyToObjects: true
+    applyToObjects: true,
+    isFixed: (m) => stacked.has(m)
   });
 
   // lanes insure no docks invisible geometries BB overlap
   if (selSet.has('lanes')) {
-    ensureNoDocksInvisibleOverlap(dockModules, plotBounds, v);
+    ensureNoDocksInvisibleOverlap(dockModules.filter(m => !stacked.has(m)), plotBounds, v);
   }
 
-  // Clamp inside plot bounds and sync plan coordinates
-  v.modulesGroup.children.forEach(mod => {
-    if (!mod || mod.visible === false) return;
-    const s = getModSize(mod);
-    clampModulePositionToPlot(mod.position, s, plotBounds);
-
-    const planMod = v.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
-    if (planMod && mod.position) {
-      planMod.position.x = Math.round(mod.position.x);
-      planMod.position.y = Math.round(mod.position.y);
-      planMod.position.z = Math.round(-mod.position.z);
-    }
-  });
+  // Keep each module's own BB (lanes excluded) inside the plot and sync plan coordinates
+  keepModulesInsidePlot(v.modulesGroup.children, plotBounds, v);
+  // Nothing else may sit in the stacks' space
+  clearStackedDocksSpace(stacked, v.modulesGroup.children, plotBounds, v, gap);
 
   if (typeof v.updatePlotBoxViolations === 'function') v.updatePlotBoxViolations();
   if (typeof v.renderScene === 'function') v.renderScene();
@@ -2362,6 +2755,9 @@ export function applyDocksVerticalOrientation(orientation = null, viewer = null)
     }
   });
 
+  // Piers' docking lanes always point out of the plot, whichever orientation the docks take
+  if (orientPierLanesOutward(v.modulesGroup.children, plotBounds, v) > 0) anyMoved = true;
+
   if (anyMoved) {
     ensureNoBoundingBoxOverlaps(v.modulesGroup.children, plotBounds, {
       gap: 15,
@@ -2369,66 +2765,8 @@ export function applyDocksVerticalOrientation(orientation = null, viewer = null)
       applyToObjects: true
     });
 
-    // Insure any Layout Orientations don't have any module BB overlap or extend outside the plot BB
-    v.modulesGroup.children.forEach(mod => {
-      if (!mod || mod.visible === false) return;
-      if (typeof mod.updateMatrixWorld === 'function') {
-        mod.updateMatrixWorld(true);
-      }
-      const worldBox = typeof v.getModuleWorldBoundingBox === 'function' ? v.getModuleWorldBoundingBox(mod) : null;
-      if (worldBox && !worldBox.isEmpty()) {
-        const boxW = worldBox.max.x - worldBox.min.x;
-        const boxH = worldBox.max.y - worldBox.min.y;
-        const boxD = worldBox.max.z - worldBox.min.z;
-        const eps = 0.01;
-        let shiftX = 0;
-        let shiftY = 0;
-        let shiftZ = 0;
-
-        if (boxW <= plotBounds.widthX) {
-          if (worldBox.max.x > plotBounds.maxX) shiftX = plotBounds.maxX - worldBox.max.x;
-          else if (worldBox.min.x < plotBounds.minX) shiftX = plotBounds.minX - worldBox.min.x;
-        } else {
-          shiftX = plotBounds.centerX - ((worldBox.min.x + worldBox.max.x) / 2);
-        }
-
-        if (boxH <= plotBounds.heightY) {
-          if (worldBox.max.y > plotBounds.maxY) shiftY = plotBounds.maxY - worldBox.max.y;
-          else if (worldBox.min.y < plotBounds.minY) shiftY = plotBounds.minY - worldBox.min.y;
-        } else {
-          shiftY = plotBounds.centerY - ((worldBox.min.y + worldBox.max.y) / 2);
-        }
-
-        if (boxD <= plotBounds.depthZ) {
-          if (worldBox.max.z > plotBounds.maxZ) shiftZ = plotBounds.maxZ - worldBox.max.z;
-          else if (worldBox.min.z < plotBounds.minZ) shiftZ = plotBounds.minZ - worldBox.min.z;
-        } else {
-          shiftZ = plotBounds.centerZ - ((worldBox.min.z + worldBox.max.z) / 2);
-        }
-
-        if (Math.abs(shiftX) > eps || Math.abs(shiftY) > eps || Math.abs(shiftZ) > eps) {
-          if (typeof mod.position?.set === 'function') {
-            mod.position.set(mod.position.x + shiftX, mod.position.y + shiftY, mod.position.z + shiftZ);
-          } else if (mod.position) {
-            mod.position.x = (mod.position.x || 0) + shiftX;
-            mod.position.y = (mod.position.y || 0) + shiftY;
-            mod.position.z = (mod.position.z || 0) + shiftZ;
-          }
-          if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
-        }
-      } else {
-        const s = (v.getModuleInitialSize ? v.getModuleInitialSize(mod) : null) || defaultModuleSize(mod) || { x: 100, y: 100, z: 100 };
-        clampModulePositionToPlot(mod.position, s, plotBounds);
-      }
-
-      // Synchronize plan coordinates
-      const planMod = v.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
-      if (planMod && mod.position) {
-        planMod.position.x = Math.round(mod.position.x);
-        planMod.position.y = Math.round(mod.position.y);
-        planMod.position.z = Math.round(-mod.position.z);
-      }
-    });
+    // Insure any Layout Orientations don't have any module BB extend outside the plot BB
+    keepModulesInsidePlot(v.modulesGroup.children, plotBounds, v);
 
     if (typeof v.updatePlotBoxViolations === 'function') {
       v.updatePlotBoxViolations();

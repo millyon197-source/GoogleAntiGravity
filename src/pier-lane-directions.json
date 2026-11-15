@@ -1,0 +1,87 @@
+{
+  "pier_arg_harbor_01": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_arg_harbor_02": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_arg_harbor_03": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_arg_harbor_04": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_arg_single_01_tradestation_01": {
+    "x": 0,
+    "z": 1
+  },
+  "pier_bor_harbor_01": {
+    "x": 1,
+    "z": 0
+  },
+  "pier_bor_harbor_02": {
+    "x": 1,
+    "z": 0
+  },
+  "pier_bor_harbor_03": {
+    "x": 1,
+    "z": 0
+  },
+  "pier_bor_harbor_04": null,
+  "pier_bor_tradestation_01": null,
+  "pier_par_harbor_01": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_par_harbor_02": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_par_harbor_03": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_spl_harbor_01": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_spl_harbor_02": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_spl_harbor_03": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_tel_harbor_01": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_tel_harbor_02": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_tel_harbor_03": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_ter_harbor_01": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_ter_harbor_02": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_ter_harbor_03": {
+    "x": -1,
+    "z": 0
+  },
+  "pier_ter_harbor_04": null,
+  "pier_ter_harbor_05": null,
+  "pier_ter_tradestation_01": null
+}

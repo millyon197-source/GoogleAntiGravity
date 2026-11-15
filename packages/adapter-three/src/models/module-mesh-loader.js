@@ -378,6 +378,49 @@ export function interpolateKeyframes(keyframes, period, time) {
  * @param {{ index: number, macro: string }} mod Station module descriptor.
  * @param {ModuleMeshOptions} [options]
  */
+/**
+ * Lane volumes from the pier XML (src/pier-lane-boxes.json, generate_pier_lanes.js) for a pier that
+ * loaded no lane model of its own: one hidden box mesh per volume, marked like a loaded lane model
+ * (isBBox / isGeometryInvisible) so lane overlap checks see it and module bounding boxes leave it out.
+ * @param {THREE.Group} meshGroup the module's mesh group (shifted by its part-main offset)
+ * @param {THREE.Object3D[]} loadedScenes the parts that loaded
+ * @param {{ part: string, center: number[], halfSize: number[], quaternion: number[] }[]|undefined} boxes in mesh space
+ * @returns {THREE.Mesh[]} the boxes added
+ */
+export function addXmlLaneBoxes(meshGroup, loadedScenes, boxes) {
+  if (!Array.isArray(boxes) || boxes.length === 0) return [];
+  let hasLaneModel = false;
+  for (const scene of loadedScenes) {
+    scene.traverse(o => { if (o.userData?.isGeometryInvisible || o.userData?.isBBox) hasLaneModel = true; });
+  }
+  if (hasLaneModel) return [];
+  const added = [];
+  for (const box of boxes) {
+    const [hx, hy, hz] = box.halfSize;
+    if (!(hx > 0 && hy > 0 && hz > 0)) continue;
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(hx * 2, hy * 2, hz * 2),
+      new THREE.MeshBasicMaterial({ wireframe: true, color: 0x33aaff })
+    );
+    const name = `geometryinvisible_${box.part || 'lane'}`;
+    mesh.name = name;
+    mesh.visible = false;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    // Mesh space -> inside the shifted group
+    mesh.position.set(
+      box.center[0] - meshGroup.position.x,
+      box.center[1] - meshGroup.position.y,
+      box.center[2] - meshGroup.position.z
+    );
+    if (Array.isArray(box.quaternion)) mesh.quaternion.set(...box.quaternion);
+    mesh.userData = { isBBox: true, isGeometryInvisible: true, partName: name, fromXml: true };
+    meshGroup.add(mesh);
+    added.push(mesh);
+  }
+  return added;
+}
+
 export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componentOffsets = {}, allowAnimations, log = consoleLog } = {}) {
   const { baseName, folderPath } = host.resolveModuleAssetEntry(mod.macro);
   const activeFiles = host.getModuleActiveComponentFiles(mod.index, mod.macro);
@@ -977,6 +1020,8 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
   if (offset) {
     meshGroup.position.set(-offset[0], offset[1], offset[2]);
   }
+
+  addXmlLaneBoxes(meshGroup, loadedScenes, host.pierLaneBoxes?.[baseName]);
 
   const moduleRoot = new THREE.Group();
   moduleRoot.add(meshGroup);
