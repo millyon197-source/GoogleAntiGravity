@@ -76,7 +76,8 @@ import {
   applyDocksPerimeterPlacement,
   keepModulesInsidePlot,
   clearPierProngCorridors,
-  getPierClampTunnelShapes
+  getPierClampTunnelShapes,
+  orientPierLanesOutward
 } from './module-display-panel.js';
 import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
 import TEXTURE_LOOKUPS from './texture-lookups.json' with { type: 'json' };
@@ -3776,7 +3777,8 @@ export class StationViewer {
   /**
    * Draws every visible pier's exclusion zones (getPierClampTunnelShapes): a translucent box and
    * outline per clamp tunnel and a marker at the clamp, amber while clear and red while any other
-   * module or pier reaches into it. Checked on every frame drawn (renderScene), so the zones follow
+   * module or pier reaches into it or its pier is outside the plot. The plot BB is hidden meanwhile,
+   * so any module outside the plot shows its own BB in red. Checked on every frame drawn (renderScene), so the zones follow
    * any pier or module as it moves (gizmo drags, layouts, undo, edits); rebuilt only when a module,
    * the plot or the toggle changed.
    * Nothing is drawn while the plot is off (the tunnels run to its walls).
@@ -3791,7 +3793,7 @@ export class StationViewer {
     // What the zones depend on, cheap enough to check every frame: the plot, and every module's index,
     // position (0.1 m), rotation and parts
     let key = '';
-    if (on && piers.length) {
+    if (on && mods.length) {
       let h = 0;
       const add = (v) => { h = (Math.imul(h, 31) + (Math.round(v) | 0)) | 0; };
       for (const m of mods) {
@@ -3822,17 +3824,42 @@ export class StationViewer {
     const group = new THREE.Group();
     group.name = 'pierExclusionZonesGroup';
     group.renderOrder = 2;
+    // With the plot BB hidden (Zones on), a module outside the plot shows its own BB in red
+    const EPS = 0.5;
+    const outside = new Set(mods.filter(m => {
+      const b = boxes.get(m);
+      return b && !b.isEmpty() && (b.min.x < pb.minX - EPS || b.max.x > pb.maxX + EPS || b.min.y < pb.minY - EPS ||
+        b.max.y > pb.maxY + EPS || b.min.z < pb.minZ - EPS || b.max.z > pb.maxZ + EPS);
+    }));
+    for (const m of outside) {
+      const b = boxes.get(m);
+      const size = new THREE.Vector3(), center = new THREE.Vector3();
+      b.getSize(size); b.getCenter(center);
+      const geo = new THREE.BoxGeometry(Math.max(size.x, 1), Math.max(size.y, 1), Math.max(size.z, 1));
+      const red = new THREE.Group();
+      red.name = `module_outside_plot_${m.userData?.index}`;
+      red.userData = { isOutsidePlotBox: true, moduleIndex: m.userData?.index };
+      red.position.copy(center);
+      const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xFF0033, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }));
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xFF0033, transparent: true, opacity: 0.95, depthWrite: false }));
+      fill.raycast = () => {};
+      edges.raycast = () => {};
+      red.add(fill, edges);
+      group.add(red);
+    }
     for (const pier of piers) {
       const shapes = getPierClampTunnelShapes(pier, pb, this) || [];
+      const pierOutside = outside.has(pier);
       shapes.forEach((t, i) => {
-        const blocked = mods.some(m => m !== pier && t.pieces.some(pc => hits(pc, boxes.get(m))));
+        // Red while anything is in it, or while its pier is outside the plot
+        const blocked = pierOutside || mods.some(m => m !== pier && t.pieces.some(pc => hits(pc, boxes.get(m))));
         const color = blocked ? 0xFF2244 : 0xFFAA00;
         const geo = new THREE.BoxGeometry(t.length, t.height, t.width);
         const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: blocked ? 0.16 : 0.07, depthWrite: false, side: THREE.DoubleSide }));
         const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.75, depthWrite: false }));
         const zone = new THREE.Group();
         zone.name = `pier_zone_${pier.userData?.index}_${i}`;
-        zone.userData = { isPierExclusionZone: true, pierIndex: pier.userData?.index, clamp: i, blocked };
+        zone.userData = { isPierExclusionZone: true, pierIndex: pier.userData?.index, clamp: i, blocked, pierOutside };
         zone.position.set(t.center.x, t.center.y, t.center.z);
         // Box X along the prong's way out, Y its up, Z across: tilts with the pier
         zone.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(
@@ -5352,6 +5379,27 @@ export class StationViewer {
   }
 
   applyLayoutBehavior(key, name, activeEntries = null) {
+    this.placeLayout(key, name, activeEntries);
+    // Any placement (not plain Blueprint, which clears lastLayoutArgs) keeps the pier zones clear
+    if (this.lastLayoutArgs) this.settlePierZonesAfterLayout();
+  }
+
+  /**
+   * After a Layout placement moved the modules: piers' lanes out of the plot through the nearest wall
+   * (tilted piers levelled), every module's own BB inside the plot, and no module or pier in any
+   * pier's exclusion zones (clearPierProngCorridors). The docks layouts end the same way.
+   */
+  settlePierZonesAfterLayout() {
+    const modules = this.modulesGroup?.children;
+    if (!modules || modules.length === 0) return;
+    const plotBounds = getPlotBoundingBox(this.currentPlotConfig || getCurrentPlotConfig());
+    orientPierLanesOutward(modules, plotBounds, this);
+    keepModulesInsidePlot(modules, plotBounds, this);
+    clearPierProngCorridors(modules, plotBounds, this);
+    this.updatePlotBoxViolations();
+  }
+
+  placeLayout(key, name, activeEntries = null) {
     const modules = this.modulesGroup.children;
     if (modules.length === 0) return;
 
@@ -5744,6 +5792,8 @@ export class StationViewer {
     if (isDocks1Present()) {
       applyDocksVerticalOrientation(getDocksVerticalOrientation(), this);
     }
+    // Whatever the docks did, the pier zones end up clear
+    this.settlePierZonesAfterLayout();
   }
 
   applyShadingBehavior(key, name) {
@@ -5802,16 +5852,8 @@ export class StationViewer {
 
     // When Layers order or behavior changes, re-apply active layout to place modules in updated Layers category order
     if (this.lastLayoutArgs) {
+      // Re-placed (applyLayoutBehavior also keeps every BB inside the plot and the pier zones clear)
       this.applyLayoutBehavior(this.lastLayoutArgs.key, this.lastLayoutArgs.name, this.lastLayoutArgs.activeEntries);
-      // A layout (not plain Blueprint, which clears lastLayoutArgs) relocated the modules: keep each
-      // one's own BB, lanes excluded, inside the plot
-      if (this.lastLayoutArgs) {
-        const plotBounds = getPlotBoundingBox(this.currentPlotConfig || getCurrentPlotConfig());
-        keepModulesInsidePlot(modules, plotBounds, this);
-        // ... and nothing blocking a pier's prongs out to the plot wall
-        clearPierProngCorridors(modules, plotBounds, this);
-        this.updatePlotBoxViolations();
-      }
     } else if (isDocks1Present() && (!isBlueprintModeActive() || isDocksVerticalAppliedToCurrentPlan())) {
       const perimeterSelections = getDocksPerimeterSelections();
       if (perimeterSelections.size > 0) {

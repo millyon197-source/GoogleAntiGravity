@@ -1486,11 +1486,12 @@ export function getLayerPlacementCategoryOrder() {
 }
 
 /**
- * Sort an array of modules according to the current Layers category order.
+ * Sort an array of modules according to the current Layers category order, piers first: Layout
+ * placement places the piers before anything else, so the rest fits around them and their zones.
  */
 export function sortModulesByLayerCategoryOrder(modules, layerOrder = null) {
   if (!Array.isArray(modules) || modules.length === 0) return [];
-  return StationLayoutEngine.sortByCategoryOrder(modules, layerOrder || getLayerPlacementCategoryOrder(), moduleCategoryOf);
+  return StationLayoutEngine.sortByCategoryOrder(modules, layerOrder || getLayerPlacementCategoryOrder(), moduleCategoryOf, isPierModule);
 }
 
 /** Catalog category of a module object, mesh or placement record (by macro). */
@@ -2513,15 +2514,17 @@ function pierLaneCorridor(pier, plotBounds, viewer) {
 }
 
 /**
- * Keeps every pier's prongs clear out to the plot wall (getPierProngCorridors: its box and a tunnel from each docking clamp) and every pier's BB
- * out of every module: no module or pier, snapped to the pier or not, may be in a pier's exclusion
- * zones. Any other visible module whose box (as rendered, lanes excluded) reaches into any of a
- * pier's corridors moves the shortest distance sideways (X or Z), else up or down, that takes it
- * out, `gap` apart, with its box still inside the plot and not onto another module: in each
- * direction it goes on past whatever is in the way until it finds room. A pier only moves where its
- * own corridors are clear, and moves itself off, or its tunnels away from, a fixed module (e.g. the
- * stacked docks), which never move. A module with no such move stays where it is. Repeats while
- * moves are made.
+ * Keeps every pier's prongs clear out to the plot wall (getPierProngCorridors: its box and a tunnel
+ * from each docking clamp) and every pier's BB out of every module: no module or pier, snapped to
+ * the pier or not, may be in a pier's exclusion zones. Any other visible module whose box (as
+ * rendered, lanes excluded) reaches into any of a pier's corridors moves the shortest distance
+ * sideways (X or Z), else up or down, that takes it out, `gap` apart, with its box still inside the
+ * plot and not onto another module: in each direction it goes on past whatever is in the way until
+ * it finds room; failing that, to the nearest free place on a 1 km grid across the plot. A pier only
+ * moves where its own corridors are clear, and moves itself off, or its
+ * tunnels away from, a fixed module (e.g. the stacked docks), which never move, or a module in its
+ * zones that found no way out. A module with no such move stays where it is. Repeats while moves
+ * are made.
  * @param {Array<object>} modules
  * @param {object} plotBounds
  * @param {object} [viewer]
@@ -2550,9 +2553,26 @@ export function clearPierProngCorridors(modules, plotBounds, viewer = null, { ga
   const boxes = new Map(visible.map(m => [m, moduleWorldBox(m, viewer)]));
 
   let moves = 0;
+  // Modules in a pier's zones that found no way out: the pier then moves itself, as for fixed ones
+  const stuck = new Set();
+  // Places for the last-resort move: every FREE_SPOT_STEP across the plot
+  const FREE_SPOT_STEP = 1000;
+  const along = (lo, hi) => { const n = Math.max(1, Math.floor((hi - lo) / FREE_SPOT_STEP)); return Array.from({ length: n + 1 }, (_, i) => lo + (hi - lo) * i / n); };
+  const lines = { x: along(pb.minX, pb.maxX), y: along(pb.minY, pb.maxY), z: along(pb.minZ, pb.maxZ) };
+  /** Offset to the nearest grid place (the module's own coordinates count as grid lines too, so it
+   * can keep its level) whose box `ok` accepts, or null. */
+  const nearestFreeSpot = (box, ok) => {
+    const c = { x: (box.min.x + box.max.x) / 2, y: (box.min.y + box.max.y) / 2, z: (box.min.z + box.max.z) / 2 };
+    const ds = [];
+    for (const x of [c.x, ...lines.x]) for (const y of [c.y, ...lines.y]) for (const z of [c.z, ...lines.z]) ds.push({ x: x - c.x, y: y - c.y, z: z - c.z });
+    ds.sort((a, b) => (a.x * a.x + a.y * a.y + a.z * a.z) - (b.x * b.x + b.y * b.y + b.z * b.z));
+    for (const d of ds) if (ok(shifted(box, d), d)) return d;
+    return null;
+  };
   for (let pass = 0; pass < 8; pass++) {
     const corridors = new Map(piers.map(p => [p, getPierProngCorridors(p, pb, viewer)]));
     let movedThisPass = 0;
+    const stuckBefore = stuck.size;
     for (const mod of visible) {
       if (isFixed(mod)) continue;
       // Where this module may not be: any other pier's box or clamp tunnels (its exclusion zones),
@@ -2569,7 +2589,7 @@ export function clearPierProngCorridors(modules, plotBounds, viewer = null, { ga
       if (isPierModule(mod)) {
         const own = corridors.get(mod) || [];
         for (const o of others) {
-          if (!isFixed(o)) continue;
+          if (!isFixed(o) && !stuck.has(o)) continue;
           const ob = boxes.get(o);
           if (intersects(box, ob)) applies.push({ pier: o, box: ob });
           else if (own.some(c => intersects(c, ob))) blockedBy.push({ pier: o, box: ob });
@@ -2619,8 +2639,11 @@ export function clearPierProngCorridors(modules, plotBounds, viewer = null, { ga
       // only when no sideways move fits; the shortest move of each kind
       found.sort((a, b) => ((a.y !== 0) - (b.y !== 0)) ||
         (Math.abs(a.x) + Math.abs(a.y) + Math.abs(a.z)) - (Math.abs(b.x) + Math.abs(b.y) + Math.abs(b.z)));
-      const move = found[0];
-      if (!move) continue;
+      let move = found[0];
+      // No straight move (a crowded plot): the nearest free place on a grid across the plot
+      if (!move) move = nearestFreeSpot(box, (nb, d) => inside(nb) && obstaclesAt(nb, d).length === 0);
+      if (!move) { stuck.add(mod); continue; }
+      stuck.delete(mod);
       translateModule(mod, move.x, move.y, move.z);
       boxes.set(mod, shifted(box, move));
       syncPlanPosition(mod, viewer);
@@ -2629,7 +2652,8 @@ export function clearPierProngCorridors(modules, plotBounds, viewer = null, { ga
       if (corridors.has(mod)) corridors.set(mod, getPierProngCorridors(mod, pb, viewer));
     }
     moves += movedThisPass;
-    if (movedThisPass === 0) break;
+    // Another pass while moves were made, or while a pier still has to give way to a stuck module
+    if (movedThisPass === 0 && stuck.size === stuckBefore) break;
   }
   return moves;
 }
@@ -3170,6 +3194,8 @@ export function calculateLayeredPlacement(modules, alignmentAnchor = null, plotC
     categoryOrder: layerOrder || getLayerPlacementCategoryOrder(),
     getCategory: moduleCategoryOf,
     getModuleSize: options.getModuleSize || defaultModuleSize,
+    // Piers are placed before any other module
+    placeFirst: isPierModule,
     alignmentAnchor,
     defaultAlignmentKeys,
     gap: options.gap,
@@ -3341,6 +3367,8 @@ export function calculateLayoutPlacement(modules, options = {}) {
     categoryOrder: getLayerPlacementCategoryOrder(),
     getCategory: moduleCategoryOf,
     getInitialSize: getInitialModuleDimensions,
+    // Piers are placed before any other module
+    placeFirst: isPierModule,
     mode: options.mode,
     dimension: options.dimension,
     gap: options.gap,

@@ -114,4 +114,33 @@ function assertInsideAndSeparated(placed, bounds) {
   console.log('  ✓ layout modes: planar row, height stack, grid, blueprint order');
 }
 
+// Piers first: placeFirst items lead, in their own order, ahead of every category
+{
+  const items = [
+    { id: 'hab', cat: 'habitation', macro: 'hab_arg_l_01_macro' },
+    { id: 'dock', cat: 'docks', macro: 'dockarea_arg_m_station_01_macro' },
+    { id: 'pier2', cat: 'docks', macro: 'pier_arg_harbor_03_macro' },
+    { id: 'store', cat: 'storage', macro: 'storage_arg_l_01_macro' },
+    { id: 'pier1', cat: 'docks', macro: 'pier_arg_harbor_01_macro' },
+    { id: 'odd', cat: 'unknown', macro: 'pier_odd_macro' }
+  ];
+  const isPier = (m) => m.macro.includes('pier');
+  const order = ['habitation', 'storage', 'docks'];
+  assert.deepStrictEqual(StationLayoutEngine.sortByCategoryOrder(items, order, m => m.cat).map(m => m.id),
+    ['hab', 'store', 'dock', 'pier2', 'pier1', 'odd'], 'without placeFirst: category order only');
+  assert.deepStrictEqual(StationLayoutEngine.sortByCategoryOrder(items, order, m => m.cat, isPier).map(m => m.id),
+    ['pier2', 'pier1', 'odd', 'hab', 'store', 'dock'], 'piers first, then the category order');
+  // Layered placement places the piers first: they take the first slots at the start corner
+  const mods = items.map(m => ({ ...m, size: box(100, 100, 100) }));
+  const placed = StationLayoutEngine.calculateLayeredPlacement(mods, { ...opts({ categoryOrder: order, placeFirst: isPier }), plotBounds: smallPlot });
+  assert.deepStrictEqual(placed.slice(0, 3).map(p => p.module.id), ['pier2', 'pier1', 'odd'], 'layered placement places piers first');
+  const laid = StationLayoutEngine.calculateLayoutPlacement(items.map((m, index) => ({ ...m, index })), {
+    plotBounds: smallPlot, categoryOrder: order, getCategory: m => m.cat, placeFirst: isPier,
+    getInitialSize: () => box(100, 100, 100), mode: 'planar', dimension: 'x', gap: 10
+  });
+  const xs = Object.fromEntries(laid.map(p => [p.macro, p.position.x]));
+  assert.ok(xs.pier_arg_harbor_03_macro < xs.hab_arg_l_01_macro && xs.pier_arg_harbor_01_macro < xs.hab_arg_l_01_macro, 'planar layout places piers first along the row');
+  console.log('  ✓ piers are placed before any other module');
+}
+
 console.log('\n[PASS] test_layout_engine_placement');

@@ -482,15 +482,17 @@ export class StationLayoutEngine {
 
   /**
    * Stable-sorts items into category buckets following `categoryOrder`; items whose
-   * category is not in the order keep their relative order and go last.
+   * category is not in the order keep their relative order and go last. Items `placeFirst`
+   * picks (e.g. piers) come before all others, in that same order.
    *
    * @template T
    * @param {T[]} items
    * @param {string[]} categoryOrder - e.g. ['docks', 'storage', 'production', 'habitation', 'defense', 'structure']
    * @param {(item: T) => string} getCategory
+   * @param {((item: T) => boolean)|null} [placeFirst]
    * @returns {T[]}
    */
-  static sortByCategoryOrder(items, categoryOrder, getCategory) {
+  static sortByCategoryOrder(items, categoryOrder, getCategory, placeFirst = null) {
     if (!Array.isArray(items) || items.length === 0) return [];
     const buckets = {};
     categoryOrder.forEach(cat => {
@@ -512,7 +514,8 @@ export class StationLayoutEngine {
       if (buckets[cat]) sorted.push(...buckets[cat]);
     });
     sorted.push(...unclassified);
-    return sorted;
+    if (typeof placeFirst !== 'function') return sorted;
+    return [...sorted.filter(i => placeFirst(i)), ...sorted.filter(i => !placeFirst(i))];
   }
 
   /**
@@ -552,6 +555,7 @@ export class StationLayoutEngine {
    * @param {PlotBounds|object|null} [options.plotBounds] - Plot boundaries (default plot when null).
    * @param {string[]} options.categoryOrder - Category placement order.
    * @param {(module: any) => string} options.getCategory - Category of a module.
+   * @param {(module: any) => boolean} [options.placeFirst] - Modules placed before all others (e.g. piers).
    * @param {(module: any) => {x: number, y: number, z: number}} options.getModuleSize - Bounding-box size.
    * @param {Array|string|object|null} [options.alignmentAnchor] - See parseAlignmentAnchorKeys.
    * @param {string[]} [options.defaultAlignmentKeys] - Keys used when no anchor is given.
@@ -563,7 +567,7 @@ export class StationLayoutEngine {
     if (!Array.isArray(modules) || modules.length === 0) return [];
 
     const bounds = StationLayoutEngine.toPlotBounds(options.plotBounds);
-    const sortedModules = StationLayoutEngine.sortByCategoryOrder(modules, options.categoryOrder, options.getCategory);
+    const sortedModules = StationLayoutEngine.sortByCategoryOrder(modules, options.categoryOrder, options.getCategory, options.placeFirst);
     const { minX, maxX, minY, maxY, minZ, maxZ, centerX, centerY, centerZ } = bounds;
 
     const activeKeys = StationLayoutEngine.parseAlignmentAnchorKeys(options.alignmentAnchor, options.defaultAlignmentKeys || []);
@@ -815,6 +819,7 @@ export class StationLayoutEngine {
    * @param {PlotBounds|object|null} [options.plotBounds]
    * @param {string[]} options.categoryOrder
    * @param {(item: {macro: string}) => string} options.getCategory - Category of a module data item.
+   * @param {(item: {macro: string}) => boolean} [options.placeFirst] - Items placed before all others (e.g. piers).
    * @param {(macro: string) => {x: number, y: number, z: number}} options.getInitialSize - Size for a macro.
    * @param {string} [options.mode='planar'] - 'planar' | 'grid' | 'height' | 'blueprint' ...
    * @param {string} [options.dimension='x'] - 'x' | 'y' | 'z' | 'x-z' | 'x-y' | 'y-z'
@@ -841,7 +846,7 @@ export class StationLayoutEngine {
       };
     });
 
-    const sortedModuleData = StationLayoutEngine.sortByCategoryOrder(moduleData, options.categoryOrder, options.getCategory);
+    const sortedModuleData = StationLayoutEngine.sortByCategoryOrder(moduleData, options.categoryOrder, options.getCategory, options.placeFirst);
     const bounds = StationLayoutEngine.toPlotBounds(options.plotBounds);
     const bb = bounds;
 

@@ -291,6 +291,47 @@ const H = panel.PIER_CLAMP_TUNNEL_HALF;
   console.log('  ✓ modules in front of or on the prongs move out; snapped ones too; modules off the tunnels stay');
 }
 
+// 2b. A crowded plot: no straight move gets a module out of a zone (walls of modules on both sides,
+// a plot too low to go over): it goes to the nearest free place instead
+{
+  const CROWD = { enabled: true, x: { plus: 4, minus: 4 }, z: { plus: 4, minus: 4 }, y: { plus: 0.5, minus: 0.5 } };
+  const pb = panel.getPlotBoundingBox(CROWD);
+  const list = [makePier(1, [-3500, 0, 0])];
+  const inZone = makeModule(2, 'hab_arg_l_01_macro', [400, 400, 400], [1500, 0, 0]);
+  list.push(inZone);
+  let i = 3;
+  for (const side of [1, -1]) for (const z of [2500, 2915, 3330, 3745]) list.push(makeModule(i++, 'storage_arg_l_liquid_01_macro', [400, 400, 400], [1500, 0, side * z]));
+  const v = makeViewer(list);
+  v.currentPlotConfig = CROWD;
+  const zones = panel.getPierProngCorridors(byIndex(v, 1), pb, v).slice(1);
+  assert.ok(zones.some(z => overlaps(z, v.getModuleWorldBoundingBox(inZone))), 'module starts in the zone');
+  const walls = list.slice(2).map(m => m.position.clone());
+  panel.clearPierProngCorridors(v.modulesGroup.children, pb, v, { gap: GAP });
+  v.modulesGroup.updateMatrixWorld(true);
+  assert.ok(list.slice(2).every((m, k) => m.position.equals(walls[k])), 'the walls of modules stay');
+  assertClear(v, 'crowded plot');
+  const b = v.getModuleWorldBoundingBox(inZone);
+  assert.ok(b.min.y >= pb.minY - 1e-6 && b.max.y <= pb.maxY + 1e-6 && Math.abs(inZone.position.y) < 1e-6, 'moved inside the plot, keeping its level');
+  for (const m of list.slice(2)) assert.ok(!overlaps(b, v.getModuleWorldBoundingBox(m)), 'not onto another module');
+  console.log('  ✓ crowded plot: a module with no straight way out goes to the nearest free place');
+}
+
+// 2c. After a general Layout placement (rows, not the docks layouts) the viewer keeps the zones clear too
+{
+  const PLOT_BIG = { enabled: true, x: { plus: 10, minus: 10 }, z: { plus: 10, minus: 10 }, y: { plus: 5, minus: 5 } };
+  const list = [makePier(1, [0, 0, 0], 0)];
+  for (let k = 0; k < 12; k++) list.push(makeModule(2 + k, 'hab_arg_l_01_macro', [600, 400, 600], [k * 700, 0, 0]));
+  const v = makeViewer(list);
+  v.currentPlotConfig = PLOT_BIG;
+  v.applyLayoutBehavior('planar', 'Planar Row');
+  v.modulesGroup.updateMatrixWorld(true);
+  const pb = panel.getPlotBoundingBox(PLOT_BIG);
+  assert.ok(panel.getPierLaneWorldDirection(byIndex(v, 1)), 'pier lanes level');
+  assertClear(v, 'planar row layout');
+  assert.strictEqual(v.checkPlotBoundViolations(), false, 'planar row layout: inside the plot');
+  console.log('  ✓ general Layout placement keeps the pier zones clear');
+}
+
 // 3. Another pier in a pier's way moves too, and its own corridor is then kept clear
 {
   const a = makePier(1, [0, 0, 0]);
