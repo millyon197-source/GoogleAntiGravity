@@ -824,7 +824,11 @@ export class StationViewer {
       return;
     }
     // Pier exclusion zones follow any move of a pier or module
-    if (!this.planLoading && typeof this.updatePierExclusionZones === 'function') this.updatePierExclusionZones();
+    if (!this.planLoading && typeof this.updatePierExclusionZones === 'function') {
+      this.updatePierExclusionZones();
+      // ... and any module outside the plot turns red
+      this.updateOutsidePlotFeedback();
+    }
     if (this.composer && this.bloomEnabled !== false) {
       this.composer.render();
     } else if (this.renderer && typeof this.renderer.render === 'function' && this.scene && this.camera) {
@@ -1930,7 +1934,9 @@ export class StationViewer {
     this.animatedParts = [];
     this.haltedModuleAnimations = new Set();
     this.componentsToggledModuleIndex = null;
+    this.redOutsideModules = new Set();
     this.updatePierExclusionZones();
+    this.updateOutsidePlotFeedback();
   }
 
   clearFilterHighlights() {
@@ -2252,6 +2258,7 @@ export class StationViewer {
    */
   updatePlotBoxViolations() {
     this.updatePierExclusionZones();
+    this.updateOutsidePlotFeedback();
     if (!this.stationPlotGroup) return;
 
     const isViolating = this.checkPlotBoundViolations();
@@ -2878,7 +2885,7 @@ export class StationViewer {
       this.selectionHelper.userData = this.selectionHelper.userData || {};
       this.selectionHelper.userData.isOverlapping = isOverlapping;
       if (this.selectionHelper.material) {
-        this.selectionHelper.material.color.setHex(isOverlapping ? 0xFF1133 : 0xFFFF00);
+        this.selectionHelper.material.color.setHex(isOverlapping || this.selectionHelper.userData.isOutsidePlot ? 0xFF1133 : 0xFFFF00);
       }
       this.selectionHelper.update();
     }
@@ -2910,6 +2917,103 @@ export class StationViewer {
     return false;
   }
 
+  /**
+   * Moves modules (together, as one block) the least distance along each axis that brings their
+   * combined BB, as rendered, inside the plot BB; a block larger than the plot along an axis is
+   * centred on it. Used when a gizmo is released.
+   * @param {Array<object>} mods
+   * @returns {boolean} whether they moved
+   */
+  pullModulesInsidePlot(mods) {
+    const pCfg = this.currentPlotConfig || getCurrentPlotConfig();
+    if (!pCfg || pCfg.enabled === false || !Array.isArray(mods) || mods.length === 0) return false;
+    const pb = getPlotBoundingBox(pCfg);
+    const box = new THREE.Box3();
+    for (const m of mods) {
+      m.updateMatrixWorld(true);
+      const b = this.getModuleWorldBoundingBox(m);
+      if (b && !b.isEmpty()) box.union(b);
+    }
+    if (box.isEmpty()) return false;
+    const into = (lo, hi, min, max) => {
+      if (hi - lo > max - min) return (min + max) / 2 - (lo + hi) / 2;
+      if (hi > max) return max - hi;
+      if (lo < min) return min - lo;
+      return 0;
+    };
+    const d = new THREE.Vector3(
+      into(box.min.x, box.max.x, pb.minX, pb.maxX),
+      into(box.min.y, box.max.y, pb.minY, pb.maxY),
+      into(box.min.z, box.max.z, pb.minZ, pb.maxZ));
+    if (d.lengthSq() < 1e-6) return false;
+    for (const m of mods) { m.position.add(d); m.updateMatrixWorld(true); }
+    return true;
+  }
+
+  /**
+   * After a gizmo release: every module ends inside the plot BB and nothing is left in a pier's
+   * exclusion zones. The released piers stay where they were put (anything in their zones moves
+   * out); a released module that landed in a zone moves out like any other (clearPierProngCorridors).
+   * Then the plot is checked again: whatever reaches outside it (the released modules as one block,
+   * others one by one) moves to the closest place inside, off any module it overlaps, and the zones
+   * are cleared again, until nothing is outside (a few rounds at most). Moves made are synced to the
+   * plan, reported (onModuleMoved) and recorded as one undo step.
+   * @param {Array<object>} released the modules the gizmo moved or turned
+   * @returns {number} how many modules moved
+   */
+  clearPierZonesAfterRelease(released) {
+    const mods = this.modulesGroup?.children;
+    const pCfg = this.currentPlotConfig || getCurrentPlotConfig();
+    if (!mods || mods.length === 0 || !pCfg || pCfg.enabled === false) return 0;
+    const pb = getPlotBoundingBox(pCfg);
+    const visible = mods.filter(m => m.visible !== false);
+    const releasedSet = new Set(released || []);
+    const before = new Map(mods.map(m => [m, m.position.clone()]));
+    const keep = new Set((released || []).filter(m => isPierModule(m)));
+    const hasPiers = visible.some(m => isPierModule(m));
+    for (let round = 0; round < 4; round++) {
+      if (hasPiers) clearPierProngCorridors(mods, pb, this, { isFixed: (m) => keep.has(m) });
+      this.modulesGroup.updateMatrixWorld(true);
+      const outside = visible.filter(m => this.isModuleOutsidePlot(m, pb));
+      if (outside.length === 0) break;
+      // Back inside: the released ones together, others one by one, each then off any overlap
+      const block = outside.filter(m => releasedSet.has(m));
+      if (block.length) this.pullModulesInsidePlot(block.length === releasedSet.size ? [...releasedSet] : block);
+      for (const m of outside.filter(o => !releasedSet.has(o))) this.pullModulesInsidePlot([m]);
+      for (const m of outside) {
+        moveMovingModuleOutsideOverlap(m, visible.filter(o => o !== m && o.userData?.index !== undefined), pCfg, {
+          gap: 5,
+          getSize: (o) => this.getModuleInitialSize(o),
+          getModuleWorldBox: (o) => this.getModuleWorldBoundingBox(o),
+          applyToObject: true
+        });
+      }
+    }
+    const moves = [];
+    for (const m of mods) {
+      const b = before.get(m);
+      if (!b || b.distanceToSquared(m.position) < 1e-6) continue;
+      const to = { x: Math.round(m.position.x), y: Math.round(m.position.y), z: Math.round(-m.position.z) };
+      m.position.set(to.x, to.y, -to.z);
+      m.updateMatrixWorld(true);
+      const planMod = this.currentPlan?.modules?.find(pm => pm.index === m.userData?.index);
+      if (planMod) planMod.position = { ...to };
+      if (this.onModuleMoved) this.onModuleMoved(m.userData?.index, to, true);
+      const from = { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(-b.z) };
+      moves.push({ moduleIndex: m.userData?.index, macro: m.userData?.macro, from, to });
+    }
+    if (moves.length && this.onMoveCommitted) {
+      this.onMoveCommitted(moves.length === 1
+        ? { type: 'move', ...moves[0], delta: { dx: moves[0].to.x - moves[0].from.x, dy: moves[0].to.y - moves[0].from.y, dz: moves[0].to.z - moves[0].from.z }, timestamp: Date.now() }
+        : { type: 'group_move', moves, timestamp: Date.now() });
+    }
+    if (moves.length) {
+      if (this.selectionHelper) this.selectionHelper.update();
+      (this.multiSelectionHelpers || []).forEach(h => h.update());
+    }
+    return moves.length;
+  }
+
   handleModuleDragEnd() {
     if (this.isCommittingMove) return;
     if (!this.transformControls || !this.transformControls.object) {
@@ -2930,6 +3034,9 @@ export class StationViewer {
         const stationaryModules = (this.modulesGroup?.children || []).filter(
           m => !this.selectedModules.includes(m) && m.visible !== false && m.userData?.index !== undefined
         );
+
+        // Released outside the plot: the selection moves to the closest place inside, along each axis
+        this.pullModulesInsidePlot(this.selectedModules);
 
         const moves = [];
         this.selectedModules.forEach(mod => {
@@ -3008,6 +3115,9 @@ export class StationViewer {
           }
         }
         this.restoreFullPlanGrid();
+        // Nothing left in a pier's exclusion zones (the released piers stay put)
+        this.clearPierZonesAfterRelease(this.selectedModules);
+        this.selectedModules.forEach(m => { m.userData.multiDragStartPos = m.position.clone(); });
 
         this.pivotDragStart = this.multiSelectPivot.position.clone();
         if (this.multiSelectPivot.userData) {
@@ -3056,6 +3166,9 @@ export class StationViewer {
         y: mod.position.y,
         z: -mod.position.z
       } : null));
+
+      // Released outside the plot: the module moves to the closest place inside, along each axis
+      this.pullModulesInsidePlot([targetModule]);
 
       // Insure the moved module doesn't overlap another module BB.
       // If it does and doesn't move out of the overlap, upon release of the gizmo,
@@ -3140,8 +3253,15 @@ export class StationViewer {
         }
       }
 
+      // Nothing left in a pier's exclusion zones (a released pier stays put; a module dropped in a zone
+      // moves out)
+      this.clearPierZonesAfterRelease([targetModule]);
       this.updatePlotBoxViolations();
-      this.dragStartPosition = { ...planPos };
+      this.dragStartPosition = {
+        x: Math.round(targetModule.position.x),
+        y: Math.round(targetModule.position.y),
+        z: Math.round(-targetModule.position.z)
+      };
     } catch (err) {
       console.error('Error in handleModuleDragEnd:', err);
     } finally {
@@ -3193,6 +3313,28 @@ export class StationViewer {
 
       targetModule.updateMatrixWorld(true);
 
+      // Turned so its BB reaches outside the plot: it moves to the closest place inside, along each axis
+      const posBefore = targetModule.position.clone();
+      if (this.pullModulesInsidePlot([targetModule])) {
+        const planPos = {
+          x: Math.round(targetModule.position.x),
+          y: Math.round(targetModule.position.y),
+          z: Math.round(-targetModule.position.z)
+        };
+        targetModule.position.set(planPos.x, planPos.y, -planPos.z);
+        targetModule.updateMatrixWorld(true);
+        if (mod) mod.position = { ...planPos };
+        if (this.onModuleMoved) this.onModuleMoved(modIndex, planPos, true);
+        if (this.onMoveCommitted) {
+          const from = { x: Math.round(posBefore.x), y: Math.round(posBefore.y), z: Math.round(-posBefore.z) };
+          this.onMoveCommitted({
+            type: 'move', moduleIndex: modIndex, macro: targetModule.userData.macro, from, to: { ...planPos },
+            delta: { dx: planPos.x - from.x, dy: planPos.y - from.y, dz: planPos.z - from.z },
+            timestamp: Date.now()
+          });
+        }
+      }
+
       const calcRot = this.getModuleCalculatedRotation(modIndex);
       const fromRot = this.dragStartRotation ? { ...this.dragStartRotation } : (mod && mod.rotation ? { ...mod.rotation } : null);
 
@@ -3242,6 +3384,8 @@ export class StationViewer {
         }
       }
 
+      // Nothing left in a pier's exclusion zones (a turned pier stays put)
+      this.clearPierZonesAfterRelease([targetModule]);
       this.updatePlotBoxViolations();
       this.dragStartRotation = calcRot ? { ...calcRot } : null;
     } catch (err) {
@@ -3775,10 +3919,130 @@ export class StationViewer {
   }
 
   /**
+   * What placement feedback depends on, cheap enough to check every frame: the plot, and every
+   * module's index, position (0.1 m), rotation and parts.
+   */
+  modulesStateKey(mods, pCfg) {
+    let h = 0;
+    const add = (v) => { h = (Math.imul(h, 31) + (Math.round(v) | 0)) | 0; };
+    for (const m of mods) {
+      add(m.userData?.index ?? -1);
+      add(m.position.x * 10); add(m.position.y * 10); add(m.position.z * 10);
+      add(m.quaternion.x * 1e4); add(m.quaternion.y * 1e4); add(m.quaternion.z * 1e4); add(m.quaternion.w * 1e4);
+      add(m.children.length);
+    }
+    return `${JSON.stringify(pCfg)}|${mods.length}|${h}`;
+  }
+
+  /** Whether a module's BB, as rendered, reaches outside the plot BB (0.5 m tolerance). */
+  isModuleOutsidePlot(mod, plotBounds = null, box = null) {
+    const pCfg = this.currentPlotConfig;
+    if (!mod || !pCfg || pCfg.enabled === false) return false;
+    const pb = plotBounds || getPlotBoundingBox(pCfg);
+    const b = box || this.getModuleWorldBoundingBox(mod);
+    if (!b || b.isEmpty()) return false;
+    const EPS = 0.5;
+    return b.min.x < pb.minX - EPS || b.max.x > pb.maxX + EPS || b.min.y < pb.minY - EPS ||
+      b.max.y > pb.maxY + EPS || b.min.z < pb.minZ - EPS || b.max.z > pb.maxZ + EPS;
+  }
+
+  /**
+   * Any module outside the plot BB, however it got there (a gizmo drag, a placement, an edit), turns
+   * red: the module itself (its own red copies of its materials, so modules sharing materials are not
+   * touched), its BB (a red box) and its selection outline; with Zones on, a pier's zones turn red too
+   * (updatePierExclusionZones). Back inside, it returns to normal. Checked on every frame drawn.
+   * @param {boolean} [force]
+   */
+  updateOutsidePlotFeedback(force = false) {
+    if (!this.scene || !this.modulesGroup) return;
+    const pCfg = this.currentPlotConfig;
+    const mods = this.modulesGroup.children.filter(m => m && m.visible !== false);
+    const key = pCfg && pCfg.enabled !== false && mods.length ? this.modulesStateKey(mods, pCfg) : '';
+    if (!force && key === this._outsidePlotKey) return;
+    this._outsidePlotKey = key;
+
+    let outside = new Set();
+    if (key) {
+      const pb = getPlotBoundingBox(pCfg);
+      this.modulesGroup.updateMatrixWorld(true);
+      outside = new Set(mods.filter(m => this.isModuleOutsidePlot(m, pb)));
+    }
+    // Module tint: on for newly outside modules, off for those back inside (or gone)
+    const was = this.redOutsideModules || new Set();
+    for (const m of was) if (!outside.has(m)) this.setModuleRedTint(m, false);
+    for (const m of outside) if (!was.has(m)) this.setModuleRedTint(m, true);
+    this.redOutsideModules = outside;
+
+    // Red BBs
+    if (this.outsidePlotGroup) {
+      this.scene.remove(this.outsidePlotGroup);
+      this.outsidePlotGroup.traverse(o => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
+      this.outsidePlotGroup = null;
+    }
+    if (outside.size) {
+      const group = new THREE.Group();
+      group.name = 'outsidePlotGroup';
+      for (const m of outside) {
+        const b = this.getModuleWorldBoundingBox(m);
+        const size = new THREE.Vector3(), center = new THREE.Vector3();
+        b.getSize(size); b.getCenter(center);
+        const geo = new THREE.BoxGeometry(Math.max(size.x, 1), Math.max(size.y, 1), Math.max(size.z, 1));
+        const red = new THREE.Group();
+        red.name = `module_outside_plot_${m.userData?.index}`;
+        red.userData = { isOutsidePlotBox: true, moduleIndex: m.userData?.index };
+        red.position.copy(center);
+        const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xFF0033, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }));
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xFF0033, transparent: true, opacity: 0.95, depthWrite: false }));
+        fill.raycast = () => {};
+        edges.raycast = () => {};
+        red.add(fill, edges);
+        group.add(red);
+      }
+      this.outsidePlotGroup = group;
+      this.scene.add(group);
+    }
+
+    // Selection outlines
+    if (this.selectionHelper) {
+      this.selectionHelper.userData = this.selectionHelper.userData || {};
+      this.selectionHelper.userData.isOutsidePlot = outside.has(this.selectionHelper.object);
+      if (this.selectionHelper.material?.color) {
+        this.selectionHelper.material.color.setHex(this.selectionHelper.userData.isOverlapping || this.selectionHelper.userData.isOutsidePlot ? 0xFF1133 : 0xFFFF00);
+      }
+    }
+    (this.multiSelectionHelpers || []).forEach(h => {
+      if (h?.material?.color) h.material.color.setHex(outside.has(h.object) ? 0xFF1133 : 0xFFFF00);
+    });
+  }
+
+  /** Tints a module red (on) with its own copies of its materials, or puts its materials back (off). */
+  setModuleRedTint(mod, on) {
+    if (!mod || typeof mod.traverse !== 'function') return;
+    const RED = new THREE.Color(0xFF0033);
+    mod.traverse(o => {
+      if (!o.isMesh || !o.material) return;
+      if (on) {
+        if (o.userData._preRedMaterial || o.userData?.isBBox || o.userData?.isGeometryInvisible) return;
+        o.userData._preRedMaterial = o.material;
+        const tint = (m) => {
+          const c = m.clone();
+          if (c.color) c.color.lerp(RED, 0.7);
+          if (c.emissive) c.emissive.setHex(0x550011);
+          return c;
+        };
+        o.material = Array.isArray(o.material) ? o.material.map(tint) : tint(o.material);
+      } else if (o.userData._preRedMaterial) {
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m?.dispose?.());
+        o.material = o.userData._preRedMaterial;
+        delete o.userData._preRedMaterial;
+      }
+    });
+  }
+
+  /**
    * Draws every visible pier's exclusion zones (getPierClampTunnelShapes): a translucent box and
    * outline per clamp tunnel and a marker at the clamp, amber while clear and red while any other
-   * module or pier reaches into it or its pier is outside the plot. The plot BB is hidden meanwhile,
-   * so any module outside the plot shows its own BB in red. Checked on every frame drawn (renderScene), so the zones follow
+   * module or pier reaches into it or its pier is outside the plot. Checked on every frame drawn (renderScene), so the zones follow
    * any pier or module as it moves (gizmo drags, layouts, undo, edits); rebuilt only when a module,
    * the plot or the toggle changed.
    * Nothing is drawn while the plot is off (the tunnels run to its walls).
@@ -3792,18 +4056,7 @@ export class StationViewer {
     const piers = mods.filter(m => isPierModule(m));
     // What the zones depend on, cheap enough to check every frame: the plot, and every module's index,
     // position (0.1 m), rotation and parts
-    let key = '';
-    if (on && mods.length) {
-      let h = 0;
-      const add = (v) => { h = (Math.imul(h, 31) + (Math.round(v) | 0)) | 0; };
-      for (const m of mods) {
-        add(m.userData?.index ?? -1);
-        add(m.position.x * 10); add(m.position.y * 10); add(m.position.z * 10);
-        add(m.quaternion.x * 1e4); add(m.quaternion.y * 1e4); add(m.quaternion.z * 1e4); add(m.quaternion.w * 1e4);
-        add(m.children.length);
-      }
-      key = `${JSON.stringify(pCfg)}|${mods.length}|${h}`;
-    }
+    const key = on && piers.length ? this.modulesStateKey(mods, pCfg) : '';
     if (!force && key === this._pierZonesKey) return;
     this._pierZonesKey = key;
 
@@ -3824,29 +4077,8 @@ export class StationViewer {
     const group = new THREE.Group();
     group.name = 'pierExclusionZonesGroup';
     group.renderOrder = 2;
-    // With the plot BB hidden (Zones on), a module outside the plot shows its own BB in red
-    const EPS = 0.5;
-    const outside = new Set(mods.filter(m => {
-      const b = boxes.get(m);
-      return b && !b.isEmpty() && (b.min.x < pb.minX - EPS || b.max.x > pb.maxX + EPS || b.min.y < pb.minY - EPS ||
-        b.max.y > pb.maxY + EPS || b.min.z < pb.minZ - EPS || b.max.z > pb.maxZ + EPS);
-    }));
-    for (const m of outside) {
-      const b = boxes.get(m);
-      const size = new THREE.Vector3(), center = new THREE.Vector3();
-      b.getSize(size); b.getCenter(center);
-      const geo = new THREE.BoxGeometry(Math.max(size.x, 1), Math.max(size.y, 1), Math.max(size.z, 1));
-      const red = new THREE.Group();
-      red.name = `module_outside_plot_${m.userData?.index}`;
-      red.userData = { isOutsidePlotBox: true, moduleIndex: m.userData?.index };
-      red.position.copy(center);
-      const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xFF0033, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }));
-      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xFF0033, transparent: true, opacity: 0.95, depthWrite: false }));
-      fill.raycast = () => {};
-      edges.raycast = () => {};
-      red.add(fill, edges);
-      group.add(red);
-    }
+    // A pier outside the plot has its zones red (its own BB turns red in updateOutsidePlotFeedback)
+    const outside = new Set(mods.filter(m => this.isModuleOutsidePlot(m, pb, boxes.get(m))));
     for (const pier of piers) {
       const shapes = getPierClampTunnelShapes(pier, pb, this) || [];
       const pierOutside = outside.has(pier);
@@ -5264,7 +5496,8 @@ export class StationViewer {
         }
         helperMat.opacity = this.pulseVal;
         const isOverlapping = !!this.selectionHelper.userData?.isOverlapping;
-        helperMat.color.setHex(isOverlapping ? 0xFF1133 : 0xFFFF00);
+        const isOutside = !!this.selectionHelper.userData?.isOutsidePlot;
+        helperMat.color.setHex(isOverlapping || isOutside ? 0xFF1133 : 0xFFFF00);
       }
       this.selectionHelper.update();
     }

@@ -125,11 +125,12 @@ assert.strictEqual(getDocksPerimeterSelections().size, 0, 'All selections cleare
 console.log('✓ Verified: Multi-selection toggles correctly and Clear removes all checks.');
 
 // =========================================================================
-// Test 3: "stacked" places largest docks along longest dimension displaced vertically by BB
+// Test 3: "stacked" places the largest piers along the longest dimension displaced vertically by BB;
+// dock areas are not stacked (they keep their X/Z, at the docks level)
 // =========================================================================
 console.log('\n--- Test 3: Stacked Placement ---');
 
-// Create mock viewer with 3 docks of different sizes
+// Create mock viewer with 3 piers of different sizes and a dock area
 // Longest plot dimension: widthX = 20,000m, depthZ = 10,000m -> Longest is X
 const mockViewer = {
   currentPlotConfig: {
@@ -142,18 +143,23 @@ const mockViewer = {
     children: [
       {
         name: 'dock_small',
-        userData: { macro: 'dock_small_macro', initialSize: { x: 100, y: 100, z: 100 } },
+        userData: { macro: 'pier_small_macro', initialSize: { x: 100, y: 100, z: 100 } },
         position: { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } }
       },
       {
         name: 'dock_huge',
-        userData: { macro: 'dock_huge_macro', initialSize: { x: 500, y: 300, z: 500 } },
+        userData: { macro: 'pier_huge_macro', initialSize: { x: 500, y: 300, z: 500 } },
         position: { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } }
       },
       {
         name: 'dock_medium',
-        userData: { macro: 'dock_medium_macro', initialSize: { x: 200, y: 200, z: 200 } },
+        userData: { macro: 'pier_medium_macro', initialSize: { x: 200, y: 200, z: 200 } },
         position: { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } }
+      },
+      {
+        name: 'dock_area',
+        userData: { macro: 'dockarea_arg_m_station_01_macro', initialSize: { x: 400, y: 260, z: 400 } },
+        position: { x: 1234, y: 0, z: -2345, set(x, y, z) { this.x = x; this.y = y; this.z = z; } }
       }
     ]
   },
@@ -180,7 +186,13 @@ assert.ok(dockMed.position.y < dockSmall.position.y, 'Medium dock must be below 
 const diffHugeToMed = dockMed.position.y - dockHuge.position.y;
 assert.ok(diffHugeToMed >= 200, `Vertical displacement between docks should be >= half-heights (got ${diffHugeToMed})`);
 
-console.log('✓ Verified: Stacked places largest docks along longest dimension, vertically displaced by BB height.');
+// The dock area is not stacked: same X/Z, on the plot floor (docks orientation 'bottom')
+const dockArea = mods.find(m => m.name === 'dock_area');
+assert.strictEqual(dockArea.position.x, 1234, 'dock area keeps its X');
+assert.strictEqual(dockArea.position.z, -2345, 'dock area keeps its Z');
+assert.strictEqual(dockArea.position.y, -10000 + 130, 'dock area at the docks level (bottom)');
+
+console.log('✓ Verified: Stacked places the largest piers along the longest dimension, vertically displaced by BB height; dock areas are not stacked.');
 
 // =========================================================================
 // Test 4: "spread" spreads docks out evenly to each side with multiples beyond 4 walls stacking vertically

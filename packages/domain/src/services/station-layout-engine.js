@@ -283,6 +283,16 @@ export class StationLayoutEngine {
     const halfZM = ((targetSize.z ?? targetSize[2]) || 100) / 2;
 
     const currentPos = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
+    // Keeps the module's box (its centre is the position plus centerOffset) inside the plot: a module
+    // whose origin is not its box centre must not be clamped by its origin
+    const clampToPlot = (p) => {
+      const c = { x: p.x + centerOffset.x, y: p.y + centerOffset.y, z: p.z + centerOffset.z };
+      StationLayoutEngine.clampModulePositionToPlot(c, targetSize, bounds);
+      p.x = c.x - centerOffset.x;
+      p.y = c.y - centerOffset.y;
+      p.z = c.z - centerOffset.z;
+      return p;
+    };
 
     // Precompute stationary module bounding data
     const stationaryData = stationaryModules.map(other => {
@@ -374,7 +384,7 @@ export class StationLayoutEngine {
             ? (otherCenter.x + halfXO + halfXM + gap) - bestCenter.x
             : (otherCenter.x - halfXO - halfXM - gap) - bestCenter.x;
           const candX = { x: bestPos.x + shiftX, y: bestPos.y, z: bestPos.z };
-          StationLayoutEngine.clampModulePositionToPlot(candX, targetSize, bounds);
+          clampToPlot(candX);
           candidates.push({ pos: candX, axis: 'X', dist: Math.abs(shiftX), overlapSpan: overlapX });
         }
 
@@ -384,7 +394,7 @@ export class StationLayoutEngine {
             ? (otherCenter.z + halfZO + halfZM + gap) - bestCenter.z
             : (otherCenter.z - halfZO - halfZM - gap) - bestCenter.z;
           const candZ = { x: bestPos.x, y: bestPos.y, z: bestPos.z + shiftZ };
-          StationLayoutEngine.clampModulePositionToPlot(candZ, targetSize, bounds);
+          clampToPlot(candZ);
           candidates.push({ pos: candZ, axis: 'Z', dist: Math.abs(shiftZ), overlapSpan: overlapZ });
         }
 
@@ -394,7 +404,7 @@ export class StationLayoutEngine {
             ? (otherCenter.y + halfYO + halfYM + gap) - bestCenter.y
             : (otherCenter.y - halfYO - halfYM - gap) - bestCenter.y;
           const candY = { x: bestPos.x, y: bestPos.y + shiftY, z: bestPos.z };
-          StationLayoutEngine.clampModulePositionToPlot(candY, targetSize, bounds);
+          clampToPlot(candY);
           candidates.push({ pos: candY, axis: 'Y', dist: Math.abs(shiftY), overlapSpan: overlapY });
         }
       }
@@ -410,7 +420,7 @@ export class StationLayoutEngine {
       let minDist = Infinity;
 
       for (const cand of candidates) {
-        StationLayoutEngine.clampModulePositionToPlot(cand.pos, targetSize, bounds);
+        clampToPlot(cand.pos);
         const count = findOverlaps(cand.pos).length;
         const distFromCurrent = Math.hypot(
           cand.pos.x - currentPos.x,
@@ -448,7 +458,7 @@ export class StationLayoutEngine {
       }
     }
 
-    StationLayoutEngine.clampModulePositionToPlot(bestPos, targetSize, bounds);
+    clampToPlot(bestPos);
 
     // Apply new position to movingModule object
     if (options.applyToObject !== false) {

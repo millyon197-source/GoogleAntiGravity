@@ -2122,8 +2122,8 @@ function translateModule(mod, dx, dy, dz) {
 }
 
 /**
- * Perimeter placement for dock types the station has more than one of (e.g. four
- * pier_arg_harbor_01): each type goes to the smallest plot wall that still has room for it, its
+ * Perimeter placement for pier types the station has more than one of (e.g. four
+ * pier_arg_harbor_01; dock areas are never stacked): each type goes to the smallest plot wall that still has room for it, its
  * modules stacked vertically on that wall, each separated from the next by its own BB height plus
  * `gap`; a pier's BB here takes in its prongs' exclusion zones (pierZoneSlotBox), so stacked and
  * side-by-side piers stay out of each other's zones. A type with prongs facing along the wall (whose
@@ -2143,7 +2143,8 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
   const stacked = new Set();
   const byMacro = new Map();
   for (const mod of dockModules || []) {
-    if (!mod || mod.visible === false) continue;
+    // Only piers stack; dock areas keep the ordinary placement
+    if (!mod || mod.visible === false || !isPierModule(mod)) continue;
     const macro = String(mod.userData?.macro || mod.macro || '').toLowerCase();
     if (!macro) continue;
     if (!byMacro.has(macro)) byMacro.set(macro, []);
@@ -2770,6 +2771,22 @@ export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
     });
   }
 
+  // Base vertical orientation: a dock keeps its X/Z and goes to the docks level
+  const placeAtDocksLevel = (mod) => {
+    const s = getModSize(mod);
+    const halfY = (s.y || 100) / 2;
+    let newY;
+    if (orient === 'top') newY = plotBounds.maxY - halfY;
+    else if (orient === 'center') newY = centerY;
+    else if (orient === 'bottom') newY = plotBounds.minY + halfY;
+    if (newY !== undefined) {
+      const pos = { x: mod.position?.x ?? 0, y: newY, z: mod.position?.z ?? 0 };
+      clampModulePositionToPlot(pos, s, plotBounds);
+      if (typeof mod.position?.set === 'function') mod.position.set(pos.x, pos.y, pos.z);
+      else if (mod.position) mod.position.y = pos.y;
+    }
+  };
+
   if (selSet.has('spread')) {
     // spread has the docks spread out evenly as possible to a side each with multiples beyond the four walls stacking vertically
     // Wall indices: 0: +Z, 1: +X, 2: -Z, 3: -X
@@ -2835,12 +2852,15 @@ export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
       wallDocks[wallIdx].push(mod);
     });
   } else if (selSet.has('stacked')) {
-    // stacked places the largest docks along the longest dimension displaced vertically by the docks' BB
-    const N = dockModules.length;
+    // stacked places the largest piers along the longest dimension displaced vertically by the piers' BB;
+    // dock areas are not stacked: they keep their place at the docks level
+    const stackPiers = dockModules.filter(m => isPierModule(m));
+    dockModules.filter(m => !isPierModule(m)).forEach(placeAtDocksLevel);
+    const N = stackPiers.length;
     let prevY = null;
     let prevHalfY = 0;
 
-    dockModules.forEach((mod, i) => {
+    stackPiers.forEach((mod, i) => {
       const s = getModSize(mod);
       const halfX = (s.x || 100) / 2;
       const halfY = (s.y || 100) / 2;
@@ -2891,20 +2911,7 @@ export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
     });
   } else {
     // Neither spread nor stacked: apply base vertical orientation
-    dockModules.forEach(mod => {
-      const s = getModSize(mod);
-      const halfY = (s.y || 100) / 2;
-      let newY;
-      if (orient === 'top') newY = plotBounds.maxY - halfY;
-      else if (orient === 'center') newY = centerY;
-      else if (orient === 'bottom') newY = plotBounds.minY + halfY;
-      if (newY !== undefined) {
-        const pos = { x: mod.position?.x ?? 0, y: newY, z: mod.position?.z ?? 0 };
-        clampModulePositionToPlot(pos, s, plotBounds);
-        if (typeof mod.position?.set === 'function') mod.position.set(pos.x, pos.y, pos.z);
-        else if (mod.position) mod.position.y = pos.y;
-      }
-    });
+    dockModules.forEach(placeAtDocksLevel);
   }
 
   // Piers' docking lanes always point out of the plot

@@ -195,6 +195,13 @@ console.log('  ✓ each repeated type on the smallest wall that fits, stacked by
   const pb = panel.getPlotBoundingBox(WIDE_X);
   const stacked = panel.stackRepeatedDockTypes([byIndex(v, 7), byIndex(v, 1)], pb, v, {});
   assert.strictEqual(stacked.size, 0, 'no type with more than one module: nothing stacked');
+  // Dock areas never stack, even several of one type; only piers do
+  const twin = makeModule(11, 'dockarea_arg_m_station_01_lowtech_macro', [400, 260, 400], [3000, 0, 0]);
+  v.modulesGroup.add(twin);
+  const twinAt = twin.position.clone(), sevenAt = byIndex(v, 7).position.clone();
+  const areas = panel.stackRepeatedDockTypes([byIndex(v, 7), twin], pb, v, {});
+  assert.strictEqual(areas.size, 0, 'two identical dock areas: not stacked');
+  assert.ok(twin.position.equals(twinAt) && byIndex(v, 7).position.equals(sevenAt), 'dock areas left where they are');
   console.log('  ✓ single docks keep the ordinary Perimeter placement');
 }
 
