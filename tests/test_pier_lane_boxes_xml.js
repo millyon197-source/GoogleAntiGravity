@@ -6,7 +6,7 @@
 import assert from 'assert';
 import fs from 'fs';
 import * as THREE from 'three';
-import { laneBoxesFromXml } from '../generate_pier_lanes.js';
+import { laneBoxesFromXml, clampsFromXml } from '../generate_pier_lanes.js';
 import { addXmlLaneBoxes } from '../packages/adapter-three/src/models/module-mesh-loader.js';
 import { getDockInvisibleWorldBoundingBox, ensureNoDocksInvisibleOverlap } from '../src/module-display-panel.js';
 
@@ -118,5 +118,27 @@ p2.updateMatrixWorld(true);
 const b1 = getDockInvisibleWorldBoundingBox(p1), b2 = getDockInvisibleWorldBoundingBox(p2);
 assert.ok(!b1.intersectsBox(b2), 'lane boxes from the XML no longer overlap');
 console.log('  ✓ lanes of piers without a lane model are kept apart');
+
+// 5. Clamps: one per exclusion zone, starting at the docking bay facing the same way next to it
+// (X mirrored to mesh space); a zone with no bay close by starts at the zone; no zones -> the bays
+const CLAMPS = JSON.parse(fs.readFileSync(new URL('../src/pier-clamps.json', import.meta.url), 'utf8'));
+const clampXml = `<component><connections>
+  <connection name="Z1" tags="exclusionzone ship_xl"><offset><position x="0" y="0" z="1887"/></offset></connection>
+  <connection name="Z2" tags="exclusionzone ship_xl"><offset><position x="-1886" y="0" z="0"/><quaternion qx="0" qy="0.7071066" qz="0" qw="-0.7071069"/></offset></connection>
+  <connection name="Z3" tags="exclusionzone ship_xl"><offset><position x="0" y="2000" z="0"/><quaternion qx="0" qy="-1" qz="0" qw="0"/></offset></connection>
+  <connection name="B1" tags="dockingbay"><offset><position x="0.2" y="0" z="1784"/></offset></connection>
+  <connection name="B2" tags="dockingbay"><offset><position x="-1783" y="0" z="0"/><quaternion qx="0" qy="0.7071068" qz="0" qw="-0.7071067"/></offset></connection>
+</connections></component>`;
+assert.deepStrictEqual(clampsFromXml(clampXml), [
+  { position: [-0.2, 0, 1784], direction: [0, 0, 1] },
+  { position: [1783, 0, 0], direction: [1, 0, 0] },
+  { position: [0, 2000, 0], direction: [0, 0, -1] }
+]);
+assert.deepStrictEqual(clampsFromXml(`<connections><connection name="B" tags="dockingbay"><offset><position x="1864" y="31" z="0"/><quaternion qx="0" qy="-0.7071068" qz="0" qw="-0.7071067"/></offset></connection></connections>`),
+  [{ position: [-1864, 31, 0], direction: [-1, 0, 0] }], 'no exclusion zones: the bays');
+assert.strictEqual(CLAMPS.pier_arg_harbor_01.length, 3, 'arg_harbor_01: three clamps');
+assert.strictEqual(CLAMPS.pier_ter_tradestation_01.length, 6, 'ter_tradestation_01: six clamps');
+assert.ok(CLAMPS.pier_bor_harbor_02?.length === 1, 'bor_harbor_02 (no zones) uses its bay');
+console.log(`  ✓ docking clamps of ${Object.keys(CLAMPS).length} piers read from the XML`);
 
 console.log('\n[SUCCESS] Pier lane boxes from the XML work');

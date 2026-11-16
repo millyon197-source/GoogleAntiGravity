@@ -10,6 +10,9 @@
  * connections' <size> boxes), in the module's mesh space, so the viewer has a lane box for piers
  * whose lane model was never extracted.
  *
+ * And src/pier-clamps.json: every pier's docking clamps (clampsFromXml), so the space ships use to
+ * reach each clamp can be kept clear out to the plot wall.
+ *
  * Usage: node generate_pier_lanes.js
  */
 import fs from 'fs';
@@ -20,6 +23,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCK_DIR = path.join(__dirname, 'assets1', 'structures', 'dock');
 const OUT = path.join(__dirname, 'src', 'pier-lane-directions.json');
 const BOXES_OUT = path.join(__dirname, 'src', 'pier-lane-boxes.json');
+const CLAMPS_OUT = path.join(__dirname, 'src', 'pier-clamps.json');
 
 /** Connections of a component XML with their tags and offset position (X4 space). */
 export function parseConnections(xml) {
@@ -108,9 +112,48 @@ export function laneBoxesFromXml(xml) {
   return boxes;
 }
 
+/**
+ * Docking clamps of a pier XML, each with where its tunnel starts and the horizontal direction ships
+ * come and go, in the viewer's mesh space. One per `exclusionzone ship_xl` connection (its local +Z is
+ * the way out of the clamp); the tunnel starts at the docking bay facing the same way next to it, or at
+ * the zone itself when there is none close by (hubs whose bays sit at the centre). Piers without
+ * exclusion zones use their docking bays.
+ * @returns {{ position: number[], direction: number[] }[]}
+ */
+export function clampsFromXml(xml) {
+  const num = (attrs, k) => Number((attrs.match(new RegExp(`(?:^|\\s)${k}="([^"]*)"`)) || [])[1] || 0);
+  const zones = [], bays = [];
+  for (const [, tags, body] of xml.matchAll(/<connection\s[^>]*?tags="([^"]*)"[^>]*>([\s\S]*?)<\/connection>/g)) {
+    const t = tags.split(/\s+/);
+    const list = t.includes('exclusionzone') && t.includes('ship_xl') ? zones : (t.includes('dockingbay') ? bays : null);
+    if (!list) continue;
+    const pre = body.split(/<parts\b/)[0];
+    const pos = pre.match(/<position\s+([^>]*?)\/>/);
+    const quat = pre.match(/<quaternion\s+([^>]*?)\/>/);
+    const p = pos ? ['x', 'y', 'z'].map(k => num(pos[1], k)) : [0, 0, 0];
+    const [qx, qy, qz, qw] = quat ? ['qx', 'qy', 'qz', 'qw'].map(k => num(quat[1], k)) : [0, 0, 0, 1];
+    // Local +Z turned by the quaternion, kept horizontal
+    const dx = 2 * (qx * qz + qw * qy), dz = 1 - 2 * (qx * qx + qy * qy);
+    const len = Math.hypot(dx, dz);
+    if (len < 0.2) continue;
+    list.push({ p, d: [dx / len, dz / len] });
+  }
+  const out = [];
+  for (const z of (zones.length ? zones : bays)) {
+    const bay = zones.length ? bays
+      .filter(b => b.d[0] * z.d[0] + b.d[1] * z.d[1] > 0.99 && Math.hypot(b.p[0] - z.p[0], b.p[1] - z.p[1], b.p[2] - z.p[2]) < 500)
+      .sort((a, b) => Math.hypot(a.p[0] - z.p[0], a.p[2] - z.p[2]) - Math.hypot(b.p[0] - z.p[0], b.p[2] - z.p[2]))[0] : null;
+    const start = (bay || z).p;
+    // X4 component space -> mesh space mirrors X
+    out.push({ position: [-start[0], start[1], start[2]].map(round), direction: [-z.d[0], 0, z.d[1]].map(v => Math.round(v * 1e4) / 1e4 + 0) });
+  }
+  return out;
+}
+
 function main() {
   const table = {};
   const boxes = {};
+  const clamps = {};
   for (const file of fs.readdirSync(DOCK_DIR).sort()) {
     if (!/^pier_.*\.xml$/i.test(file)) continue;
     const xml = fs.readFileSync(path.join(DOCK_DIR, file), 'utf8');
@@ -118,7 +161,11 @@ function main() {
     table[key] = laneDirectionFromConnections(parseConnections(xml));
     const lanes = laneBoxesFromXml(xml);
     if (lanes.length) boxes[key] = lanes;
+    const c = clampsFromXml(xml);
+    if (c.length) clamps[key] = c;
   }
+  fs.writeFileSync(CLAMPS_OUT, JSON.stringify(clamps, null, 1) + '\n');
+  console.log(`Wrote clamps of ${Object.keys(clamps).length} piers to ${path.relative(__dirname, CLAMPS_OUT)}`);
   fs.writeFileSync(BOXES_OUT, JSON.stringify(boxes, null, 1) + '\n');
   console.log(`Wrote lane boxes of ${Object.keys(boxes).length} piers to ${path.relative(__dirname, BOXES_OUT)}`);
   fs.writeFileSync(OUT, JSON.stringify(table, null, 2) + '\n');

@@ -7,6 +7,7 @@ import {
 } from '@x4/catalog';
 import { PlotBounds, StationLayoutEngine } from '@x4/domain';
 import PIER_LANE_DIRECTIONS from './pier-lane-directions.json' with { type: 'json' };
+import PIER_CLAMPS from './pier-clamps.json' with { type: 'json' };
 
 const STORAGE_KEY = 'x4_module_display_panel_config';
 const PLOT_STORAGE_KEY = 'x4_layout_plot_config';
@@ -1974,15 +1975,19 @@ const LANE_FACTIONS = ['_arg_', '_par_', '_tel_', '_spl_', '_ter_', '_bor_'];
  * @param {string} macro
  */
 export function getPierLaneDirection(macro) {
+  return lookupPierTable(PIER_LANE_DIRECTIONS, macro);
+}
+
+/** A pier's entry in a per-pier table, or the same pier shape's under another faction's name. */
+function lookupPierTable(table, macro) {
   const key = String(macro || '').toLowerCase().trim().replace(/_macro$/, '');
   if (!key.startsWith('pier_')) return null;
-  if (key in PIER_LANE_DIRECTIONS) return PIER_LANE_DIRECTIONS[key];
-  // Same pier shape under another faction's name
+  if (key in table) return table[key];
   for (const fac of LANE_FACTIONS) {
     if (!key.includes(fac)) continue;
     for (const alt of LANE_FACTIONS) {
       const altKey = key.replace(fac, alt);
-      if (alt !== fac && altKey in PIER_LANE_DIRECTIONS) return PIER_LANE_DIRECTIONS[altKey];
+      if (alt !== fac && altKey in table) return table[altKey];
     }
   }
   return null;
@@ -2033,7 +2038,8 @@ export function nearestPlotWallNormal(pos, plotBounds) {
 
 /**
  * Yaw every pier so its docking lanes point out of the plot bounding box, through the plot wall
- * nearest the pier, and record the new rotation in the plan.
+ * nearest the pier, and record the new rotation in the plan. A pier whose lanes are not level (tilted,
+ * or on its side) is levelled first, keeping its heading.
  * @param {Array<object>} modules module groups (non-piers are ignored)
  * @param {object} plotBounds
  * @param {object} [viewer]
@@ -2045,19 +2051,37 @@ export function orientPierLanesOutward(modules, plotBounds, viewer = null, wallN
   let turned = 0;
   (modules || []).forEach(mod => {
     if (!mod || mod.visible === false || !isPierModule(mod)) return;
+    // Lanes not level (a pier tilted or on its side): level the pier, keeping its heading, so its
+    // lanes and exclusion zones run out through a wall rather than through the station
+    const lane = getPierLaneDirection(mod?.userData?.macro || mod?.macro);
+    let levelled = false;
+    if (lane && mod.quaternion && mod.rotation && typeof mod.rotation.set === 'function') {
+      const v = rotateVectorByQuaternion({ x: -lane.x, y: 0, z: lane.z }, mod.quaternion);
+      if (Math.abs(v.y) > 0.01) {
+        const xAxis = rotateVectorByQuaternion({ x: 1, y: 0, z: 0 }, mod.quaternion);
+        const zAxis = rotateVectorByQuaternion({ x: 0, y: 0, z: 1 }, mod.quaternion);
+        const heading = Math.hypot(xAxis.x, xAxis.z) > 0.2 ? Math.atan2(-xAxis.z, xAxis.x) : Math.atan2(zAxis.x, zAxis.z);
+        mod.rotation.set(0, heading, 0);
+        if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
+        levelled = true;
+      }
+    }
     const dir = getPierLaneWorldDirection(mod);
-    if (!dir) return;
-    const out = (wallNormalFor && wallNormalFor(mod)) || nearestPlotWallNormal(mod.position || { x: 0, z: 0 }, plotBounds);
-    // Rotation about +Y by theta takes the vector at angle atan2(x, z) to angle + theta
-    let theta = Math.atan2(out.x, out.z) - Math.atan2(dir.x, dir.z);
-    theta = Math.atan2(Math.sin(theta), Math.cos(theta));
-    if (Math.abs(theta) < 1e-4) return;
+    if (!dir) {
+      if (!levelled) return;
+    } else {
+      const out = (wallNormalFor && wallNormalFor(mod)) || nearestPlotWallNormal(mod.position || { x: 0, z: 0 }, plotBounds);
+      // Rotation about +Y by theta takes the vector at angle atan2(x, z) to angle + theta
+      let theta = Math.atan2(out.x, out.z) - Math.atan2(dir.x, dir.z);
+      theta = Math.atan2(Math.sin(theta), Math.cos(theta));
+      if (Math.abs(theta) < 1e-4 && !levelled) return;
 
-    if (typeof mod.rotateOnWorldAxis === 'function' && mod.up?.constructor) {
-      const yAxis = new mod.up.constructor(0, 1, 0);
-      mod.rotateOnWorldAxis(yAxis, theta);
-    } else if (mod.rotation) {
-      mod.rotation.y = (mod.rotation.y || 0) + theta;
+      if (typeof mod.rotateOnWorldAxis === 'function' && mod.up?.constructor) {
+        const yAxis = new mod.up.constructor(0, 1, 0);
+        mod.rotateOnWorldAxis(yAxis, theta);
+      } else if (mod.rotation) {
+        mod.rotation.y = (mod.rotation.y || 0) + theta;
+      }
     }
     if (typeof mod.updateMatrixWorld === 'function') mod.updateMatrixWorld(true);
     turned++;
@@ -2100,8 +2124,11 @@ function translateModule(mod, dx, dy, dz) {
  * Perimeter placement for dock types the station has more than one of (e.g. four
  * pier_arg_harbor_01): each type goes to the smallest plot wall that still has room for it, its
  * modules stacked vertically on that wall, each separated from the next by its own BB height plus
- * `gap`. Piers' lanes point out through that wall. Stacks start at the top, bottom or middle of the
- * plot per the docks vertical orientation; a type taller than the plot continues in further columns
+ * `gap`; a pier's BB here takes in its prongs' exclusion zones (pierZoneSlotBox), so stacked and
+ * side-by-side piers stay out of each other's zones. A type with prongs facing along the wall (whose
+ * zones run along it to the corners) takes a whole wall to itself, its columns centred on it.
+ * Piers' lanes point out through that wall. Stacks start at the top, bottom or middle of the plot
+ * per the docks vertical orientation; a type taller than the plot continues in further columns
  * along the wall. Types sharing a wall sit side by side, centred along it.
  *
  * Boxes are the modules as rendered (lane and invisible clearance volumes excluded).
@@ -2144,9 +2171,13 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
       translateModule(mod, x - mod.position.x, 0, z - mod.position.z);
     }
     orientPierLanesOutward([mod], pb, viewer, () => wall.normal);
-    const b = moduleWorldBox(mod, viewer);
-    return { along: wall.along === 'x' ? b.max.x - b.min.x : b.max.z - b.min.z, height: b.max.y - b.min.y };
+    const b = pierZoneSlotBox(mod, viewer);
+    // A prong facing along the wall (a T pier's side prongs) has its exclusion zone run along the wall
+    // to the plot's corners: that type needs the whole wall to itself
+    const alongWall = isPierModule(mod) && pierClampsInScene(mod).some(({ d }) => Math.abs(wall.along === 'x' ? d.x : d.z) > 0.3);
+    return { along: wall.along === 'x' ? b.max.x - b.min.x : b.max.z - b.min.z, height: b.max.y - b.min.y, alongWall };
   };
+  const columnsAlong = (sizes, wall) => sizes.some(s => s.alongWall) ? wall.length : Math.max(...sizes.map(s => s.along));
 
   // A stack is one shape repeated: every module of a type gets the same level rotation (the first
   // one's heading, no pitch or roll), so piers' lanes are horizontal and can face the wall
@@ -2162,14 +2193,14 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
   }
 
   // Largest footprint first, so the big types get the walls they fit on
-  const footprint = (g) => { const b = moduleWorldBox(g[0], viewer); return Math.max(b.max.x - b.min.x, b.max.z - b.min.z); };
+  const footprint = (g) => { const b = pierZoneSlotBox(g[0], viewer); return Math.max(b.max.x - b.min.x, b.max.z - b.min.z); };
   groups.sort((a, b) => footprint(b) - footprint(a));
 
   for (const group of groups) {
     let chosen = null;
     for (const wall of walls) {
       const sizes = group.map(m => presentToWall(m, wall));
-      const along = Math.max(...sizes.map(s => s.along));
+      const along = columnsAlong(sizes, wall);
       const height = Math.max(...sizes.map(s => s.height));
       const perColumn = Math.max(1, Math.floor((plotHeight + gap) / (height + gap)));
       const columnCount = Math.ceil(group.length / perColumn);
@@ -2183,7 +2214,7 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
       // Fits on no wall: the longest one, overflowing it (keepModulesInsidePlot pulls it back in)
       const wall = walls[walls.length - 1];
       const sizes = group.map(m => presentToWall(m, wall));
-      const along = Math.max(...sizes.map(s => s.along));
+      const along = columnsAlong(sizes, wall);
       const height = Math.max(...sizes.map(s => s.height));
       const perColumn = Math.max(1, Math.floor((plotHeight + gap) / (height + gap)));
       const columnCount = Math.ceil(group.length / perColumn);
@@ -2204,20 +2235,22 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
     const wallMid = wall.along === 'x' ? pb.centerX : pb.centerZ;
     let cursor = wallMid - wall.used / 2;
     for (const column of wall.columns) {
-      const heights = column.mods.map(m => { const b = moduleWorldBox(m, viewer); return b.max.y - b.min.y; });
+      const heights = column.mods.map(m => { const b = pierZoneSlotBox(m, viewer); return b.max.y - b.min.y; });
       const stackHeight = heights.reduce((a, h) => a + h, 0) + gap * (column.mods.length - 1);
       // Bottom of the first module, then upwards (top: downwards from the plot top)
       let y = orient === 'bottom' ? pb.minY : (orient === 'center' ? centerY - stackHeight / 2 : pb.maxY);
       column.mods.forEach((mod, k) => {
-        const b = moduleWorldBox(mod, viewer);
-        // Outer face on the wall, start of the box at the column's place along the wall
+        const b = pierZoneSlotBox(mod, viewer);
+        // The module's own outer face on the wall (its prongs' zones may reach past it, out of the
+        // plot, like lanes); its room (b) centred in the column's place along the wall
+        const face = moduleWorldBox(mod, viewer);
         let dx = 0, dz = 0;
         if (wall.along === 'z') {
-          dx = wall.normal.x > 0 ? pb.maxX - b.max.x : pb.minX - b.min.x;
-          dz = cursor - b.min.z;
+          dx = wall.normal.x > 0 ? pb.maxX - face.max.x : pb.minX - face.min.x;
+          dz = cursor + (column.along - (b.max.z - b.min.z)) / 2 - b.min.z;
         } else {
-          dz = wall.normal.z > 0 ? pb.maxZ - b.max.z : pb.minZ - b.min.z;
-          dx = cursor - b.min.x;
+          dz = wall.normal.z > 0 ? pb.maxZ - face.max.z : pb.minZ - face.min.z;
+          dx = cursor + (column.along - (b.max.x - b.min.x)) / 2 - b.min.x;
         }
         let dy;
         if (orient === 'top') {
@@ -2228,6 +2261,10 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
           y += heights[k] + gap;
         }
         translateModule(mod, dx, dy, dz);
+        // A pier's zones taller than the plot: its own box still stays within the plot height
+        const own = moduleWorldBox(mod, viewer);
+        const fixY = own.min.y < pb.minY ? pb.minY - own.min.y : (own.max.y > pb.maxY ? pb.maxY - own.max.y : 0);
+        if (fixY) translateModule(mod, 0, fixY, 0);
       });
       cursor += column.along + gap;
     }
@@ -2299,6 +2336,302 @@ export function clearStackedDocksSpace(stacked, modules, plotBounds, viewer = nu
     }
   }
   return moved;
+}
+
+/** Writes a module's scene position to its plan entry (plan z is scene -z). */
+function syncPlanPosition(mod, viewer) {
+  const planMod = viewer?.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+  if (planMod && planMod.position && mod.position) {
+    planMod.position.x = Math.round(mod.position.x);
+    planMod.position.y = Math.round(mod.position.y);
+    planMod.position.z = Math.round(-mod.position.z);
+  }
+}
+
+/**
+ * Side of the square exclusion zone every pier prong keeps clear, centred on the prong and running out
+ * to the plot wall: 4000 m. The same size is used for the prongs of every pier.
+ */
+export const PIER_PRONG_ZONE_SIZE = 4000;
+/** Half the side of a prong's exclusion zone. */
+export const PIER_CLAMP_TUNNEL_HALF = PIER_PRONG_ZONE_SIZE / 2;
+
+/** Docking clamps of a pier ({position, direction} in mesh space), or null. Data: src/pier-clamps.json. */
+export function getPierClamps(macro) {
+  return lookupPierTable(PIER_CLAMPS, macro);
+}
+
+/**
+ * A pier's docking clamps in scene space, whatever the pier's orientation: `s` where the prong is,
+ * `d` the unit direction ships come and go (out of the prong, tilted with the pier), `up` the prong's
+ * up and `across` = d × up, a right-handed frame for its square exclusion zone.
+ * @returns {Array<{s: object, d: object, up: object, across: object}>}
+ */
+function pierClampsInScene(pier) {
+  const clamps = getPierClamps(pier?.userData?.macro || pier?.macro);
+  if (!clamps || !clamps.length) return [];
+  if (typeof pier.updateMatrixWorld === 'function') pier.updateMatrixWorld(true);
+  let q = pier.quaternion;
+  if (typeof pier.getWorldQuaternion === 'function' && q?.clone) q = pier.getWorldQuaternion(q.clone());
+  const turn = (v) => (q ? rotateVectorByQuaternion(v, q) : v);
+  const unit = (v) => { const l = Math.hypot(v.x, v.y, v.z) || 1; return { x: v.x / l, y: v.y / l, z: v.z / l }; };
+  const out = [];
+  for (const c of clamps) {
+    let s;
+    if (typeof pier.localToWorld === 'function' && pier.position?.clone) {
+      s = pier.localToWorld(pier.position.clone().set(...c.position));
+    } else {
+      const r = turn({ x: c.position[0], y: c.position[1], z: c.position[2] });
+      const p = pier.position || { x: 0, y: 0, z: 0 };
+      s = { x: p.x + r.x, y: p.y + r.y, z: p.z + r.z };
+    }
+    const d = unit(turn({ x: c.direction[0], y: c.direction[1] || 0, z: c.direction[2] }));
+    // The prong's up: the pier's up, square to d
+    const u0 = turn({ x: 0, y: 1, z: 0 });
+    const k = u0.x * d.x + u0.y * d.y + u0.z * d.z;
+    const up = unit({ x: u0.x - k * d.x, y: u0.y - k * d.y, z: u0.z - k * d.z });
+    const across = { x: d.y * up.z - d.z * up.y, y: d.z * up.x - d.x * up.z, z: d.x * up.y - d.y * up.x };
+    out.push({ s: { x: s.x, y: s.y, z: s.z }, d, up, across });
+  }
+  return out;
+}
+
+/**
+ * The room a module needs where docks are laid out next to and above each other: its own box (as
+ * rendered, lanes excluded) and, for a pier, the square exclusion zone's cross-section at each prong
+ * (PIER_PRONG_ZONE_SIZE across, centred on it), so no neighbour lands in a prong's zone.
+ * @returns {{min: object, max: object}}
+ */
+export function pierZoneSlotBox(mod, viewer = null) {
+  const b = moduleWorldBox(mod, viewer);
+  if (!isPierModule(mod)) return b;
+  const H = PIER_CLAMP_TUNNEL_HALF;
+  for (const { s, up, across } of pierClampsInScene(mod)) {
+    for (const i of [-H, H]) for (const j of [-H, H]) {
+      for (const k of ['x', 'y', 'z']) {
+        const v = s[k] + up[k] * i + across[k] * j;
+        b.min[k] = Math.min(b.min[k], v); b.max[k] = Math.max(b.max[k], v);
+      }
+    }
+  }
+  return b;
+}
+
+/**
+ * One exclusion zone per docking clamp (prong) of a pier, in scene space: a square PIER_PRONG_ZONE_SIZE
+ * across, centred on the prong, running straight out the way ships come and go (the pier XML's
+ * `exclusionzone ship_xl` facing) to the plot wall. A zone not along a scene axis is returned as short
+ * axis-aligned pieces covering it. Null when the pier has no clamp data.
+ * @returns {Array<{min: object, max: object}>|null}
+ */
+export function getPierClampTunnels(pier, plotBounds, viewer = null) {
+  const shapes = getPierClampTunnelShapes(pier, plotBounds, viewer);
+  return shapes ? shapes.flatMap(t => t.pieces) : null;
+}
+
+/**
+ * The clamp tunnels of a pier (getPierClampTunnels) one per clamp, for any pier orientation, each as
+ * drawn: a box `center`, `length` along `direction` (the prong's way out), `height` along `up` and
+ * `width` along `across` (d × up), plus the axis-aligned `pieces` the layout checks use. Null
+ * without clamp data.
+ * @returns {Array<{clamp: object, direction: object, center: object, length: number, width: number, height: number, yaw: number, pieces: Array<{min: object, max: object}>}>|null}
+ */
+export function getPierClampTunnelShapes(pier, plotBounds, viewer = null) {
+  if (!getPierClamps(pier?.userData?.macro || pier?.macro)?.length) return null;
+  const pb = plotBounds;
+  const H = PIER_CLAMP_TUNNEL_HALF;
+  const lo = { x: pb.minX, y: pb.minY, z: pb.minZ }, hi = { x: pb.maxX, y: pb.maxY, z: pb.maxZ };
+  const out = [];
+  for (const { s, d, up, across } of pierClampsInScene(pier)) {
+    // How far the prong's line runs before it leaves the plot (any face, the pier may be tilted); a
+    // prong outside the plot, or facing out right at it, keeps one zone length ahead of it
+    const inPlot = ['x', 'y', 'z'].every(k => s[k] >= lo[k] - 1e-6 && s[k] <= hi[k] + 1e-6);
+    let tMax = Infinity;
+    for (const k of ['x', 'y', 'z']) {
+      if (Math.abs(d[k]) > 1e-9) tMax = Math.min(tMax, ((d[k] > 0 ? hi[k] : lo[k]) - s[k]) / d[k]);
+    }
+    const runsToWall = inPlot && tMax > 1 && isFinite(tMax);
+    if (!runsToWall) tMax = PIER_PRONG_ZONE_SIZE;
+    // Along the scene axes (a level pier turned in 90° steps) the zone is one box; otherwise short
+    // pieces (500 m) so their boxes reach little past the zone's sides
+    const axial = (v) => ['x', 'y', 'z'].filter(k => Math.abs(v[k]) > 1e-6).length === 1;
+    const aligned = axial(d) && axial(up);
+    const step = aligned ? tMax : Math.min(500, tMax);
+    const pieces = [];
+    for (let t0 = 0; t0 < tMax - 1e-6; t0 += step) {
+      const t1 = Math.min(t0 + step, tMax);
+      const min = { x: Infinity, y: Infinity, z: Infinity }, max = { x: -Infinity, y: -Infinity, z: -Infinity };
+      for (const t of [t0, t1]) for (const i of [-H, H]) for (const j of [-H, H]) {
+        for (const k of ['x', 'y', 'z']) {
+          const v = s[k] + d[k] * t + up[k] * i + across[k] * j;
+          min[k] = Math.min(min[k], v); max[k] = Math.max(max[k], v);
+        }
+      }
+      // Kept to the plot sideways (as before); a zone of a prong outside the plot stays where it is
+      if (runsToWall) for (const k of ['x', 'z']) { min[k] = Math.max(lo[k], min[k]); max[k] = Math.min(hi[k], max[k]); }
+      pieces.push({ min, max });
+    }
+    out.push({
+      clamp: { x: s.x, y: s.y, z: s.z }, direction: d, up, across,
+      yaw: Math.atan2(-d.z, d.x), pieces,
+      center: { x: s.x + d.x * tMax / 2, y: s.y + d.y * tMax / 2, z: s.z + d.z * tMax / 2 },
+      length: tMax, width: 2 * H, height: 2 * H
+    });
+  }
+  return out;
+}
+
+/**
+ * The space a pier's prongs need kept clear, in scene space: the pier's own box (as rendered, lanes
+ * excluded) and a tunnel from each of its docking clamps out to the plot wall (getPierClampTunnels).
+ * A pier without clamp data falls back to its box carried along its lane direction to the wall, or,
+ * for a hub with bays all around, its lane volume (or its own box when it has none).
+ * @returns {Array<{min: object, max: object}>}
+ */
+export function getPierProngCorridors(pier, plotBounds, viewer = null) {
+  if (!pier || pier.visible === false || !isPierModule(pier)) return [];
+  const tunnels = getPierClampTunnels(pier, plotBounds, viewer);
+  if (tunnels) return [moduleWorldBox(pier, viewer), ...tunnels];
+  const c = pierLaneCorridor(pier, plotBounds, viewer);
+  return c ? [c] : [];
+}
+
+function pierLaneCorridor(pier, plotBounds, viewer) {
+  const box = moduleWorldBox(pier, viewer);
+  const dir = getPierLaneWorldDirection(pier);
+  if (!dir) {
+    const lane = getDockInvisibleWorldBoundingBox(pier, viewer);
+    return lane ? { min: { ...lane.min }, max: { ...lane.max } } : box;
+  }
+  const axis = Math.abs(dir.x) >= Math.abs(dir.z) ? 'x' : 'z';
+  const sign = Math.sign(axis === 'x' ? dir.x : dir.z) || 1;
+  const wall = axis === 'x' ? (sign > 0 ? plotBounds.maxX : plotBounds.minX) : (sign > 0 ? plotBounds.maxZ : plotBounds.minZ);
+  const c = { min: { ...box.min }, max: { ...box.max } };
+  if (sign > 0) c.max[axis] = Math.max(c.max[axis], wall);
+  else c.min[axis] = Math.min(c.min[axis], wall);
+  return c;
+}
+
+/**
+ * Keeps every pier's prongs clear out to the plot wall (getPierProngCorridors: its box and a tunnel from each docking clamp) and every pier's BB
+ * out of every module: no module or pier, snapped to the pier or not, may be in a pier's exclusion
+ * zones. Any other visible module whose box (as rendered, lanes excluded) reaches into any of a
+ * pier's corridors moves the shortest distance sideways (X or Z), else up or down, that takes it
+ * out, `gap` apart, with its box still inside the plot and not onto another module: in each
+ * direction it goes on past whatever is in the way until it finds room. A pier only moves where its
+ * own corridors are clear, and moves itself off, or its tunnels away from, a fixed module (e.g. the
+ * stacked docks), which never move. A module with no such move stays where it is. Repeats while
+ * moves are made.
+ * @param {Array<object>} modules
+ * @param {object} plotBounds
+ * @param {object} [viewer]
+ * @param {{ gap?: number, isFixed?: (mod: object) => boolean }} [options]
+ * @returns {number} how many moves were made
+ */
+export function clearPierProngCorridors(modules, plotBounds, viewer = null, { gap = 15, isFixed = () => false } = {}) {
+  const pb = plotBounds;
+  const visible = (modules || []).filter(m => m && m.visible !== false);
+  const piers = visible.filter(m => isPierModule(m));
+  if (piers.length === 0) return 0;
+  const eps = 1e-3;
+  const intersects = (a, b, margin = 0) =>
+    Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > eps - margin &&
+    Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > eps - margin &&
+    Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > eps - margin;
+  const shifted = (b, d) => ({
+    min: { x: b.min.x + d.x, y: b.min.y + d.y, z: b.min.z + d.z },
+    max: { x: b.max.x + d.x, y: b.max.y + d.y, z: b.max.z + d.z }
+  });
+  const inside = (b) => b.min.x >= pb.minX - 1e-6 && b.max.x <= pb.maxX + 1e-6 &&
+    b.min.y >= pb.minY - 1e-6 && b.max.y <= pb.maxY + 1e-6 &&
+    b.min.z >= pb.minZ - 1e-6 && b.max.z <= pb.maxZ + 1e-6;
+
+  // Every module's box, kept current as modules move
+  const boxes = new Map(visible.map(m => [m, moduleWorldBox(m, viewer)]));
+
+  let moves = 0;
+  for (let pass = 0; pass < 8; pass++) {
+    const corridors = new Map(piers.map(p => [p, getPierProngCorridors(p, pb, viewer)]));
+    let movedThisPass = 0;
+    for (const mod of visible) {
+      if (isFixed(mod)) continue;
+      // Where this module may not be: any other pier's box or clamp tunnels (its exclusion zones),
+      // also for a module snapped to that pier
+      const applies = [];
+      for (const [p, list] of corridors) {
+        if (p === mod) continue;
+        for (const b of list) applies.push({ pier: p, box: b });
+      }
+      const box = boxes.get(mod);
+      const others = visible.filter(o => o !== mod);
+      // A pier overlapping, or with a tunnel through, a module that cannot move (fixed) moves itself
+      const blockedBy = [];
+      if (isPierModule(mod)) {
+        const own = corridors.get(mod) || [];
+        for (const o of others) {
+          if (!isFixed(o)) continue;
+          const ob = boxes.get(o);
+          if (intersects(box, ob)) applies.push({ pier: o, box: ob });
+          else if (own.some(c => intersects(c, ob))) blockedBy.push({ pier: o, box: ob });
+        }
+      }
+      const blocking = [...applies.filter(c => intersects(box, c.box)), ...blockedBy.map(c => ({ ...c, own: true }))];
+      if (blocking.length === 0) continue;
+      // A pier's own zones reach past its box: what they hit must be cleared by their cross-section
+      // (the box with each prong's zone square), not by the pier's box alone
+      const slotBox = isPierModule(mod) ? pierZoneSlotBox(mod, viewer) : box;
+      // What a move to `nb` (offset d) would run into: corridors, other modules (fixed ones kept
+      // `gap` away) and, for a pier, modules its own moved corridor would then cover
+      const obstaclesAt = (nb, d) => {
+        const hit = applies.filter(c => intersects(nb, c.box)).map(c => ({ box: c.box }));
+        for (const o of others) if (intersects(nb, boxes.get(o), isFixed(o) ? gap : 0)) hit.push({ box: boxes.get(o) });
+        if (isPierModule(mod)) {
+          translateModule(mod, d.x, d.y, d.z);
+          const own = getPierProngCorridors(mod, pb, viewer);
+          translateModule(mod, -d.x, -d.y, -d.z);
+          for (const o of others) if (own.some(c => intersects(c, boxes.get(o)))) hit.push({ box: boxes.get(o), own: true });
+        }
+        return hit;
+      };
+      // In each direction: out of the corridors, then on past whatever is in the way, until a free
+      // place or the plot wall
+      const sweep = (axis, sign) => {
+        const past = (list) => Math.max(...list.map(({ box: o, own }) => {
+          const m = own ? slotBox : box;
+          return sign > 0 ? o.max[axis] + gap - m.min[axis] : m.max[axis] - (o.min[axis] - gap);
+        }));
+        let dist = past(blocking);
+        for (let step = 0; step < 64; step++) {
+          const d = { x: 0, y: 0, z: 0, [axis]: sign * dist };
+          const nb = shifted(box, d);
+          if (!inside(nb)) return null;
+          const hit = obstaclesAt(nb, d);
+          if (hit.length === 0) return d;
+          const next = past(hit);
+          if (!(next > dist + 1e-6)) return null;
+          dist = next;
+        }
+        return null;
+      };
+      const found = [];
+      for (const axis of ['x', 'z', 'y']) for (const sign of [1, -1]) { const d = sweep(axis, sign); if (d) found.push(d); }
+      // Sideways first, so modules keep their level (e.g. the docks vertical orientation); up or down
+      // only when no sideways move fits; the shortest move of each kind
+      found.sort((a, b) => ((a.y !== 0) - (b.y !== 0)) ||
+        (Math.abs(a.x) + Math.abs(a.y) + Math.abs(a.z)) - (Math.abs(b.x) + Math.abs(b.y) + Math.abs(b.z)));
+      const move = found[0];
+      if (!move) continue;
+      translateModule(mod, move.x, move.y, move.z);
+      boxes.set(mod, shifted(box, move));
+      syncPlanPosition(mod, viewer);
+      movedThisPass++;
+      // A moved pier carries its corridor: measure again before the next module
+      if (corridors.has(mod)) corridors.set(mod, getPierProngCorridors(mod, pb, viewer));
+    }
+    moves += movedThisPass;
+    if (movedThisPass === 0) break;
+  }
+  return moves;
 }
 
 /**
@@ -2573,6 +2906,8 @@ export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
   keepModulesInsidePlot(v.modulesGroup.children, plotBounds, v);
   // Nothing else may sit in the stacks' space
   clearStackedDocksSpace(stacked, v.modulesGroup.children, plotBounds, v, gap);
+  // Nothing may block a pier's prongs out to the plot wall
+  clearPierProngCorridors(v.modulesGroup.children, plotBounds, v, { gap, isFixed: (m) => stacked.has(m) });
 
   if (typeof v.updatePlotBoxViolations === 'function') v.updatePlotBoxViolations();
   if (typeof v.renderScene === 'function') v.renderScene();
@@ -2767,6 +3102,8 @@ export function applyDocksVerticalOrientation(orientation = null, viewer = null)
 
     // Insure any Layout Orientations don't have any module BB extend outside the plot BB
     keepModulesInsidePlot(v.modulesGroup.children, plotBounds, v);
+    // Nothing may block a pier's prongs out to the plot wall
+    clearPierProngCorridors(v.modulesGroup.children, plotBounds, v);
 
     if (typeof v.updatePlotBoxViolations === 'function') {
       v.updatePlotBoxViolations();

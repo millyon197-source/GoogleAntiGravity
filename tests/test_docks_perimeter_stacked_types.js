@@ -36,10 +36,10 @@ function box(name, size, center) {
 }
 
 // Mesh space mirrors X4's X, so a lane along X4 -X runs along mesh +X: hulls extend that way from the origin
-function makePier(index, macro, hull, { yaw = 0, pitch = 0, pos = [0, 0, 0] } = {}) {
+function makePier(index, macro, hull, { yaw = 0, pitch = 0, pos = [0, 0, 0], centerX = hull[0] / 2 } = {}) {
   const g = new THREE.Group();
   g.userData = { index, macro, initialSize: new THREE.Vector3(hull[0], hull[1], hull[2]) };
-  g.add(box('part_main-lod0', hull, [hull[0] / 2, 0, 0]));
+  g.add(box('part_main-lod0', hull, [centerX, 0, 0]));
   const lane = box('geometryinvisible-lod0', [4000, 2000, 2000], [hull[0] + 2000, 0, 0]);
   lane.userData.isGeometryInvisible = true;
   g.add(lane);
@@ -63,14 +63,14 @@ function makeViewer(plot) {
   v.renderScene = () => {};
   v.stationPlotGroup = null;
   const mods = [
-    // 4 × harbor_01 (3600 m long hull), one of them pitched in the blueprint
-    makePier(1, 'pier_arg_harbor_01_macro', [3600, 400, 2400], { yaw: 30, pos: [0, 0, 0] }),
-    makePier(2, 'pier_arg_harbor_01_macro', [3600, 400, 2400], { yaw: 120, pitch: 40, pos: [2000, 500, 1000] }),
-    makePier(3, 'pier_arg_harbor_01_macro', [3600, 400, 2400], { yaw: 0, pos: [-3000, 0, 2000] }),
-    makePier(4, 'pier_arg_harbor_01_macro', [3600, 400, 2400], { yaw: 270, pos: [1000, -2000, -3000] }),
-    // 2 × harbor_03: 800 m deep along its lane, 6200 m wide across it, like the real one
-    makePier(5, 'pier_arg_harbor_03_macro', [800, 400, 6200], { yaw: 90, pos: [-1000, 1000, -1000] }),
-    makePier(6, 'pier_arg_harbor_03_macro', [800, 400, 6200], { yaw: 180, pos: [500, 2000, 500] }),
+    // 4 × harbor_01 (T pier: hull mesh x -600..1800, z ±1800, prongs at +X and ±Z), one pitched in the blueprint
+    makePier(1, 'pier_arg_harbor_01_macro', [2400, 400, 3600], { yaw: 30, pos: [0, 0, 0], centerX: 600 }),
+    makePier(2, 'pier_arg_harbor_01_macro', [2400, 400, 3600], { yaw: 120, pitch: 40, pos: [2000, 500, 1000], centerX: 600 }),
+    makePier(3, 'pier_arg_harbor_01_macro', [2400, 400, 3600], { yaw: 0, pos: [-3000, 0, 2000], centerX: 600 }),
+    makePier(4, 'pier_arg_harbor_01_macro', [2400, 400, 3600], { yaw: 270, pos: [1000, -2000, -3000], centerX: 600 }),
+    // 2 × harbor_03 (E pier): 800 m deep along its lanes, 6200 m wide across them, prongs 3000 m apart
+    makePier(5, 'pier_arg_harbor_03_macro', [800, 400, 6200], { yaw: 90, pos: [-1000, 1000, -1000], centerX: 200 }),
+    makePier(6, 'pier_arg_harbor_03_macro', [800, 400, 6200], { yaw: 180, pos: [500, 2000, 500], centerX: 200 }),
     // a single dock and some other modules
     makeModule(7, 'dockarea_arg_m_station_01_lowtech_macro', [400, 260, 400], [0, 3000, 0]),
     makeModule(8, 'hab_arg_l_01_macro', [600, 400, 600], [8500, 9500, 0]),
@@ -83,6 +83,11 @@ function makeViewer(plot) {
 }
 
 const wb = (v, m) => v.getModuleWorldBoundingBox(m);
+// The room a pier takes in a stack: its box and its prongs' exclusion zone squares
+const slot = (v, m) => panel.pierZoneSlotBox(m, v);
+const ovl = (a, b) => Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > 0.5 &&
+  Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > 0.5 &&
+  Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > 0.5;
 const byIndex = (v, i) => v.modulesGroup.children.find(m => m.userData.index === i);
 
 // Which wall (outward normal) a box is flush against
@@ -100,18 +105,18 @@ function check(v, plot, orient, label, expectWalls) {
   const groups = { 'pier_arg_harbor_01_macro': [1, 2, 3, 4], 'pier_arg_harbor_03_macro': [5, 6] };
   for (const [macro, indices] of Object.entries(groups)) {
     const mods = indices.map(i => byIndex(v, i));
-    const boxes = mods.map(m => wb(v, m));
-    const walls = boxes.map(b => wallOf(b, pb));
+    const boxes = mods.map(m => slot(v, m));
+    const walls = mods.map(m => wallOf(wb(v, m), pb));
     assert.ok(walls.every(w => w && w === walls[0]), `${label}: every ${macro} on one wall (got ${walls})`);
     assert.strictEqual(walls[0], expectWalls[macro], `${label}: ${macro} on the smallest wall that fits it`);
-    // one column: same footprint, levels stepped by BB height + gap
+    // one column: same footprint, levels stepped by the zone-inclusive height + gap
     const h = boxes[0].max.y - boxes[0].min.y;
     for (const b of boxes) {
       assert.ok(Math.abs(b.min.x - boxes[0].min.x) < 0.5 && Math.abs(b.min.z - boxes[0].min.z) < 0.5, `${label}: ${macro} stacked in one column`);
       assert.ok(Math.abs((b.max.y - b.min.y) - h) < 0.5, `${label}: ${macro} levelled, all the same height`);
     }
     const ys = boxes.map(b => b.min.y).sort((a, b) => a - b);
-    for (let i = 1; i < ys.length; i++) assert.ok(Math.abs(ys[i] - ys[i - 1] - (h + GAP)) < 0.5, `${label}: ${macro} separated by BB height + gap`);
+    for (let i = 1; i < ys.length; i++) assert.ok(Math.abs(ys[i] - ys[i - 1] - (h + GAP)) < 0.5, `${label}: ${macro} separated by zone height + gap`);
     if (orient === 'top') assert.ok(Math.abs(Math.max(...boxes.map(b => b.max.y)) - pb.maxY) < 0.5, `${label}: stack hangs from the plot top`);
     if (orient === 'bottom') assert.ok(Math.abs(Math.min(...boxes.map(b => b.min.y)) - pb.minY) < 0.5, `${label}: stack stands on the plot bottom`);
     if (orient === 'center') {
@@ -125,17 +130,15 @@ function check(v, plot, orient, label, expectWalls) {
       assert.ok(lane && lane.x * n.x + lane.z * n.z > 0.9999, `${label}: ${macro}#${m.userData.index} lane out through ${walls[0]}`);
     }
   }
-  // nothing overlaps a stack, everything inside the plot
+  // nothing overlaps a stack or sits in any pier's exclusion zones, everything inside the plot
   const stacked = [1, 2, 3, 4, 5, 6].map(i => byIndex(v, i));
   for (const s of stacked) {
-    const bs = wb(v, s);
+    const zones = panel.getPierProngCorridors(s, pb, v);
     for (const m of v.modulesGroup.children) {
       if (m === s) continue;
       const b = wb(v, m);
-      const ov = Math.min(bs.max.x, b.max.x) - Math.max(bs.min.x, b.min.x) > 0.5 &&
-        Math.min(bs.max.y, b.max.y) - Math.max(bs.min.y, b.min.y) > 0.5 &&
-        Math.min(bs.max.z, b.max.z) - Math.max(bs.min.z, b.min.z) > 0.5;
-      assert.ok(!ov, `${label}: ${m.userData.macro}#${m.userData.index} must not overlap stacked ${s.userData.macro}#${s.userData.index}`);
+      assert.ok(!ovl(wb(v, s), b), `${label}: ${m.userData.macro}#${m.userData.index} must not overlap stacked ${s.userData.macro}#${s.userData.index}`);
+      assert.ok(!zones.some(z => ovl(z, b)), `${label}: ${m.userData.macro}#${m.userData.index} in ${s.userData.macro}#${s.userData.index} exclusion zones`);
     }
   }
   assert.strictEqual(v.checkPlotBoundViolations(), false, `${label}: every module inside the plot`);
@@ -148,14 +151,16 @@ function check(v, plot, orient, label, expectWalls) {
 
 panel.addActionableElement({ id: 'layers:docks', decoratorId: 'layers', category: 'docks', layerNumber: 1, elementName: 'Docks-1' });
 
-// ±X walls (12 km) are the smallest and take both types side by side: 6200 + 15 + 2400 m
+// Along the wall, harbor_03 takes 10000 m (outer prongs at ±3000 plus half a 4000 m zone each side)
+// and harbor_01 a whole wall (its side prongs' zones run along the wall to the corners).
+// ±X walls (12 km) are the smallest: harbor_03 (larger, placed first) takes +X; harbor_01 no longer
+// fits beside it (10000 + 15 + 4000) and goes to -X
 const WIDE_X = { enabled: true, x: { plus: 10, minus: 10 }, z: { plus: 6, minus: 6 }, y: { plus: 10, minus: 10 } };
-// ±Z walls (8 km) are the smallest: the larger type, harbor_03 (6200), is placed first and takes +Z;
-// harbor_01 (2400 along the wall) no longer fits beside it and goes to -Z, the other smallest wall
+// ±Z walls (8 km) are the smallest: too short for harbor_03, which goes to +X; harbor_01 takes +Z
 const WIDE_Z = { enabled: true, x: { plus: 4, minus: 4 }, z: { plus: 10, minus: 10 }, y: { plus: 10, minus: 10 } };
 const cases = [
-  [WIDE_X, { 'pier_arg_harbor_01_macro': '+x', 'pier_arg_harbor_03_macro': '+x' }],
-  [WIDE_Z, { 'pier_arg_harbor_01_macro': '-z', 'pier_arg_harbor_03_macro': '+z' }]
+  [WIDE_X, { 'pier_arg_harbor_01_macro': '-x', 'pier_arg_harbor_03_macro': '+x' }],
+  [WIDE_Z, { 'pier_arg_harbor_01_macro': '+z', 'pier_arg_harbor_03_macro': '+x' }]
 ];
 for (const [plot, walls] of cases) {
   for (const orient of ['top', 'center', 'bottom']) {
@@ -167,7 +172,7 @@ for (const [plot, walls] of cases) {
     }
   }
 }
-console.log('  ✓ each repeated type on the smallest wall that fits, stacked by BB height + gap, lanes out, space clear, inside the plot');
+console.log('  ✓ each repeated type on the smallest wall that fits, stacked by zone height + gap, lanes out, zones clear, inside the plot');
 
 // A type taller than the plot continues in another column along the same wall
 {
@@ -178,10 +183,10 @@ console.log('  ✓ each repeated type on the smallest wall that fits, stacked by
   const stacked = panel.stackRepeatedDockTypes([1, 2, 3, 4].map(i => byIndex(v, i)), pb, v, { orient: 'bottom', gap: GAP });
   assert.strictEqual(stacked.size, 4);
   const boxes = [1, 2, 3, 4].map(i => wb(v, byIndex(v, i)));
-  const columns = new Set(boxes.map(b => Math.round(b.min.z)));
-  assert.strictEqual(columns.size, 2, '900 m of height holds two 400 m piers per column: two columns');
-  assert.ok(boxes.every(b => b.min.y >= pb.minY - 0.5 && b.max.y <= pb.maxY + 0.5), 'columns fit the plot height');
-  console.log('  ✓ a stack taller than the plot continues in a second column on the same wall');
+  const columns = new Set(boxes.map(b => `${Math.round(b.min.x)},${Math.round(b.min.z)}`));
+  assert.strictEqual(columns.size, 4, '900 m of height holds one pier with its 4000 m zones per column: four columns');
+  assert.ok(boxes.every(b => b.min.y >= pb.minY - 0.5 && b.max.y <= pb.maxY + 0.5), 'piers fit the plot height');
+  console.log('  ✓ a stack taller than the plot continues in further columns on the same wall');
 }
 
 // Single docks are not stacked

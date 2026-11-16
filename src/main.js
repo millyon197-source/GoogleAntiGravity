@@ -1715,6 +1715,17 @@ function setupEventListeners() {
     });
   }
 
+  const pierZonesToggle = document.getElementById('toggle-pier-zones');
+  if (pierZonesToggle) {
+    const savedZones = getSavedCheckboxState('toggle-pier-zones', true);
+    pierZonesToggle.checked = savedZones;
+    viewer.togglePierExclusionZones(savedZones);
+    pierZonesToggle.addEventListener('change', (e) => {
+      saveCheckboxState('toggle-pier-zones', e.target.checked);
+      viewer.togglePierExclusionZones(e.target.checked);
+    });
+  }
+
   const bloomToggle = document.getElementById('toggle-bloom');
   if (bloomToggle) {
     const savedBloom = getSavedCheckboxState('toggle-bloom', true);
@@ -1925,6 +1936,13 @@ function setupEventListeners() {
         snapToggle.checked = !snapToggle.checked;
         saveCheckboxState('toggle-snaps', snapToggle.checked);
         viewer.toggleSnapPoints(snapToggle.checked);
+      }
+    } else if (e.key === 'e' || e.key === 'E') {
+      const zonesToggle = document.getElementById('toggle-pier-zones');
+      if (zonesToggle) {
+        zonesToggle.checked = !zonesToggle.checked;
+        saveCheckboxState('toggle-pier-zones', zonesToggle.checked);
+        viewer.togglePierExclusionZones(zonesToggle.checked);
       }
     } else if (e.key === 'b' || e.key === 'B') {
       const bloomToggle = document.getElementById('toggle-bloom');

@@ -95,6 +95,7 @@ Translate all modules so that their collective center aligns with the geometric 
 | **`G`** | Toggle **Combined (All: Move + Rotate)** gizmo mode |
 | **`D`** | Toggle component **Bounding Box Dimensions** overlay |
 | **`S`** | Toggle **Magnetic Snap Points** display |
+| **`E`** | Toggle **Pier Exclusion Zones** (a tunnel from each docking clamp to the plot wall; amber when clear, red when a module is in it). The plot BB shows only while the zones are off |
 | **`Ctrl + Z`** | **Undo** last action (module moves, rotations, diamond center, fit plot, FEFB) |
 | **`Esc`** | Detach 3D gizmo / clear active module selection |
 
