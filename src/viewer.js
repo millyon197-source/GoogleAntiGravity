@@ -2730,7 +2730,7 @@ export class StationViewer {
     if (wantsGizmo) {
       const group = this.getSnapGroupModules(index);
       if (group.length > 1) {
-        this.selectModulesGroup(group);
+        this.selectSnapGroup(group);
         this.gizmoTargetModuleIndex = priorGizmoTarget;
         return;
       }
@@ -3636,6 +3636,7 @@ export class StationViewer {
     }
     this.selectedModuleIndex = null;
     this.clearMultiSelection();
+    this.setSnapGroupHighlight(null);
     if (clearGizmoTarget) {
       this.gizmoTargetModuleIndex = null;
     }
@@ -4193,8 +4194,63 @@ export class StationViewer {
     return mods.filter(m => m.visible !== false && m.userData?.snapGroup === g);
   }
 
+  /**
+   * Select a snap group for a group move: the gizmo on the group (one pivot) and each of its
+   * modules highlighted.
+   * @param {Array<object>} group the group's modules
+   */
+  selectSnapGroup(group) {
+    this.restoreFullPlanGrid();
+    this.selectModulesGroup(group);
+    this.setSnapGroupHighlight(group);
+  }
+
+  /**
+   * Highlight each module of a snap group being moved: a translucent green box over the module's
+   * own bounds with bright edges, drawn through other geometry and carried with the module while
+   * it moves. null clears it.
+   * @param {Array<object>|null} group
+   */
+  setSnapGroupHighlight(group) {
+    for (const m of this.snapGroupHighlighted || []) {
+      const h = m.getObjectByName('snap_group_highlight');
+      if (!h) continue;
+      m.remove(h);
+      h.traverse(o => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
+    }
+    this.snapGroupHighlighted = [];
+    if (!group || group.length === 0) return;
+    const COLOR = 0x39FF14;
+    for (const m of group) {
+      const b = this.getModuleLocalBounds(m);
+      if (!b || b.isEmpty()) continue;
+      const size = b.getSize(new THREE.Vector3());
+      // A little larger than the module, so the box shows around the hull rather than inside it
+      const pad = (n) => Math.max(n * 1.04, n + 4, 1);
+      const geo = new THREE.BoxGeometry(pad(size.x), pad(size.y), pad(size.z));
+      const h = new THREE.Group();
+      h.name = 'snap_group_highlight';
+      h.userData.isBBox = true;
+      b.getCenter(h.position);
+      // Drawn through other geometry: what moves is always visible
+      const fill = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: COLOR, transparent: true, opacity: 0.28, depthWrite: false, depthTest: false, side: THREE.DoubleSide }));
+      fill.userData.isBBox = true;
+      fill.raycast = () => {};
+      fill.renderOrder = 40;
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: COLOR, transparent: true, opacity: 0.95, depthTest: false }));
+      edges.userData.isBBox = true;
+      edges.raycast = () => {};
+      edges.renderOrder = 41;
+      h.add(fill, edges);
+      m.add(h);
+      this.snapGroupHighlighted.push(m);
+    }
+    if (typeof this.renderScene === 'function') this.renderScene();
+  }
+
   /** Releases every snapped module: no longer stationary, no longer in a snap group. */
   clearSnapJoins() {
+    this.setSnapGroupHighlight(null);
     for (const m of this.modulesGroup?.children || []) {
       if (!m.userData) continue;
       delete m.userData.snapStationary;
@@ -5122,8 +5178,12 @@ export class StationViewer {
     const maxY = Math.max(this.selectionBoxStart.y, event.clientY);
     this.selectionBoxStart = null;
 
-    // Minimum drag threshold to prevent unintentional clicks from clearing selection
+    // A middle click (no drag) on a snapped module selects its whole snap group for a group move;
+    // elsewhere a click below the drag threshold leaves the selection as it is
     if (maxX - minX < 4 && maxY - minY < 4) {
+      const hit = this.raycastModuleAtPointer(event);
+      const group = hit ? this.getSnapGroupModules(hit.moduleIdx) : [];
+      if (group.length > 1) this.selectSnapGroup(group);
       return;
     }
 
