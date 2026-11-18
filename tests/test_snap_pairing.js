@@ -119,6 +119,26 @@ console.log('[PASS] closest pair first, the rest join free snap points without o
   console.log('[PASS] pairing again keeps the stationary modules and their taken snaps');
 }
 
+// startGroups false: modules only join the stationary ones, never pair among themselves
+{
+  const mk = (name, at, local, normal) => {
+    const m = makeModule(name, at);
+    m.userData.localSnaps = [new THREE.Vector3(...local)];
+    m.userData.normals = [new THREE.Vector3(...normal)];
+    return m;
+  };
+  const getNormals = (m) => m.userData.normals;
+  const anchor = mk('anchor', [0, 0, 0], [50, 0, 0], [1, 0, 0]);
+  const s1 = mk('s1', [300, 0, 0], [-50, 0, 0], [-1, 0, 0]);     // faces the anchor: joins it
+  const s2 = mk('s2', [0, 0, 600], [50, 0, 0], [1, 0, 0]);       // could only pair with s3
+  const s3 = mk('s3', [200, 0, 600], [-50, 0, 0], [-1, 0, 0]);
+  const r = pairModulesAtSnaps([anchor, s1, s2, s3], { getSnaps, getBox, getNormals, stationary: [anchor], startGroups: false });
+  assert(r.order.includes(s1), 's1 joins the stationary anchor');
+  assert(!r.order.includes(s2) && !r.order.includes(s3), 's2 and s3 do not start a pair of their own');
+  assert.deepStrictEqual(s2.position.toArray(), [0, 0, 600]);
+  console.log('[PASS] with startGroups off, modules only join the stationary ones');
+}
+
 // The snap-facings table covers the snap table: unit normals for known snap names
 {
   const { default: FACINGS } = await import('../src/snap-facings.json', { with: { type: 'json' } });

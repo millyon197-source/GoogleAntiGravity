@@ -2270,6 +2270,8 @@ export class StationViewer {
    * Otherwise restore standard holographic cyan (0x00F5FF) and cyber green (0x39FF14).
    */
   updatePlotBoxViolations() {
+    // A batch of module changes (e.g. undoing a group move) refreshes once, when it ends
+    if (this.deferPlotViolations) return;
     this.updatePierExclusionZones();
     this.updateOutsidePlotFeedback();
     if (!this.stationPlotGroup) return;
@@ -4162,7 +4164,8 @@ export class StationViewer {
    * points whose hull normals face each other: the two whose snap points are closest join at those
    * points, then each remaining one joins a free snap point of the joined ones (closest first).
    * Then half of the modules left over turn 180 degrees about an axis across a snap normal (so the
-   * normal points the other way) and pair again.
+   * normal points the other way) and pair again. Modules with a single snap point are held back
+   * and join last, once every other join is made.
    * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
    * after a gizmo release leave it where it is. The moves are synced to the plan, reported
    * (onModuleMoved) and recorded as one undo step.
@@ -4203,39 +4206,51 @@ export class StationViewer {
     const fits = (b) => inPlot(b) && !inZone(b);
     const getBox = (m) => this.getModuleWorldBoundingBox(m);
     const startRot = new Map(mods.map(m => [m, this.getModuleCalculatedRotation(m.userData.index)]));
-    const first = pairModulesAtSnaps(mods, { getSnaps, getBox, fits, getNormals });
-
-    // Then half of the modules left unjoined turn 180 degrees about an axis across one of their snap
-    // normals, so that normal points the other way (the snap closest to a free snap point of a joined
-    // module, pivoting on it), and pairing runs again with the joined ones staying put. A turned
-    // module that still does not join turns back.
-    const joined = new Set(first.order);
-    const unjoined = mods.filter(m => !joined.has(m)).sort((a, b) => a.userData.index - b.userData.index);
-    const freeSnaps = first.order.flatMap(m => getSnaps(m).filter((_, i) => !first.used.get(m)?.has(i)));
+    // Modules with a single snap point wait until every other join is made (they would end a chain)
+    const snapCount = (m) => m.getObjectByName('module_snaps_group')?.children.filter(d => d.userData?.isSnapPoint).length || 0;
+    const singles = mods.filter(m => snapCount(m) === 1);
+    const multi = mods.filter(m => snapCount(m) > 1);
     const flipped = new Map();
-    unjoined.forEach((m, i) => {
-      if (i % 2 !== 0) return;
-      const dots = m.getObjectByName('module_snaps_group')?.children.filter(d => d.userData?.isSnapPoint) || [];
-      if (dots.length === 0) return;
-      const pts = getSnaps(m);
-      const near = (p) => freeSnaps.reduce((best, q) => Math.min(best, p.distanceToSquared(q)), Infinity);
-      let pick = 0;
-      pts.forEach((p, k) => { if (near(p) < near(pts[pick])) pick = k; });
-      flipped.set(m, { position: m.position.clone(), quaternion: m.quaternion.clone() });
-      this.flipModuleAtSnap(m, dots[pick]);
-    });
-    let order = first.order;
-    if (flipped.size > 0) {
-      const second = pairModulesAtSnaps(mods, { getSnaps, getBox, fits, getNormals, stationary: first.order, usedSnaps: first.used });
-      order = second.order;
-      const nowJoined = new Set(order);
-      for (const [m, s] of flipped) {
+    // One stage: the pool pairs (joining the stationary modules first), then half of the pool's
+    // modules left unjoined turn 180 degrees about an axis across one of their snap normals, so that
+    // normal points the other way (the snap closest to a free snap point of a joined module, pivoting
+    // on it), and pairing runs again with the joined ones staying put. A turned module that still
+    // does not join turns back.
+    const stage = (pool, stationary, usedSnaps) => {
+      const first = pairModulesAtSnaps(pool, { getSnaps, getBox, fits, getNormals, stationary, usedSnaps });
+      const joined = new Set(first.order);
+      const unjoined = pool.filter(m => !joined.has(m) && !flipped.has(m)).sort((a, b) => a.userData.index - b.userData.index);
+      const freeSnaps = first.order.flatMap(m => getSnaps(m).filter((_, i) => !first.used.get(m)?.has(i)));
+      const turnedNow = [];
+      unjoined.forEach((m, i) => {
+        if (i % 2 !== 0) return;
+        const dots = m.getObjectByName('module_snaps_group')?.children.filter(d => d.userData?.isSnapPoint) || [];
+        if (dots.length === 0) return;
+        const pts = getSnaps(m);
+        const near = (p) => freeSnaps.reduce((best, q) => Math.min(best, p.distanceToSquared(q)), Infinity);
+        let pick = 0;
+        pts.forEach((p, k) => { if (near(p) < near(pts[pick])) pick = k; });
+        flipped.set(m, { position: m.position.clone(), quaternion: m.quaternion.clone() });
+        turnedNow.push(m);
+        this.flipModuleAtSnap(m, dots[pick]);
+      });
+      if (turnedNow.length === 0) return first;
+      const second = pairModulesAtSnaps(pool, { getSnaps, getBox, fits, getNormals, stationary: first.order, usedSnaps: first.used });
+      const nowJoined = new Set(second.order);
+      for (const m of turnedNow) {
         if (nowJoined.has(m)) continue;
+        const s = flipped.get(m);
         m.position.copy(s.position);
         m.quaternion.copy(s.quaternion);
         m.updateMatrixWorld(true);
+        flipped.delete(m);
       }
-    }
+      return second;
+    };
+    let { order, used } = stage(multi, [], null);
+    // Last, the single-snap modules, in a stage of their own: they join free snap points of the
+    // joined modules first, then pair with each other, then half of those left turn and try again
+    if (singles.length > 0) ({ order, used } = stage([...multi, ...singles], order, used));
     for (const m of order) m.userData.snapStationary = true;
 
     const moves = [];

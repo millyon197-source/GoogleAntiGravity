@@ -56,20 +56,22 @@ class MinHeap {
  *   getNormals?: (mod: object) => THREE.Vector3[],
  *   maxFacingDot?: number,
  *   stationary?: object[],
- *   usedSnaps?: Map<object, Set<number>>
+ *   usedSnaps?: Map<object, Set<number>>,
+ *   startGroups?: boolean
  * }} options getSnaps gives a module's snap points in world space, getBox its world box;
  *   maxOverlap is the largest share of the smaller box two joined modules may have in common;
  *   fits says whether a moved module's box is somewhere it may go; getNormals gives each snap
  *   point's outward hull normal in world space (unit), and two snap points join only when their
  *   normals face each other: dot product at most maxFacingDot (-0.99: opposite within about 8 degrees);
  *   stationary lists modules already joined (from an earlier call): they never move, the others
- *   join their free snap points first; usedSnaps gives the snap indices already taken
+ *   join their free snap points first; usedSnaps gives the snap indices already taken; with
+ *   startGroups false, modules only join the stationary ones (no new pairs among the others)
  * @returns {{ order: object[], joins: Array<{ mod: object, to: object, delta: THREE.Vector3 }>,
  *   used: Map<object, Set<number>> }} the modules in the order they became stationary (the given
  *   stationary ones first), each move made (applied to position), and the snap indices taken
  */
 export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1, fits = () => true, getNormals = null, maxFacingDot = -0.99,
-  stationary = [], usedSnaps = null } = {}) {
+  stationary = [], usedSnaps = null, startGroups = true } = {}) {
   // World snap points and boxes, read once; a move translates them
   const snaps = new Map();
   const normals = new Map();
@@ -164,7 +166,7 @@ export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1
   // Every pair of remaining modules, closest first, for starting groups. Remaining modules do not
   // move and the stationary ones only grow in number, so a pair that cannot start a group never
   // can later: one pass down the list (a cursor) finds each next group's start.
-  const rest = [...remaining];
+  const rest = startGroups ? [...remaining] : [];
   const all = [];
   for (let i = 0; i < rest.length; i++) for (let k = i + 1; k < rest.length; k++) {
     pairs(rest[i], rest[k], all);
@@ -173,7 +175,7 @@ export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1
   all.sort((x, y) => x.d - y.d);
   let cursor = 0;
 
-  while (remaining.size >= 2) {
+  while (startGroups && remaining.size >= 2) {
     // A new pair: the two remaining modules with the closest snap points (the first one stays,
     // so it must not be buried in a stationary module itself)
     let seed = null;

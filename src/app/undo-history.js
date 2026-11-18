@@ -104,11 +104,18 @@ export function performUndo() {
   const friendlyName = lastMove.friendlyName || getFriendlyName(lastMove.macro || '');
 
   if (lastMove.type === 'group_move' && Array.isArray(lastMove.moves)) {
-    lastMove.moves.forEach(m => {
-      // A module the snapping also turned turns back first
-      if (m.fromRot) deps.getViewer().setModuleRotation(m.moduleIndex, m.fromRot);
-      deps.getViewer().setModulePosition(m.moduleIndex, m.from);
-    });
+    const viewer = deps.getViewer();
+    viewer.deferPlotViolations = true;
+    try {
+      lastMove.moves.forEach(m => {
+        // A module the snapping also turned turns back first
+        if (m.fromRot) viewer.setModuleRotation(m.moduleIndex, m.fromRot);
+        viewer.setModulePosition(m.moduleIndex, m.from);
+      });
+    } finally {
+      viewer.deferPlotViolations = false;
+    }
+    if (typeof viewer.updatePlotBoxViolations === 'function') viewer.updatePlotBoxViolations();
     // Undoing the snapping releases the modules it marked stationary
     if (lastMove.operation === 'snap_pairing') {
       for (const mod of deps.getViewer().modulesGroup?.children || []) if (mod.userData) delete mod.userData.snapStationary;
