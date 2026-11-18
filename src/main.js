@@ -1704,6 +1704,13 @@ function setupEventListeners() {
     });
   }
 
+  // Checking Snaps joins the production modules at their closest snap points (stationary);
+  // unchecking it releases them (they stay where they are)
+  function applySnapPairing(checked) {
+    if (checked) viewer.snapProductionModules();
+    else for (const m of viewer.modulesGroup?.children || []) if (m.userData) delete m.userData.snapStationary;
+  }
+
   const snapsToggle = document.getElementById('toggle-snaps');
   if (snapsToggle) {
     const savedSnaps = getSavedCheckboxState('toggle-snaps', true);
@@ -1712,6 +1719,7 @@ function setupEventListeners() {
     snapsToggle.addEventListener('change', (e) => {
       saveCheckboxState('toggle-snaps', e.target.checked);
       viewer.toggleSnapPoints(e.target.checked);
+      applySnapPairing(e.target.checked);
     });
   }
 
@@ -1936,6 +1944,7 @@ function setupEventListeners() {
         snapToggle.checked = !snapToggle.checked;
         saveCheckboxState('toggle-snaps', snapToggle.checked);
         viewer.toggleSnapPoints(snapToggle.checked);
+        applySnapPairing(snapToggle.checked);
       }
     } else if (e.key === 'e' || e.key === 'E') {
       const zonesToggle = document.getElementById('toggle-pier-zones');

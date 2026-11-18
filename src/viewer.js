@@ -87,6 +87,7 @@ import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
 import TEXTURE_LOOKUPS from './texture-lookups.json' with { type: 'json' };
 import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
 import PIER_LANE_BOXES from './pier-lane-boxes.json' with { type: 'json' };
+import { pairModulesAtSnaps } from './snap-pairing.js';
 
 function sendLogToVSC(msg, type = 'log') {
   if (type === 'warn') {
@@ -2973,7 +2974,9 @@ export class StationViewer {
     const visible = mods.filter(m => m.visible !== false);
     const releasedSet = new Set(released || []);
     const before = new Map(mods.map(m => [m, m.position.clone()]));
+    // Released piers and snap-joined (stationary) modules stay where they are
     const keep = new Set((released || []).filter(m => isPierModule(m)));
+    for (const m of visible) if (m.userData?.snapStationary && !releasedSet.has(m)) keep.add(m);
     const hasPiers = visible.some(m => isPierModule(m));
     // Piers the Perimeter stacking placed stay where they are too, unless one now has a box in
     // another pier's zones or its zones over another pier's box (e.g. a released pier's zones over
@@ -4144,6 +4147,57 @@ export class StationViewer {
         child.visible = enabled;
       }
     });
+  }
+
+  /**
+   * Snap the production modules together: the two whose snap points are closest join at those
+   * points, then each remaining one joins a free snap point of the joined ones (closest first).
+   * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
+   * after a gizmo release leave it where it is. The moves are synced to the plan, reported
+   * (onModuleMoved) and recorded as one undo step.
+   * @returns {number} how many modules moved
+   */
+  snapProductionModules() {
+    const mods = (this.modulesGroup?.children || []).filter(m =>
+      m.visible !== false && m.userData?.index !== undefined &&
+      getModuleCategory(m.userData?.macro || '') === 'production');
+    for (const m of this.modulesGroup?.children || []) if (m.userData) delete m.userData.snapStationary;
+    if (mods.length < 2) return 0;
+    this.modulesGroup.updateMatrixWorld(true);
+    const before = new Map(mods.map(m => [m, m.position.clone()]));
+    const getSnaps = (m) => {
+      const group = m.getObjectByName('module_snaps_group');
+      if (!group) return [];
+      m.updateMatrixWorld(true);
+      return group.children.filter(d => d.userData?.isSnapPoint).map(d => d.getWorldPosition(new THREE.Vector3()));
+    };
+    const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m) });
+    for (const m of order) m.userData.snapStationary = true;
+
+    const moves = [];
+    for (const m of mods) {
+      const b = before.get(m);
+      if (b.distanceToSquared(m.position) < 1e-6) continue;
+      const to = { x: Math.round(m.position.x), y: Math.round(m.position.y), z: Math.round(-m.position.z) };
+      m.position.set(to.x, to.y, -to.z);
+      m.updateMatrixWorld(true);
+      const planMod = this.currentPlan?.modules?.find(pm => pm.index === m.userData?.index);
+      if (planMod) planMod.position = { ...to };
+      if (this.onModuleMoved) this.onModuleMoved(m.userData?.index, to, true);
+      moves.push({ moduleIndex: m.userData?.index, macro: m.userData?.macro, from: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(-b.z) }, to });
+    }
+    if (moves.length && this.onMoveCommitted) {
+      this.onMoveCommitted(moves.length === 1
+        ? { type: 'move', ...moves[0], delta: { dx: moves[0].to.x - moves[0].from.x, dy: moves[0].to.y - moves[0].from.y, dz: moves[0].to.z - moves[0].from.z }, timestamp: Date.now() }
+        : { type: 'group_move', moves, timestamp: Date.now() });
+    }
+    if (moves.length) {
+      if (this.selectionHelper) this.selectionHelper.update();
+      (this.multiSelectionHelpers || []).forEach(h => h.update());
+      if (typeof this.updatePlotBoxViolations === 'function') this.updatePlotBoxViolations();
+      if (typeof this.renderScene === 'function') this.renderScene();
+    }
+    return moves.length;
   }
 
   buildModuleSnapPoints(moduleGroup, macroName) {
