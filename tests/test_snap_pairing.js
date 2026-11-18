@@ -69,6 +69,49 @@ console.log('[PASS] closest pair first, the rest join free snap points without o
   console.log(`[PASS] joins stay inside the plot (${r.order.length} of ${ms.length} joined)`);
 }
 
+// Normals: snap points join only when their hull normals face each other
+{
+  const mk = (name, at, local, normals) => {
+    const m = makeModule(name, at);
+    m.userData.localSnaps = local.map(p => new THREE.Vector3(...p));
+    m.userData.normals = normals.map(n => new THREE.Vector3(...n));
+    return m;
+  };
+  // h1's +x snap faces +x. v1's top snap (facing up) is 10 m from it but does not face it; h3's
+  // +x snap is 20 m away but faces the same way; h2's -x snap is 300 m away and faces it.
+  const h1 = mk('h1', [0, 0, 0], [[50, 0, 0]], [[1, 0, 0]]);
+  const v1 = mk('v1', [60, -50, 0], [[0, 50, 0]], [[0, 1, 0]]);
+  const h3 = mk('h3', [20, 0, 400], [[50, 0, 0]], [[1, 0, 0]]);
+  const h2 = mk('h2', [400, 0, 0], [[-50, 0, 0]], [[-1, 0, 0]]);
+  const v2 = mk('v2', [60, 300, 0], [[0, -50, 0]], [[0, -1, 0]]);
+  const r = pairModulesAtSnaps([h1, v1, h3, h2, v2], { getSnaps, getBox, getNormals: (m) => m.userData.normals });
+  const key = (p) => p.toArray().map(n => n.toFixed(3)).join(',');
+  for (const j of r.joins) {
+    assert(j.mod.userData.normals[0].dot(j.to.userData.normals[0]) < -0.99, `${j.mod.name} and ${j.to.name} face each other`);
+    assert.strictEqual(key(getSnaps(j.mod)[0]), key(getSnaps(j.to)[0]));
+  }
+  assert.strictEqual(r.joins.length, 2, 'h1 joins h2 and v1 joins v2; h3 faces nothing');
+  assert(!r.order.includes(h3), 'h3 stays');
+  console.log('[PASS] only snap points whose normals face each other join');
+}
+
+// The snap-facings table covers the snap table: unit normals for known snap names
+{
+  const { default: FACINGS } = await import('../src/snap-facings.json', { with: { type: 'json' } });
+  const { SNAP_POINTS_DB } = await import('../packages/catalog/src/snap-points-db.js');
+  let n = 0;
+  for (const [macro, entry] of Object.entries(FACINGS)) {
+    assert(SNAP_POINTS_DB[macro], `${macro} is in the snap table`);
+    for (const [name, f] of Object.entries(entry)) {
+      assert(SNAP_POINTS_DB[macro].some(s => s.name === name), `${macro} ${name} is a known snap`);
+      assert(Math.abs(Math.hypot(...f) - 1) < 0.01, `${macro} ${name} facing is a unit vector`);
+      n++;
+    }
+  }
+  assert(n > 500, `facings for most snaps (${n})`);
+  console.log(`[PASS] snap-facings.json: ${n} unit hull normals for known snaps`);
+}
+
 // Fewer than two modules: nothing moves
 {
   const solo = makeModule('solo', [10, 0, 0]);

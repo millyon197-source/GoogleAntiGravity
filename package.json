@@ -14,7 +14,8 @@
     "sync:dlc-components": "node tools/sync-dlc-components.js",
     "generate:macro-refs": "node tools/generate-macro-component-refs.js",
     "generate:scene-cache": "node tools/generate-scene-cache.js",
-    "generate:component-offsets": "node tools/generate-component-offsets.js"
+    "generate:component-offsets": "node tools/generate-component-offsets.js",
+    "generate:snap-facings": "node tools/generate-snap-facings.js --write"
   },
   "dependencies": {
     "@x4/adapter-three": "^1.0.0",

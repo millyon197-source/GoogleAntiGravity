@@ -88,6 +88,14 @@ import TEXTURE_LOOKUPS from './texture-lookups.json' with { type: 'json' };
 import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
 import PIER_LANE_BOXES from './pier-lane-boxes.json' with { type: 'json' };
 import { pairModulesAtSnaps } from './snap-pairing.js';
+import SNAP_FACINGS from './snap-facings.json' with { type: 'json' };
+
+/** A snap point's hull normal [x, y, z] in X4 component space (snap-facings.json), or null. */
+function getSnapFacing(macro, snapName) {
+  const key = (macro || '').toLowerCase().trim();
+  const entry = SNAP_FACINGS[key] || SNAP_FACINGS[key.replace(/_macro$/, '') + '_macro'];
+  return entry?.[snapName] || null;
+}
 
 function sendLogToVSC(msg, type = 'log') {
   if (type === 'warn') {
@@ -4150,7 +4158,8 @@ export class StationViewer {
   }
 
   /**
-   * Snap the production modules together, inside the plot and out of the pier zones: the two whose snap points are closest join at those
+   * Snap the production modules together, inside the plot and out of the pier zones, only at snap
+   * points whose hull normals face each other: the two whose snap points are closest join at those
    * points, then each remaining one joins a free snap point of the joined ones (closest first).
    * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
    * after a gizmo release leave it where it is. The moves are synced to the plan, reported
@@ -4171,6 +4180,11 @@ export class StationViewer {
       m.updateMatrixWorld(true);
       return group.children.filter(d => d.userData?.isSnapPoint).map(d => d.getWorldPosition(new THREE.Vector3()));
     };
+    // Only snap points whose hull normals face each other join
+    const getNormals = (m) => {
+      const group = m.getObjectByName('module_snaps_group');
+      return group ? group.children.filter(d => d.userData?.isSnapPoint).map(d => this.getSnapWorldNormal(m, d)) : [];
+    };
     // Joins keep every moved module inside the plot BB (when the plot is on)
     const pCfg = this.currentPlotConfig || getCurrentPlotConfig();
     const pb = pCfg && pCfg.enabled !== false ? getPlotBoundingBox(pCfg) : null;
@@ -4185,7 +4199,7 @@ export class StationViewer {
       Math.min(b.max.y, z.max.y) - Math.max(b.min.y, z.min.y) > eps &&
       Math.min(b.max.z, z.max.z) - Math.max(b.min.z, z.min.z) > eps);
     const fits = (b) => inPlot(b) && !inZone(b);
-    const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m), fits });
+    const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m), fits, getNormals });
     for (const m of order) m.userData.snapStationary = true;
 
     const moves = [];
@@ -4197,9 +4211,10 @@ export class StationViewer {
       m.updateMatrixWorld(true);
       const planMod = this.currentPlan?.modules?.find(pm => pm.index === m.userData?.index);
       if (planMod) planMod.position = { ...to };
-      if (this.onModuleMoved) this.onModuleMoved(m.userData?.index, to, true);
       moves.push({ moduleIndex: m.userData?.index, macro: m.userData?.macro, from: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(-b.z) }, to });
     }
+    // Reported with only the last move final, so the station stats refresh once
+    if (this.onModuleMoved) moves.forEach((mv, i) => this.onModuleMoved(mv.moduleIndex, mv.to, i === moves.length - 1));
     if (moves.length && this.onMoveCommitted) {
       this.onMoveCommitted(moves.length === 1
         ? { type: 'move', ...moves[0], delta: { dx: moves[0].to.x - moves[0].from.x, dy: moves[0].to.y - moves[0].from.y, dz: moves[0].to.z - moves[0].from.z }, timestamp: Date.now() }
@@ -4212,6 +4227,41 @@ export class StationViewer {
       if (typeof this.renderScene === 'function') this.renderScene();
     }
     return moves.length;
+  }
+
+  /**
+   * A snap point's outward hull normal in the scene (unit), with the module's rotation applied. It
+   * comes from the game component file (snap-facings.json, mirrored on X like the positions); without
+   * it, from where the snap sits on the module's box (the face it is closest to, relative to the box size).
+   * @param {object} mod the module group
+   * @param {object} dot one of its snap dots
+   * @returns {THREE.Vector3}
+   */
+  getSnapWorldNormal(mod, dot) {
+    const f = dot.userData?.facing;
+    let n;
+    if (f) {
+      n = new THREE.Vector3(-f[0], f[1], f[2]);
+    } else {
+      const b = this.getModuleLocalBounds(mod);
+      const p = dot.position;
+      if (b && !b.isEmpty()) {
+        const c = b.getCenter(new THREE.Vector3());
+        const h = b.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+        n = new THREE.Vector3((p.x - c.x) / (h.x || 1), (p.y - c.y) / (h.y || 1), (p.z - c.z) / (h.z || 1));
+        const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+        n.set(ax >= ay && ax >= az ? Math.sign(n.x) : 0, ay > ax && ay >= az ? Math.sign(n.y) : 0, az > ax && az > ay ? Math.sign(n.z) : 0);
+      } else {
+        n = p.clone();
+      }
+    }
+    mod.updateMatrixWorld(true);
+    return n.transformDirection(mod.matrixWorld);
+  }
+
+  /** Whether a snap point's hull normal is 'vertical' or 'horizontal' in the scene. */
+  getSnapNormalKind(mod, dot) {
+    return Math.abs(this.getSnapWorldNormal(mod, dot).y) > 0.7 ? 'vertical' : 'horizontal';
   }
 
   buildModuleSnapPoints(moduleGroup, macroName) {
@@ -4239,7 +4289,9 @@ export class StationViewer {
         isSnapPoint: true,
         snapName: snap.name,
         moduleIndex: moduleGroup.userData.index,
-        localPos: [...snap.pos]
+        localPos: [...snap.pos],
+        // Hull normal at the snap from the game component file (X4 space), when known
+        facing: getSnapFacing(macroName, snap.name)
       };
       // Unified coordinate transformation:
       // Maps standard X4 component coordinates (x, y, z) into visualizer local space (-x, y, z)
