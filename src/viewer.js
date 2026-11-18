@@ -4161,7 +4161,8 @@ export class StationViewer {
    * Snap the production modules together, inside the plot and out of the pier zones, only at snap
    * points whose hull normals face each other: the two whose snap points are closest join at those
    * points, then each remaining one joins a free snap point of the joined ones (closest first).
-   * Then half of the modules left over spin 180 degrees about a snap normal and pair again.
+   * Then half of the modules left over turn 180 degrees about an axis across a snap normal (so the
+   * normal points the other way) and pair again.
    * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
    * after a gizmo release leave it where it is. The moves are synced to the plan, reported
    * (onModuleMoved) and recorded as one undo step.
@@ -4204,13 +4205,14 @@ export class StationViewer {
     const startRot = new Map(mods.map(m => [m, this.getModuleCalculatedRotation(m.userData.index)]));
     const first = pairModulesAtSnaps(mods, { getSnaps, getBox, fits, getNormals });
 
-    // Then half of the modules left unjoined spin 180 degrees about one of their snap normals (the
-    // snap closest to a free snap point of a joined module, pivoting on it) and pairing runs again
-    // with the joined ones staying put. A spun module that still does not join turns back.
+    // Then half of the modules left unjoined turn 180 degrees about an axis across one of their snap
+    // normals, so that normal points the other way (the snap closest to a free snap point of a joined
+    // module, pivoting on it), and pairing runs again with the joined ones staying put. A turned
+    // module that still does not join turns back.
     const joined = new Set(first.order);
     const unjoined = mods.filter(m => !joined.has(m)).sort((a, b) => a.userData.index - b.userData.index);
     const freeSnaps = first.order.flatMap(m => getSnaps(m).filter((_, i) => !first.used.get(m)?.has(i)));
-    const spun = new Map();
+    const flipped = new Map();
     unjoined.forEach((m, i) => {
       if (i % 2 !== 0) return;
       const dots = m.getObjectByName('module_snaps_group')?.children.filter(d => d.userData?.isSnapPoint) || [];
@@ -4219,15 +4221,15 @@ export class StationViewer {
       const near = (p) => freeSnaps.reduce((best, q) => Math.min(best, p.distanceToSquared(q)), Infinity);
       let pick = 0;
       pts.forEach((p, k) => { if (near(p) < near(pts[pick])) pick = k; });
-      spun.set(m, { position: m.position.clone(), quaternion: m.quaternion.clone() });
-      this.spinModuleAboutSnap(m, dots[pick]);
+      flipped.set(m, { position: m.position.clone(), quaternion: m.quaternion.clone() });
+      this.flipModuleAtSnap(m, dots[pick]);
     });
     let order = first.order;
-    if (spun.size > 0) {
+    if (flipped.size > 0) {
       const second = pairModulesAtSnaps(mods, { getSnaps, getBox, fits, getNormals, stationary: first.order, usedSnaps: first.used });
       order = second.order;
       const nowJoined = new Set(order);
-      for (const [m, s] of spun) {
+      for (const [m, s] of flipped) {
         if (nowJoined.has(m)) continue;
         m.position.copy(s.position);
         m.quaternion.copy(s.quaternion);
@@ -4241,7 +4243,7 @@ export class StationViewer {
     for (const m of mods) {
       const b = before.get(m);
       const fromRot = startRot.get(m);
-      const toRot = spun.has(m) && order.includes(m) ? this.getModuleCalculatedRotation(m.userData.index) : null;
+      const toRot = flipped.has(m) && order.includes(m) ? this.getModuleCalculatedRotation(m.userData.index) : null;
       if (b.distanceToSquared(m.position) < 1e-6 && !toRot) continue;
       const to = { x: Math.round(m.position.x), y: Math.round(m.position.y), z: Math.round(-m.position.z) };
       m.position.set(to.x, to.y, -to.z);
@@ -4275,15 +4277,22 @@ export class StationViewer {
   }
 
   /**
-   * Turn a module 180 degrees about one of its snap points' hull normals, pivoting on that snap point
-   * (it stays where it is). The turn is settled to the whole-degree yaw / pitch / roll a plan holds.
+   * Turn a module 180 degrees about an axis across one of its snap points' hull normals, so that
+   * normal points the other way: about the vertical axis for a horizontal normal (the module stays
+   * upright), about a horizontal axis for a vertical normal (upside down). It pivots on that snap
+   * point (it stays where it is). The turn is settled to the whole-degree yaw / pitch / roll a plan holds.
    * @param {object} mod the module group
-   * @param {object} dot the snap dot to turn about
+   * @param {object} dot the snap dot whose normal flips
    */
-  spinModuleAboutSnap(mod, dot) {
+  flipModuleAtSnap(mod, dot) {
     mod.updateMatrixWorld(true);
     const pivot = dot.getWorldPosition(new THREE.Vector3());
-    const axis = this.getSnapWorldNormal(mod, dot).normalize();
+    const n = this.getSnapWorldNormal(mod, dot);
+    // Across the normal: up for a horizontal normal; for a vertical one, the horizontal axis
+    // (x or z) least along it
+    const axis = Math.abs(n.y) <= 0.7 ? new THREE.Vector3(0, 1, 0)
+      : (Math.abs(n.x) <= Math.abs(n.z) ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1));
+    axis.addScaledVector(n, -axis.dot(n)).normalize();
     const q = new THREE.Quaternion().setFromAxisAngle(axis, Math.PI);
     mod.quaternion.premultiply(q);
     mod.position.sub(pivot).applyQuaternion(q).add(pivot);
