@@ -54,16 +54,22 @@ class MinHeap {
  *   maxOverlap?: number,
  *   fits?: (box: THREE.Box3) => boolean,
  *   getNormals?: (mod: object) => THREE.Vector3[],
- *   maxFacingDot?: number
+ *   maxFacingDot?: number,
+ *   stationary?: object[],
+ *   usedSnaps?: Map<object, Set<number>>
  * }} options getSnaps gives a module's snap points in world space, getBox its world box;
  *   maxOverlap is the largest share of the smaller box two joined modules may have in common;
  *   fits says whether a moved module's box is somewhere it may go; getNormals gives each snap
  *   point's outward hull normal in world space (unit), and two snap points join only when their
- *   normals face each other: dot product at most maxFacingDot (-0.99: opposite within about 8 degrees)
- * @returns {{ order: object[], joins: Array<{ mod: object, to: object, delta: THREE.Vector3 }> }}
- *   the modules in the order they became stationary, and each move made (applied to position)
+ *   normals face each other: dot product at most maxFacingDot (-0.99: opposite within about 8 degrees);
+ *   stationary lists modules already joined (from an earlier call): they never move, the others
+ *   join their free snap points first; usedSnaps gives the snap indices already taken
+ * @returns {{ order: object[], joins: Array<{ mod: object, to: object, delta: THREE.Vector3 }>,
+ *   used: Map<object, Set<number>> }} the modules in the order they became stationary (the given
+ *   stationary ones first), each move made (applied to position), and the snap indices taken
  */
-export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1, fits = () => true, getNormals = null, maxFacingDot = -0.99 } = {}) {
+export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1, fits = () => true, getNormals = null, maxFacingDot = -0.99,
+  stationary = [], usedSnaps = null } = {}) {
   // World snap points and boxes, read once; a move translates them
   const snaps = new Map();
   const normals = new Map();
@@ -80,9 +86,8 @@ export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1
   const mods = [...snaps.keys()];
   const order = [];
   const joins = [];
-  if (mods.length < 2) return { order, joins };
-
-  const used = new Map(mods.map(m => [m, new Set()]));
+  const used = new Map(mods.map(m => [m, new Set(usedSnaps?.get(m) || [])]));
+  if (mods.length < 2) return { order, joins, used };
   const volume = (b) => Math.max(0, b.max.x - b.min.x) * Math.max(0, b.max.y - b.min.y) * Math.max(0, b.max.z - b.min.z);
   const tooDeep = (a, b) => {
     if (!a || !b) return false;
@@ -137,14 +142,33 @@ export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1
     for (const c of out) heap.push(c);
   };
   const settle = (m) => { order.push(m); remaining.delete(m); offer(m); };
+  // Each remaining module, the closest to a free stationary snap point first. Stationary modules
+  // never move again, so a used snap, a clash or a misfit rules a candidate out for good.
+  const grow = () => {
+    while (remaining.size > 0 && heap.size > 0) {
+      const c = heap.pop();
+      if (!remaining.has(c.m) || !free(c)) continue;
+      const delta = deltaOf(c);
+      if (!allowed(c, delta)) continue;
+      join(c, delta);
+      settle(c.m);
+    }
+  };
 
-  // Every pair of modules, closest first, for starting groups. Remaining modules do not move and
-  // the stationary ones only grow in number, so a pair that cannot start a group never can later:
-  // one pass down the list (a cursor) finds each next group's start.
+  // Modules already stationary: the others join them first
+  const given = stationary.filter(m => remaining.has(m));
+  for (const m of given) { order.push(m); remaining.delete(m); }
+  for (const m of given) offer(m);
+  grow();
+
+  // Every pair of remaining modules, closest first, for starting groups. Remaining modules do not
+  // move and the stationary ones only grow in number, so a pair that cannot start a group never
+  // can later: one pass down the list (a cursor) finds each next group's start.
+  const rest = [...remaining];
   const all = [];
-  for (let i = 0; i < mods.length; i++) for (let k = i + 1; k < mods.length; k++) {
-    pairs(mods[i], mods[k], all);
-    pairs(mods[k], mods[i], all);
+  for (let i = 0; i < rest.length; i++) for (let k = i + 1; k < rest.length; k++) {
+    pairs(rest[i], rest[k], all);
+    pairs(rest[k], rest[i], all);
   }
   all.sort((x, y) => x.d - y.d);
   let cursor = 0;
@@ -168,17 +192,7 @@ export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1
     join(seed, deltaOf(seed));
     settle(seed.a);
     settle(seed.m);
-
-    // Then each remaining module, the closest to a free stationary snap point first. Stationary
-    // modules never move again, so a used snap, a clash or a misfit rules a candidate out for good.
-    while (remaining.size > 0 && heap.size > 0) {
-      const c = heap.pop();
-      if (!remaining.has(c.m) || !free(c)) continue;
-      const delta = deltaOf(c);
-      if (!allowed(c, delta)) continue;
-      join(c, delta);
-      settle(c.m);
-    }
+    grow();
   }
-  return { order, joins };
+  return { order, joins, used };
 }

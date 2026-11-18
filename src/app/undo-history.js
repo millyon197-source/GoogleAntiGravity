@@ -105,7 +105,15 @@ export function performUndo() {
 
   if (lastMove.type === 'group_move' && Array.isArray(lastMove.moves)) {
     lastMove.moves.forEach(m => {
+      // A module the snapping also turned turns back first
+      if (m.fromRot) deps.getViewer().setModuleRotation(m.moduleIndex, m.fromRot);
       deps.getViewer().setModulePosition(m.moduleIndex, m.from);
+    });
+    // Undoing the snapping releases the modules it marked stationary
+    if (lastMove.operation === 'snap_pairing') {
+      for (const mod of deps.getViewer().modulesGroup?.children || []) if (mod.userData) delete mod.userData.snapStationary;
+    }
+    lastMove.moves.forEach(m => {
       const coordCell = document.getElementById(`mod-coords-${m.moduleIndex}`);
       if (coordCell) {
         coordCell.textContent = `${m.from.x}, ${m.from.y}, ${m.from.z}`;
@@ -137,7 +145,8 @@ export function performUndo() {
     deps.getViewer().restoreFullPlanGrid();
 
     const remaining = undoList.length;
-    const prefix = lastMove.operation === 'diamond_center' ? 'Undid centering' : 'Undid multi-module move';
+    const prefix = lastMove.operation === 'diamond_center' ? 'Undid centering'
+      : lastMove.operation === 'snap_pairing' ? 'Undid snapping' : 'Undid multi-module move';
     deps.showNotification(`${prefix}: ${lastMove.moves.length} modules reverted to previous positions${remaining > 0 ? ` [${remaining} move${remaining > 1 ? 's' : ''} remaining in undo list]` : ' [Undo list exhausted]'}`, 'info');
 
   } else if (lastMove.type === 'move' && lastMove.from) {

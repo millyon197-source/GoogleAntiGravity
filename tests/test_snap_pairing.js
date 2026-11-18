@@ -95,6 +95,30 @@ console.log('[PASS] closest pair first, the rest join free snap points without o
   console.log('[PASS] only snap points whose normals face each other join');
 }
 
+// Pairing again: modules already stationary stay put, their taken snaps stay taken, and the
+// others join their free snap points
+{
+  const mk = (name, at) => {
+    const m = makeModule(name, at);
+    m.userData.localSnaps = [new THREE.Vector3(50, 0, 0), new THREE.Vector3(-50, 0, 0)];
+    m.userData.normals = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0)];
+    return m;
+  };
+  const getNormals = (m) => m.userData.normals;
+  const a = mk('a', [0, 0, 0]);
+  const b = mk('b', [100, 0, 0]);   // already joined: b's -x snap on a's +x snap
+  const c = mk('c', [120, 0, 300]);
+  const used = new Map([[a, new Set([0])], [b, new Set([1])]]);
+  const r = pairModulesAtSnaps([a, b, c], { getSnaps, getBox, getNormals, stationary: [a, b], usedSnaps: used });
+  assert.deepStrictEqual(a.position.toArray(), [0, 0, 0], 'a stays');
+  assert.deepStrictEqual(b.position.toArray(), [100, 0, 0], 'b stays');
+  assert.deepStrictEqual(r.order.slice(0, 2), [a, b], 'the given stationary modules come first');
+  assert(r.order.includes(c), 'c joins');
+  // c joined a free snap: b's +x (at 150) with its -x, so c sits at 200
+  assert.deepStrictEqual(c.position.toArray().map(Math.round), [200, 0, 0]);
+  console.log('[PASS] pairing again keeps the stationary modules and their taken snaps');
+}
+
 // The snap-facings table covers the snap table: unit normals for known snap names
 {
   const { default: FACINGS } = await import('../src/snap-facings.json', { with: { type: 'json' } });

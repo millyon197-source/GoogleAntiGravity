@@ -4161,6 +4161,7 @@ export class StationViewer {
    * Snap the production modules together, inside the plot and out of the pier zones, only at snap
    * points whose hull normals face each other: the two whose snap points are closest join at those
    * points, then each remaining one joins a free snap point of the joined ones (closest first).
+   * Then half of the modules left over spin 180 degrees about a snap normal and pair again.
    * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
    * after a gizmo release leave it where it is. The moves are synced to the plan, reported
    * (onModuleMoved) and recorded as one undo step.
@@ -4199,26 +4200,70 @@ export class StationViewer {
       Math.min(b.max.y, z.max.y) - Math.max(b.min.y, z.min.y) > eps &&
       Math.min(b.max.z, z.max.z) - Math.max(b.min.z, z.min.z) > eps);
     const fits = (b) => inPlot(b) && !inZone(b);
-    const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m), fits, getNormals });
+    const getBox = (m) => this.getModuleWorldBoundingBox(m);
+    const startRot = new Map(mods.map(m => [m, this.getModuleCalculatedRotation(m.userData.index)]));
+    const first = pairModulesAtSnaps(mods, { getSnaps, getBox, fits, getNormals });
+
+    // Then half of the modules left unjoined spin 180 degrees about one of their snap normals (the
+    // snap closest to a free snap point of a joined module, pivoting on it) and pairing runs again
+    // with the joined ones staying put. A spun module that still does not join turns back.
+    const joined = new Set(first.order);
+    const unjoined = mods.filter(m => !joined.has(m)).sort((a, b) => a.userData.index - b.userData.index);
+    const freeSnaps = first.order.flatMap(m => getSnaps(m).filter((_, i) => !first.used.get(m)?.has(i)));
+    const spun = new Map();
+    unjoined.forEach((m, i) => {
+      if (i % 2 !== 0) return;
+      const dots = m.getObjectByName('module_snaps_group')?.children.filter(d => d.userData?.isSnapPoint) || [];
+      if (dots.length === 0) return;
+      const pts = getSnaps(m);
+      const near = (p) => freeSnaps.reduce((best, q) => Math.min(best, p.distanceToSquared(q)), Infinity);
+      let pick = 0;
+      pts.forEach((p, k) => { if (near(p) < near(pts[pick])) pick = k; });
+      spun.set(m, { position: m.position.clone(), quaternion: m.quaternion.clone() });
+      this.spinModuleAboutSnap(m, dots[pick]);
+    });
+    let order = first.order;
+    if (spun.size > 0) {
+      const second = pairModulesAtSnaps(mods, { getSnaps, getBox, fits, getNormals, stationary: first.order, usedSnaps: first.used });
+      order = second.order;
+      const nowJoined = new Set(order);
+      for (const [m, s] of spun) {
+        if (nowJoined.has(m)) continue;
+        m.position.copy(s.position);
+        m.quaternion.copy(s.quaternion);
+        m.updateMatrixWorld(true);
+      }
+    }
     for (const m of order) m.userData.snapStationary = true;
 
     const moves = [];
+    let turned = false;
     for (const m of mods) {
       const b = before.get(m);
-      if (b.distanceToSquared(m.position) < 1e-6) continue;
+      const fromRot = startRot.get(m);
+      const toRot = spun.has(m) && order.includes(m) ? this.getModuleCalculatedRotation(m.userData.index) : null;
+      if (b.distanceToSquared(m.position) < 1e-6 && !toRot) continue;
       const to = { x: Math.round(m.position.x), y: Math.round(m.position.y), z: Math.round(-m.position.z) };
       m.position.set(to.x, to.y, -to.z);
       m.updateMatrixWorld(true);
       const planMod = this.currentPlan?.modules?.find(pm => pm.index === m.userData?.index);
       if (planMod) planMod.position = { ...to };
-      moves.push({ moduleIndex: m.userData?.index, macro: m.userData?.macro, from: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(-b.z) }, to });
+      const mv = { moduleIndex: m.userData?.index, macro: m.userData?.macro, from: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(-b.z) }, to };
+      if (toRot) {
+        turned = true;
+        if (planMod) planMod.rotation = { ...toRot };
+        mv.fromRot = fromRot ? { ...fromRot } : { yaw: 0, pitch: 0, roll: 0 };
+        mv.toRot = { ...toRot };
+      }
+      moves.push(mv);
     }
     // Reported with only the last move final, so the station stats refresh once
+    if (this.onModuleRotated) moves.filter(mv => mv.toRot).forEach(mv => this.onModuleRotated(mv.moduleIndex, mv.toRot, false));
     if (this.onModuleMoved) moves.forEach((mv, i) => this.onModuleMoved(mv.moduleIndex, mv.to, i === moves.length - 1));
     if (moves.length && this.onMoveCommitted) {
-      this.onMoveCommitted(moves.length === 1
+      this.onMoveCommitted(moves.length === 1 && !turned
         ? { type: 'move', ...moves[0], delta: { dx: moves[0].to.x - moves[0].from.x, dy: moves[0].to.y - moves[0].from.y, dz: moves[0].to.z - moves[0].from.z }, timestamp: Date.now() }
-        : { type: 'group_move', moves, timestamp: Date.now() });
+        : { type: 'group_move', operation: 'snap_pairing', moves, timestamp: Date.now() });
     }
     if (moves.length) {
       if (this.selectionHelper) this.selectionHelper.update();
@@ -4227,6 +4272,30 @@ export class StationViewer {
       if (typeof this.renderScene === 'function') this.renderScene();
     }
     return moves.length;
+  }
+
+  /**
+   * Turn a module 180 degrees about one of its snap points' hull normals, pivoting on that snap point
+   * (it stays where it is). The turn is settled to the whole-degree yaw / pitch / roll a plan holds.
+   * @param {object} mod the module group
+   * @param {object} dot the snap dot to turn about
+   */
+  spinModuleAboutSnap(mod, dot) {
+    mod.updateMatrixWorld(true);
+    const pivot = dot.getWorldPosition(new THREE.Vector3());
+    const axis = this.getSnapWorldNormal(mod, dot).normalize();
+    const q = new THREE.Quaternion().setFromAxisAngle(axis, Math.PI);
+    mod.quaternion.premultiply(q);
+    mod.position.sub(pivot).applyQuaternion(q).add(pivot);
+    mod.updateMatrixWorld(true);
+    const rot = this.getModuleCalculatedRotation(mod.userData.index);
+    if (rot) {
+      const deg = (v) => { let d = Math.round(v) % 360; if (d > 180) d -= 360; if (d <= -180) d += 360; return d; };
+      mod.rotation.copy(computeModuleGroupRotation(deg(rot.yaw), deg(rot.pitch), deg(rot.roll)));
+      mod.updateMatrixWorld(true);
+      mod.position.add(pivot.sub(dot.getWorldPosition(new THREE.Vector3())));
+      mod.updateMatrixWorld(true);
+    }
   }
 
   /**
