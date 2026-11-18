@@ -183,6 +183,9 @@ function initApp() {
       const detTitle = document.getElementById('det-title');
       if (detTitle) detTitle.textContent = `${indices.length} Modules Selected`;
 
+      // One module's bounding dimensions do not describe a selection of several: the line goes
+      document.getElementById('det-dim')?.closest('.detail-cell')?.classList.add('hidden');
+
       const catTag = document.getElementById('det-category');
       if (catTag) {
         catTag.textContent = 'GROUP SELECTION';
@@ -1409,9 +1412,10 @@ function selectModule(index, focusCamera = false) {
     if (inputRoll) inputRoll.value = calcRot.roll;
     if (inputYaw) inputYaw.value = calcRot.yaw;
 
-    // Fetch and display bounding dimensions
+    // Fetch and display bounding dimensions (the line a multi-module selection hid comes back)
     const detDim = document.getElementById('det-dim');
     if (detDim) {
+      detDim.closest('.detail-cell')?.classList.remove('hidden');
       const dimensions = viewer.getModuleDimensions(index);
       if (dimensions) {
         detDim.textContent = `Width: ${Math.round(dimensions.x)}m | Height: ${Math.round(dimensions.y)}m | Depth: ${Math.round(dimensions.z)}m`;
