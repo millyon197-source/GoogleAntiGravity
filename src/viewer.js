@@ -4171,7 +4171,13 @@ export class StationViewer {
       m.updateMatrixWorld(true);
       return group.children.filter(d => d.userData?.isSnapPoint).map(d => d.getWorldPosition(new THREE.Vector3()));
     };
-    const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m) });
+    // Joins keep every moved module inside the plot BB (when the plot is on)
+    const pCfg = this.currentPlotConfig || getCurrentPlotConfig();
+    const pb = pCfg && pCfg.enabled !== false ? getPlotBoundingBox(pCfg) : null;
+    const eps = 0.5;
+    const fits = (b) => !pb || (b.min.x >= pb.minX - eps && b.max.x <= pb.maxX + eps &&
+      b.min.y >= pb.minY - eps && b.max.y <= pb.maxY + eps && b.min.z >= pb.minZ - eps && b.max.z <= pb.maxZ + eps);
+    const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m), fits });
     for (const m of order) m.userData.snapStationary = true;
 
     const moves = [];

@@ -45,6 +45,30 @@ for (let i = 0; i < mods.length; i++) {
 }
 console.log('[PASS] closest pair first, the rest join free snap points without overlapping');
 
+// A plot: chains (two snaps per module) stay inside it, and start a new pair when they cannot grow
+{
+  const chain = (name, at) => {
+    const m = makeModule(name, at);
+    m.userData.localSnaps = [new THREE.Vector3(50, 0, 0), new THREE.Vector3(-50, 0, 0)];
+    return m;
+  };
+  const plot = new THREE.Box3(new THREE.Vector3(-260, -260, -260), new THREE.Vector3(260, 260, 260));
+  const fits = (b) => plot.containsBox(b);
+  const ms = [chain('p', [0, 0, 0]), chain('q', [120, 0, 0]), chain('r', [-130, 0, 0]),
+    chain('s', [0, 0, 200]), chain('t', [150, 0, 200]), chain('u', [-150, 0, -200]), chain('w', [100, 0, -200])];
+  const start = new Map(ms.map(m => [m, m.position.clone()]));
+  const r = pairModulesAtSnaps(ms, { getSnaps, getBox, fits });
+  for (const m of ms) {
+    if (start.get(m).distanceTo(m.position) > 1e-6) assert(fits(getBox(m)), `${m.name} moved inside the plot`);
+  }
+  for (const m of r.order) assert(fits(getBox(m)), `stationary ${m.name} is inside the plot`);
+  assert(r.order.length >= 6, `most modules join (${r.order.length})`);
+  // A 520 m plot holds at most five 100 m modules in a row: more than one chain formed
+  const unplot = pairModulesAtSnaps(ms.map(m => chain(m.name, start.get(m).toArray())), { getSnaps, getBox });
+  assert.strictEqual(unplot.order.length, 7);
+  console.log(`[PASS] joins stay inside the plot (${r.order.length} of ${ms.length} joined)`);
+}
+
 // Fewer than two modules: nothing moves
 {
   const solo = makeModule('solo', [10, 0, 0]);

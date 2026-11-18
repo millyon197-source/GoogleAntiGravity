@@ -42,19 +42,23 @@ class MinHeap {
  * both become stationary. Then, one by one, the remaining module with a snap point closest to a
  * free snap point of a stationary module moves onto it and becomes stationary too. A snap point
  * joins at most one other. A join that would leave the moving module's box deep inside a
- * stationary module's box is skipped for the next closest one; a module with no such join stays.
+ * stationary module's box, or outside `fits` (e.g. the plot), is skipped for the next closest one.
+ * When no remaining module can join the stationary ones, the closest pair of remaining modules
+ * starts a new group the same way, until no pair can join; a module that cannot join stays.
  *
  * @param {Array<object>} modules the modules to join (THREE objects)
  * @param {{
  *   getSnaps: (mod: object) => THREE.Vector3[],
  *   getBox: (mod: object) => THREE.Box3 | null,
- *   maxOverlap?: number
+ *   maxOverlap?: number,
+ *   fits?: (box: THREE.Box3) => boolean
  * }} options getSnaps gives a module's snap points in world space, getBox its world box;
- *   maxOverlap is the largest share of the smaller box two joined modules may have in common
+ *   maxOverlap is the largest share of the smaller box two joined modules may have in common;
+ *   fits says whether a moved module's box is somewhere it may go
  * @returns {{ order: object[], joins: Array<{ mod: object, to: object, delta: THREE.Vector3 }> }}
  *   the modules in the order they became stationary, and each move made (applied to position)
  */
-export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1 } = {}) {
+export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1, fits = () => true } = {}) {
   // World snap points and boxes, read once; a move translates them
   const snaps = new Map();
   const boxes = new Map();
@@ -109,35 +113,55 @@ export function pairModulesAtSnaps(modules, { getSnaps, getBox, maxOverlap = 0.1
     });
   };
 
-  // The first pair: the two modules with the closest snap points
-  const all = [];
-  for (let i = 0; i < mods.length; i++) for (let k = i + 1; k < mods.length; k++) pairs(mods[i], mods[k], all);
-  all.sort((x, y) => x.d - y.d);
-  const first = all.find(c => !clashes(c.m, deltaOf(c), [c.a]));
-  if (!first) return { order, joins };
-  join(first, deltaOf(first));
-  order.push(first.a, first.m);
-
-  // Then each remaining module, the closest to a free stationary snap point first. Stationary
-  // modules never move again, so a used snap or a clash rules a candidate out for good.
-  const remaining = new Set(mods.filter(m => m !== first.a && m !== first.m));
+  // A move is allowed when the moved box still fits (e.g. inside the plot) and is not buried in a
+  // stationary module
+  const allowed = (c, delta) => {
+    const box = boxes.get(c.m);
+    if (box && !fits(box.clone().translate(delta))) return false;
+    return !clashes(c.m, delta, order);
+  };
+  const remaining = new Set(mods);
   const heap = new MinHeap();
   const offer = (anchor) => {
     const out = [];
     for (const m of remaining) pairs(anchor, m, out);
     for (const c of out) heap.push(c);
   };
-  offer(first.a);
-  offer(first.m);
-  while (remaining.size > 0 && heap.size > 0) {
-    const c = heap.pop();
-    if (!remaining.has(c.m) || !free(c)) continue;
-    const delta = deltaOf(c);
-    if (clashes(c.m, delta, order)) continue;
-    join(c, delta);
-    order.push(c.m);
-    remaining.delete(c.m);
-    offer(c.m);
+  const settle = (m) => { order.push(m); remaining.delete(m); offer(m); };
+
+  while (remaining.size >= 2) {
+    // A new pair: the two remaining modules with the closest snap points (the first one stays,
+    // so it must not be buried in a stationary module itself)
+    const rest = [...remaining];
+    const all = [];
+    for (let i = 0; i < rest.length; i++) for (let k = i + 1; k < rest.length; k++) {
+      pairs(rest[i], rest[k], all);
+      pairs(rest[k], rest[i], all);
+    }
+    all.sort((x, y) => x.d - y.d);
+    const seed = all.find(c => {
+      const anchorBox = boxes.get(c.a);
+      if (anchorBox && !fits(anchorBox)) return false;
+      if (clashes(c.a, new THREE.Vector3(), order)) return false;
+      const delta = deltaOf(c);
+      if (!allowed(c, delta)) return false;
+      return !(anchorBox && boxes.get(c.m) && tooDeep(anchorBox, boxes.get(c.m).clone().translate(delta)));
+    });
+    if (!seed) break;
+    join(seed, deltaOf(seed));
+    settle(seed.a);
+    settle(seed.m);
+
+    // Then each remaining module, the closest to a free stationary snap point first. Stationary
+    // modules never move again, so a used snap, a clash or a misfit rules a candidate out for good.
+    while (remaining.size > 0 && heap.size > 0) {
+      const c = heap.pop();
+      if (!remaining.has(c.m) || !free(c)) continue;
+      const delta = deltaOf(c);
+      if (!allowed(c, delta)) continue;
+      join(c, delta);
+      settle(c.m);
+    }
   }
   return { order, joins };
 }
