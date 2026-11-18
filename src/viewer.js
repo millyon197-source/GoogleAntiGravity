@@ -4150,7 +4150,7 @@ export class StationViewer {
   }
 
   /**
-   * Snap the production modules together: the two whose snap points are closest join at those
+   * Snap the production modules together, inside the plot and out of the pier zones: the two whose snap points are closest join at those
    * points, then each remaining one joins a free snap point of the joined ones (closest first).
    * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
    * after a gizmo release leave it where it is. The moves are synced to the plan, reported
@@ -4175,8 +4175,16 @@ export class StationViewer {
     const pCfg = this.currentPlotConfig || getCurrentPlotConfig();
     const pb = pCfg && pCfg.enabled !== false ? getPlotBoundingBox(pCfg) : null;
     const eps = 0.5;
-    const fits = (b) => !pb || (b.min.x >= pb.minX - eps && b.max.x <= pb.maxX + eps &&
+    const inPlot = (b) => !pb || (b.min.x >= pb.minX - eps && b.max.x <= pb.maxX + eps &&
       b.min.y >= pb.minY - eps && b.max.y <= pb.maxY + eps && b.min.z >= pb.minZ - eps && b.max.z <= pb.maxZ + eps);
+    // ...and out of every pier's exclusion zones (its box and its prong tunnels)
+    const zones = pb ? (this.modulesGroup?.children || [])
+      .filter(m => m.visible !== false && isPierModule(m))
+      .flatMap(p => getPierProngCorridors(p, pb, this)) : [];
+    const inZone = (b) => zones.some(z => Math.min(b.max.x, z.max.x) - Math.max(b.min.x, z.min.x) > eps &&
+      Math.min(b.max.y, z.max.y) - Math.max(b.min.y, z.min.y) > eps &&
+      Math.min(b.max.z, z.max.z) - Math.max(b.min.z, z.min.z) > eps);
+    const fits = (b) => inPlot(b) && !inZone(b);
     const { order } = pairModulesAtSnaps(mods, { getSnaps, getBox: (m) => this.getModuleWorldBoundingBox(m), fits });
     for (const m of order) m.userData.snapStationary = true;
 
