@@ -116,9 +116,9 @@ export function performUndo() {
       viewer.deferPlotViolations = false;
     }
     if (typeof viewer.updatePlotBoxViolations === 'function') viewer.updatePlotBoxViolations();
-    // Undoing the snapping releases the modules it marked stationary
+    // Undoing the snapping releases the modules it marked stationary and grouped
     if (lastMove.operation === 'snap_pairing') {
-      for (const mod of deps.getViewer().modulesGroup?.children || []) if (mod.userData) delete mod.userData.snapStationary;
+      deps.getViewer().clearSnapJoins();
     }
     lastMove.moves.forEach(m => {
       const coordCell = document.getElementById(`mod-coords-${m.moduleIndex}`);

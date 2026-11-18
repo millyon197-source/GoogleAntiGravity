@@ -2725,6 +2725,16 @@ export class StationViewer {
 
   selectModuleByIndex(index, resizeGridAndBounds = false, attachGizmo = null) {
     const priorGizmoTarget = this.gizmoTargetModuleIndex;
+    // The gizmo on a module of a snap group takes the whole group, moved as one object
+    const wantsGizmo = attachGizmo === true || (attachGizmo === null && priorGizmoTarget === index);
+    if (wantsGizmo) {
+      const group = this.getSnapGroupModules(index);
+      if (group.length > 1) {
+        this.selectModulesGroup(group);
+        this.gizmoTargetModuleIndex = priorGizmoTarget;
+        return;
+      }
+    }
     this.deselect(false, false);
     this.clearFilterHighlights();
 
@@ -2986,7 +2996,8 @@ export class StationViewer {
     const before = new Map(mods.map(m => [m, m.position.clone()]));
     // Released piers and snap-joined (stationary) modules stay where they are
     const keep = new Set((released || []).filter(m => isPierModule(m)));
-    for (const m of visible) if (m.userData?.snapStationary && !releasedSet.has(m)) keep.add(m);
+    // (a snap group moved with the gizmo stays as one: none of its modules is pushed on its own)
+    for (const m of visible) if (m.userData?.snapStationary) keep.add(m);
     const hasPiers = visible.some(m => isPierModule(m));
     // Piers the Perimeter stacking placed stay where they are too, unless one now has a box in
     // another pier's zones or its zones over another pier's box (e.g. a released pier's zones over
@@ -3015,8 +3026,17 @@ export class StationViewer {
       // Back inside: the released ones together, others one by one, each then off any overlap
       const block = outside.filter(m => releasedSet.has(m));
       if (block.length) this.pullModulesInsidePlot(block.length === releasedSet.size ? [...releasedSet] : block);
-      for (const m of outside.filter(o => !releasedSet.has(o))) this.pullModulesInsidePlot([m]);
+      // ...a snap group outside comes back whole
+      const pulledGroups = new Set();
+      for (const m of outside.filter(o => !releasedSet.has(o))) {
+        const g = m.userData?.snapGroup;
+        if (g === undefined) { this.pullModulesInsidePlot([m]); continue; }
+        if (pulledGroups.has(g)) continue;
+        pulledGroups.add(g);
+        this.pullModulesInsidePlot(this.getSnapGroupModules(m.userData.index));
+      }
       for (const m of outside) {
+        if (m.userData?.snapGroup !== undefined) continue;
         moveMovingModuleOutsideOverlap(m, visible.filter(o => o !== m && o.userData?.index !== undefined), pCfg, {
           gap: 5,
           getSize: (o) => this.getModuleInitialSize(o),
@@ -3084,8 +3104,9 @@ export class StationViewer {
             z: mod.userData.multiDragStartPos.z
           } : null;
 
-          // Insure moved module doesn't overlap another module BB on gizmo release
-          moveMovingModuleOutsideOverlap(mod, stationaryModules, plotConfig, {
+          // Insure moved module doesn't overlap another module BB on gizmo release (a snap group
+          // moves as one object: its modules are not pushed apart)
+          if (mod.userData?.snapGroup === undefined) moveMovingModuleOutsideOverlap(mod, stationaryModules, plotConfig, {
             gap: 5,
             fromPos: fromPosThree,
             dragAxis: this.transformControls?.axis || this.lastDragAxis || '',
@@ -4160,6 +4181,28 @@ export class StationViewer {
   }
 
   /**
+   * The modules of the snap group a module belongs to (itself included), or [] when it is not joined.
+   * @param {number} index module index
+   * @returns {Array<object>}
+   */
+  getSnapGroupModules(index) {
+    const mods = this.modulesGroup?.children || [];
+    const mod = mods.find(m => m.userData?.index === index);
+    const g = mod?.userData?.snapGroup;
+    if (g === undefined) return [];
+    return mods.filter(m => m.visible !== false && m.userData?.snapGroup === g);
+  }
+
+  /** Releases every snapped module: no longer stationary, no longer in a snap group. */
+  clearSnapJoins() {
+    for (const m of this.modulesGroup?.children || []) {
+      if (!m.userData) continue;
+      delete m.userData.snapStationary;
+      delete m.userData.snapGroup;
+    }
+  }
+
+  /**
    * Snap the production modules together, inside the plot and out of the pier zones, only at snap
    * points whose hull normals face each other: the two whose snap points are closest join at those
    * points, then each remaining one joins a free snap point of the joined ones (closest first).
@@ -4167,7 +4210,8 @@ export class StationViewer {
    * normal points the other way) and pair again. Modules with a single snap point are held back
    * and join last, once every other join is made.
    * Every joined module is marked stationary (userData.snapStationary), so the automatic clean-ups
-   * after a gizmo release leave it where it is. The moves are synced to the plan, reported
+   * after a gizmo release leave it where it is, and gets its group (userData.snapGroup): the gizmo
+   * moves a group as one object. The moves are synced to the plan, reported
    * (onModuleMoved) and recorded as one undo step.
    * @returns {number} how many modules moved
    */
@@ -4175,7 +4219,7 @@ export class StationViewer {
     const mods = (this.modulesGroup?.children || []).filter(m =>
       m.visible !== false && m.userData?.index !== undefined &&
       getModuleCategory(m.userData?.macro || '') === 'production');
-    for (const m of this.modulesGroup?.children || []) if (m.userData) delete m.userData.snapStationary;
+    this.clearSnapJoins();
     if (mods.length < 2) return 0;
     this.modulesGroup.updateMatrixWorld(true);
     const before = new Map(mods.map(m => [m, m.position.clone()]));
@@ -4211,13 +4255,20 @@ export class StationViewer {
     const singles = mods.filter(m => snapCount(m) === 1);
     const multi = mods.filter(m => snapCount(m) > 1);
     const flipped = new Map();
+    // Every join made, to find the groups of joined modules at the end
+    const joinsMade = [];
+    const pair = (pool, opts) => {
+      const r = pairModulesAtSnaps(pool, opts);
+      joinsMade.push(...r.joins);
+      return r;
+    };
     // One stage: the pool pairs (joining the stationary modules first), then half of the pool's
     // modules left unjoined turn 180 degrees about an axis across one of their snap normals, so that
     // normal points the other way (the snap closest to a free snap point of a joined module, pivoting
     // on it), and pairing runs again with the joined ones staying put. A turned module that still
     // does not join turns back.
     const stage = (pool, stationary, usedSnaps) => {
-      const first = pairModulesAtSnaps(pool, { getSnaps, getBox, fits, getNormals, stationary, usedSnaps });
+      const first = pair(pool, { getSnaps, getBox, fits, getNormals, stationary, usedSnaps });
       const joined = new Set(first.order);
       const unjoined = pool.filter(m => !joined.has(m) && !flipped.has(m)).sort((a, b) => a.userData.index - b.userData.index);
       const freeSnaps = first.order.flatMap(m => getSnaps(m).filter((_, i) => !first.used.get(m)?.has(i)));
@@ -4235,7 +4286,7 @@ export class StationViewer {
         this.flipModuleAtSnap(m, dots[pick]);
       });
       if (turnedNow.length === 0) return first;
-      const second = pairModulesAtSnaps(pool, { getSnaps, getBox, fits, getNormals, stationary: first.order, usedSnaps: first.used });
+      const second = pair(pool, { getSnaps, getBox, fits, getNormals, stationary: first.order, usedSnaps: first.used });
       const nowJoined = new Set(second.order);
       for (const m of turnedNow) {
         if (nowJoined.has(m)) continue;
@@ -4252,6 +4303,18 @@ export class StationViewer {
     // joined modules first, then pair with each other, then half of those left turn and try again
     if (singles.length > 0) ({ order, used } = stage([...multi, ...singles], order, used));
     for (const m of order) m.userData.snapStationary = true;
+    // Joined modules form groups (modules linked by joins); the gizmo moves a group as one object
+    const root = new Map();
+    const find = (m) => { while (root.get(m) !== m) { root.set(m, root.get(root.get(m))); m = root.get(m); } return m; };
+    for (const m of order) root.set(m, m);
+    for (const j of joinsMade) if (root.has(j.mod) && root.has(j.to)) root.set(find(j.mod), find(j.to));
+    const groupId = new Map();
+    for (const m of order) {
+      const r = find(m);
+      if (!groupId.has(r)) groupId.set(r, m.userData.index);
+      groupId.set(r, Math.min(groupId.get(r), m.userData.index));
+    }
+    for (const m of order) m.userData.snapGroup = groupId.get(find(m));
 
     const moves = [];
     let turned = false;

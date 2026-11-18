@@ -1705,10 +1705,10 @@ function setupEventListeners() {
   }
 
   // Checking Snaps joins the production modules at their closest snap points (stationary);
-  // unchecking it releases them (they stay where they are)
+  // unchecking it releases them (they stay where they are, no longer grouped)
   function applySnapPairing(checked) {
     if (checked) viewer.snapProductionModules();
-    else for (const m of viewer.modulesGroup?.children || []) if (m.userData) delete m.userData.snapStationary;
+    else viewer.clearSnapJoins();
   }
 
   const snapsToggle = document.getElementById('toggle-snaps');
