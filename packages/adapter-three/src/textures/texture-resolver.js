@@ -301,6 +301,12 @@ export function resolveTextureForModel(modelUrl, materialName = '') {
     };
   }
 
+  // Materials from the generic library (generic.generic_p1_*, gen_p2_*, p2generic) keep their own
+  // textures on Terran and Split models, as in the game: a Terran pier's generic hull plating and
+  // alpha cut-outs are not Terran hull pattern. The Terran and Split rules below are for the race's
+  // own materials and for models whose material is unknown. (Paranid and Teladi keep their rules.)
+  const isGenericLibraryMaterial = matLower.includes('generic_p1_') || matLower.includes('gen_p2_') || matLower.includes('p2generic');
+
   // 4. Paranid Stations (Holy Order / Godrealm Modules & Habitats)
   if (lower.includes('_par_') || lower.includes('/paranid/') || matLower.includes('paranid')) {
     if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
@@ -322,7 +328,7 @@ export function resolveTextureForModel(modelUrl, materialName = '') {
   }
 
   // 5. Terran Stations (Terran Protectorate / Segaris Pioneer Modules)
-  if (lower.includes('_ter_') || lower.includes('/terran/') || matLower.includes('terran')) {
+  if (!isGenericLibraryMaterial && (lower.includes('_ter_') || lower.includes('/terran/') || matLower.includes('terran'))) {
     if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
       return {
         diffuse: '/assets1/textures/terran/ter_p2_fx_01_diff.dds',
@@ -342,7 +348,7 @@ export function resolveTextureForModel(modelUrl, materialName = '') {
   }
 
   // 6. Split Stations (Free Families / Zyarth Modules)
-  if (lower.includes('_spl_') || lower.includes('/split/') || matLower.includes('split')) {
+  if (!isGenericLibraryMaterial && (lower.includes('_spl_') || lower.includes('/split/') || matLower.includes('split'))) {
     if (matLower.includes('fx') || lower.includes('poslight') || lower.includes('light')) {
       return {
         diffuse: '/assets1/textures/generic/generic_p1_fx_diff.dds',

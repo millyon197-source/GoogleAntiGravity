@@ -97,8 +97,14 @@ function assertLanesOutward(viewer, label) {
       assert.ok(Math.abs(mod.rotation.y - computeModuleGroupRotation(37, 0, 0).y) < 1e-9, `${label}: hub pier is left as it was`);
       continue;
     }
-    const out = nearestPlotWallNormal(mod.position, getPlotBoundingBox(viewer.currentPlotConfig));
-    assert.ok(dir.x * out.x + dir.z * out.z > 0.9999,
+    const pb = getPlotBoundingBox(viewer.currentPlotConfig);
+    const out = nearestPlotWallNormal(mod.position, pb);
+    // Out through its nearest wall, or (Spread slides piers into corners) through a wall its box is on
+    // (these piers have no geometry: their catalog size around their position stands for the box)
+    const s = mod.userData.initialSize, half = Math.max(s.x, s.y, s.z) / 2 + 1, q = mod.position;
+    const onWallItFaces = (dir.x > 0.9999 && pb.maxX - q.x <= half) || (dir.x < -0.9999 && q.x - pb.minX <= half) ||
+      (dir.z > 0.9999 && pb.maxZ - q.z <= half) || (dir.z < -0.9999 && q.z - pb.minZ <= half);
+    assert.ok(dir.x * out.x + dir.z * out.z > 0.9999 || onWallItFaces,
       `${label}: ${mod.userData.macro} lane ${JSON.stringify(dir)} must point out through wall ${JSON.stringify(out)}`);
     const planMod = viewer.currentPlan.modules.find(m => m.index === mod.userData.index);
     const rot = computeX4RotationFromModuleGroup(mod, { decimals: 3 });

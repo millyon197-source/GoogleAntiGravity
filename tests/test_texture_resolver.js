@@ -49,4 +49,21 @@ for (const url of probe) {
 }
 console.log('  ✓ StationViewer.resolveTextureForModel delegates to the package function');
 
+// Generic-library materials on Terran and Split models keep their generic textures; the race's own
+// materials (and unknown ones) get the race textures
+{
+  const ter = '/assets1/structures/dock/pier_ter_harbor_04_data/detail_s_main-lod0.dae';
+  const diff = (url, mat) => resolveTextureForModel(url, mat).diffuse?.split('/').pop();
+  assert.strictEqual(diff(ter, 'genericXgeneric_p1_hulltexture'), 'generic_p1_hulltexture_01_diff.dds');
+  assert.strictEqual(diff(ter, 'genericXgeneric_p1_alphatexture'), 'generic_p1_alphatexture_diff.dds');
+  assert.strictEqual(diff(ter, 'genericXgeneric_p1_alphatexture_b'), 'generic_p1_alphatexture_diff.dds');
+  assert.strictEqual(diff(ter, 'p1terran.ter_p1_hullpattern_01'), 'ter_p2_hullpattern_01_diff.dds');
+  assert.strictEqual(diff(ter, 'p1terran.ter_p1_fx_01'), 'ter_p2_fx_01_diff.dds');
+  assert.strictEqual(diff(ter, ''), 'ter_p2_hullpattern_01_diff.dds', 'unknown material: race texture');
+  const spl = '/assets1/structures/dock/pier_spl_harbor_01_data/detail_m_main-lod0.dae';
+  assert.strictEqual(diff(spl, 'genericXgeneric_p1_alphatexture'), 'generic_p1_alphatexture_diff.dds');
+  assert.strictEqual(diff(spl, ''), 'spl_p2_hulltexture_01_diff.dds', 'unknown material: race texture');
+  console.log('  ✓ generic materials on Terran and Split models keep their generic textures');
+}
+
 console.log('\n[PASS] test_texture_resolver');

@@ -199,6 +199,11 @@
       "hash": 1297274038,
       "folder_path": "/assets1/structures/dock/pier_spl_harbor_02_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -1364,6 +1369,11 @@
       "hash": 3120160570,
       "folder_path": "/assets1/structures/dock/pier_spl_harbor_03_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_s_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -1650,6 +1660,11 @@
       "hash": 188612489,
       "folder_path": "/assets1/structures/dock/pier_spl_harbor_01_data",
       "files": [
+        "anim_arrows01-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6026,6 +6041,10 @@
       "hash": 3527491120,
       "folder_path": "/assets1/structures/dock/pier_ter_harbor_05_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -7844,6 +7863,12 @@
       "hash": 3702415824,
       "folder_path": "/assets1/structures/dock/pier_ter_harbor_04_data",
       "files": [
+        "anim_cross-lod0.dae",
+        "anim_guidelights_01-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8030,6 +8055,14 @@
       "hash": 2619465247,
       "folder_path": "/assets1/structures/dock/pier_ter_harbor_02_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8112,6 +8145,14 @@
       "hash": 3612557157,
       "folder_path": "/assets1/structures/dock/pier_ter_harbor_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8782,6 +8823,13 @@
       "hash": 2262469193,
       "folder_path": "/assets1/structures/dock/pier_ter_tradestation_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows01-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "bounding_box-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }

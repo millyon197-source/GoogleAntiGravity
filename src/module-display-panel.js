@@ -3,7 +3,8 @@ import {
   getInitialModuleSize,
   getInitialModuleDimensions,
   getInitialModuleBounds,
-  getModuleCategory
+  getModuleCategory,
+  getFriendlyName
 } from '@x4/catalog';
 import { PlotBounds, StationLayoutEngine } from '@x4/domain';
 import PIER_LANE_DIRECTIONS from './pier-lane-directions.json' with { type: 'json' };
@@ -2123,13 +2124,26 @@ function translateModule(mod, dx, dy, dz) {
 
 /**
  * Perimeter placement for pier types the station has more than one of (e.g. four
- * pier_arg_harbor_01; dock areas are never stacked): each type goes to the smallest plot wall that still has room for it, its
+ * pier_arg_harbor_01; dock areas are never stacked).
+ *
+ * Types choose walls in order of how many piers they have, the most first. A type with more than
+ * two piers takes the narrowest plot wall still free to itself: as many as fit there with their
+ * exclusion zones apart (levels up the wall; columns along it, one column for a type whose side
+ * prongs' zones run along the wall) are placed the first at the docks Vertical Orientation's level
+ * (top, middle or bottom), each next one as far from those placed as the remaining placements and
+ * the space left allow (only the pier's own BB limits how near the top and bottom of the plot it
+ * goes; its zones may reach past them); the rest go on that wall wherever no pier's box touches
+ * another pier's exclusion zones, as far from the others as possible (their zones may overlap each
+ * other, never a box); one with no such place is left to the zone clean-up, not kept as stacked.
+ *
+ * A type with two piers goes to the smallest plot wall that still has room for it, its
  * modules stacked vertically on that wall, each separated from the next by its own BB height plus
  * `gap`; a pier's BB here takes in its prongs' exclusion zones (pierZoneSlotBox), so stacked and
  * side-by-side piers stay out of each other's zones. A type with prongs facing along the wall (whose
  * zones run along it to the corners) takes a whole wall to itself, its columns centred on it.
  * Piers' lanes point out through that wall. Stacks start at the top, bottom or middle of the plot
- * per the docks vertical orientation; a type taller than the plot continues in further columns
+ * per the docks vertical orientation, only a pier's own BB limiting how near the top or bottom it
+ * goes (its zones may reach past); a type taller than the plot continues in further columns
  * along the wall. Types sharing a wall sit side by side, centred along it.
  *
  * Boxes are the modules as rendered (lane and invisible clearance volumes excluded).
@@ -2141,6 +2155,7 @@ function translateModule(mod, dx, dy, dz) {
  */
 export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, { orient = 'top', gap = 15 } = {}) {
   const stacked = new Set();
+  for (const mod of dockModules || []) if (mod?.userData) delete mod.userData.perimeterStacked;
   const byMacro = new Map();
   for (const mod of dockModules || []) {
     // Only piers stack; dock areas keep the ordinary placement
@@ -2177,7 +2192,15 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
     // A prong facing along the wall (a T pier's side prongs) has its exclusion zone run along the wall
     // to the plot's corners: that type needs the whole wall to itself
     const alongWall = isPierModule(mod) && pierClampsInScene(mod).some(({ d }) => Math.abs(wall.along === 'x' ? d.x : d.z) > 0.3);
-    return { along: wall.along === 'x' ? b.max.x - b.min.x : b.max.z - b.min.z, height: b.max.y - b.min.y, alongWall };
+    const own = moduleWorldBox(mod, viewer);
+    return { along: wall.along === 'x' ? b.max.x - b.min.x : b.max.z - b.min.z, height: b.max.y - b.min.y, ownHeight: own.max.y - own.min.y, alongWall };
+  };
+  // How many of a type fit up the wall with zones apart: the end piers' own boxes reach the plot's
+  // top and bottom (their zones may reach past), each next pier a zone height + gap further
+  const fitUpWall = (sizes) => {
+    const height = Math.max(...sizes.map(s => s.height));
+    const ownHeight = Math.max(...sizes.map(s => s.ownHeight));
+    return Math.max(1, 1 + Math.floor((plotHeight - ownHeight) / (height + gap) + 1e-9));
   };
   const columnsAlong = (sizes, wall) => sizes.some(s => s.alongWall) ? wall.length : Math.max(...sizes.map(s => s.along));
 
@@ -2194,17 +2217,151 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
     }
   }
 
-  // Largest footprint first, so the big types get the walls they fit on
+  // The type with the most piers chooses first; among types with as many, the largest footprint, so
+  // the big types get the walls they fit on
   const footprint = (g) => { const b = pierZoneSlotBox(g[0], viewer); return Math.max(b.max.x - b.min.x, b.max.z - b.min.z); };
-  groups.sort((a, b) => footprint(b) - footprint(a));
+  groups.sort((a, b) => (b.length - a.length) || (footprint(b) - footprint(a)));
+
+  // A type with more than two piers claims the narrowest wall still free: as many as fit with their
+  // exclusion zones apart go there, spread as far apart as the wall allows; the rest go where on
+  // that wall no pier's box touches another's zones (their zones may overlap each other)
+  for (const group of groups.filter(g => g.length > 2)) {
+    const wall = walls.find(w => w.used === 0 && !w.claimed);
+    if (!wall) break;
+    const unplaced = new Set(spreadOnWall(group, wall));
+    wall.claimed = true;
+    wall.used = wall.length;
+    group.forEach(m => { if (!unplaced.has(m)) stacked.add(m); });
+    group.spread = true;
+  }
+
+  function spreadOnWall(group, wall) {
+    const sizes = group.map(m => presentToWall(m, wall));
+    const alongWall = sizes.some(s => s.alongWall);
+    const slotAlong = Math.max(...sizes.map(s => s.along));
+    const slotHeight = Math.max(...sizes.map(s => s.height));
+    const lo = wall.along === 'x' ? pb.minX : pb.minZ;
+    const hi = lo + wall.length;
+    const k = wall.along;
+    // Levels up the wall: the first placement where the docks Vertical Orientation puts it (top,
+    // middle or bottom of the room); the rest split above and below it so the spacing is as wide as
+    // the remaining placements and the space left allow, each zone-height + gap apart at least.
+    // Levels are the piers' own box centres: only the module's BB limits how close to the top and
+    // bottom of the plot a pier goes (its zones may reach past them), leaving the most room between
+    const ownHeight = Math.max(...group.map(m => { const b = moduleWorldBox(m, viewer); return b.max.y - b.min.y; }));
+    const yLo = pb.minY + ownHeight / 2, yHi = pb.maxY - ownHeight / 2;
+    // (piers taller than the plot: one level, the pier's own box kept inside by moveTo)
+    const y0 = orient === 'bottom' ? yLo : orient === 'center' ? centerY : yHi;
+    const step = slotHeight + gap;
+    const capAbove = yHi < yLo ? 0 : Math.floor((yHi - y0) / step + 1e-9), capBelow = yHi < yLo ? 0 : Math.floor((y0 - yLo) / step + 1e-9);
+    const levelsFor = (count) => {
+      const k = count - 1;
+      let best = null;
+      for (let a = Math.max(0, k - capBelow); a <= Math.min(capAbove, k); a++) {
+        const b = k - a;
+        const sp = Math.min(a ? (yHi - y0) / a : Infinity, b ? (y0 - yLo) / b : Infinity);
+        if (!best || sp > best.sp + 1e-6 || (Math.abs(sp - best.sp) <= 1e-6 && Math.abs(a - b) < Math.abs(best.a - best.b))) best = { a, b, sp };
+      }
+      const above = Array.from({ length: best.a }, (_, i) => y0 + (yHi - y0) * (i + 1) / best.a);
+      const below = Array.from({ length: best.b }, (_, i) => y0 - (y0 - yLo) * (i + 1) / best.b);
+      // Placement order: the first, then each next the level farthest from those already placed
+      const order = [y0];
+      const left = [...above, ...below];
+      while (left.length) {
+        let bi = 0, bd = -1;
+        left.forEach((y, i) => { const d = Math.min(...order.map(o => Math.abs(o - y))); if (d > bd + 1e-6) { bd = d; bi = i; } });
+        order.push(left.splice(bi, 1)[0]);
+      }
+      return order;
+    };
+    // How many fit with zones apart: levels up the wall, and columns along it (one column for a type
+    // whose side prongs' zones run along the wall)
+    const rowsMax = 1 + capAbove + capBelow;
+    const colsMax = alongWall ? 1 : Math.max(1, Math.floor((wall.length + gap) / (slotAlong + gap)));
+    const nFit = Math.min(group.length, rowsMax * colsMax);
+    const cols = Math.min(colsMax, nFit);
+    const rows = Math.ceil(nFit / cols);
+    // Columns spread to the ends of the wall: the first and last at its edges, the rest evenly between
+    const spread = (n, from, to, single) => n === 1 ? [single] : Array.from({ length: n }, (_, i) => from + (to - from) * i / (n - 1));
+    const alongCs = spread(cols, lo + slotAlong / 2, hi - slotAlong / 2, (lo + hi) / 2);
+    const yCs = levelsFor(rows);
+
+    // Moves a module so its `box` (slot or own) is centred at alongC along the wall and its own box at
+    // height yC, its own face on the wall
+    const moveTo = (mod, alongC, yC, boxOf) => {
+      const b = boxOf(mod);
+      const face = moduleWorldBox(mod, viewer);
+      const toWall = k === 'z'
+        ? (wall.normal.x > 0 ? pb.maxX - face.max.x : pb.minX - face.min.x)
+        : (wall.normal.z > 0 ? pb.maxZ - face.max.z : pb.minZ - face.min.z);
+      const dAlong = alongC - (b.min[k] + b.max[k]) / 2;
+      const dy = yC - (face.min.y + face.max.y) / 2;
+      if (k === 'z') translateModule(mod, toWall, dy, dAlong);
+      else translateModule(mod, dAlong, dy, toWall);
+      const own = moduleWorldBox(mod, viewer);
+      const fixY = own.min.y < pb.minY ? pb.minY - own.min.y : (own.max.y > pb.maxY ? pb.maxY - own.max.y : 0);
+      if (fixY) translateModule(mod, 0, fixY, 0);
+    };
+    const slotOf = (m) => pierZoneSlotBox(m, viewer);
+    const ownOf = (m) => moduleWorldBox(m, viewer);
+
+    const placed = [];
+    group.slice(0, nFit).forEach((mod, i) => {
+      moveTo(mod, alongCs[i % cols], yCs[Math.floor(i / cols)], slotOf);
+      placed.push(mod);
+    });
+
+    // The rest: wherever on the wall no box touches another pier's exclusion zones (neither this
+    // pier's box in a placed pier's zones nor a placed pier's box in this one's), as far from the
+    // others as possible. Their zones may overlap each other; boxes and zones never. A pier with no
+    // such place on the wall is left to the caller (clearPierProngCorridors) and not kept as stacked.
+    const centre = (b) => ({ a: (b.min[k] + b.max[k]) / 2, y: (b.min.y + b.max.y) / 2 });
+    const zonesOf = (m) => [pierZoneSlotBox(m, viewer), ...getPierProngCorridors(m, pb, viewer)];
+    const hit = (p, q) =>
+      Math.min(p.max.x, q.max.x) - Math.max(p.min.x, q.min.x) > -gap + 1e-3 &&
+      Math.min(p.max.y, q.max.y) - Math.max(p.min.y, q.min.y) > -gap + 1e-3 &&
+      Math.min(p.max.z, q.max.z) - Math.max(p.min.z, q.min.z) > -gap + 1e-3;
+    const shift = (bx, dA, dY) => ({
+      min: { ...bx.min, [k]: bx.min[k] + dA, y: bx.min.y + dY },
+      max: { ...bx.max, [k]: bx.max[k] + dA, y: bx.max.y + dY }
+    });
+    const minDist = (c) => Math.min(...placed.map(p => { const o = centre(ownOf(p)); return Math.hypot(o.a - c.a, o.y - c.y); }));
+    const unplaced = [];
+    const STEP = 100;
+    for (const mod of group.slice(nFit)) {
+      moveTo(mod, alongCs[0], yCs[0], ownOf);
+      const own = ownOf(mod);
+      const zones = zonesOf(mod);
+      const c0 = centre(own);
+      const w = own.max[k] - own.min[k], h = own.max.y - own.min.y;
+      const placedOwn = placed.map(ownOf);
+      const placedZones = placed.flatMap(zonesOf);
+      let best = null;
+      for (let aC = lo + w / 2; aC <= hi - w / 2 + 1e-6; aC += Math.max(STEP, 1e-3)) {
+        for (let yC = pb.minY + h / 2; yC <= pb.maxY - h / 2 + 1e-6; yC += STEP) {
+          const dA = aC - c0.a, dY = yC - c0.y;
+          const ob = shift(own, dA, dY);
+          if (placedZones.some(z => hit(ob, z))) continue;
+          if (zones.some(z => placedOwn.some(o => hit(shift(z, dA, dY), o)))) continue;
+          const d = minDist({ a: aC, y: yC });
+          if (!best || d > best.d) best = { a: aC, y: yC, d };
+        }
+      }
+      if (!best) { unplaced.push(mod); continue; }
+      moveTo(mod, best.a, best.y, ownOf);
+      placed.push(mod);
+    }
+    return unplaced;
+  }
 
   for (const group of groups) {
+    if (group.spread) continue;
     let chosen = null;
     for (const wall of walls) {
+      if (wall.claimed) continue;
       const sizes = group.map(m => presentToWall(m, wall));
       const along = columnsAlong(sizes, wall);
-      const height = Math.max(...sizes.map(s => s.height));
-      const perColumn = Math.max(1, Math.floor((plotHeight + gap) / (height + gap)));
+      const perColumn = fitUpWall(sizes);
       const columnCount = Math.ceil(group.length / perColumn);
       const need = columnCount * along + (columnCount - 1) * gap + (wall.used > 0 ? gap : 0);
       if (wall.used + need <= wall.length + 1e-6) {
@@ -2213,12 +2370,12 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
       }
     }
     if (!chosen) {
-      // Fits on no wall: the longest one, overflowing it (keepModulesInsidePlot pulls it back in)
-      const wall = walls[walls.length - 1];
+      // Fits on no wall: the longest one not claimed by a spread type, overflowing it
+      // (keepModulesInsidePlot pulls it back in)
+      const wall = [...walls].reverse().find(w => !w.claimed) || walls[walls.length - 1];
       const sizes = group.map(m => presentToWall(m, wall));
       const along = columnsAlong(sizes, wall);
-      const height = Math.max(...sizes.map(s => s.height));
-      const perColumn = Math.max(1, Math.floor((plotHeight + gap) / (height + gap)));
+      const perColumn = fitUpWall(sizes);
       const columnCount = Math.ceil(group.length / perColumn);
       chosen = { wall, along, perColumn, need: columnCount * along + (columnCount - 1) * gap + (wall.used > 0 ? gap : 0) };
     } else {
@@ -2237,10 +2394,15 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
     const wallMid = wall.along === 'x' ? pb.centerX : pb.centerZ;
     let cursor = wallMid - wall.used / 2;
     for (const column of wall.columns) {
+      // Levels are the modules' own box centres, a zone height + gap apart (zones apart); the end
+      // modules' own boxes reach the plot's top or bottom, only their BB limiting how near
       const heights = column.mods.map(m => { const b = pierZoneSlotBox(m, viewer); return b.max.y - b.min.y; });
-      const stackHeight = heights.reduce((a, h) => a + h, 0) + gap * (column.mods.length - 1);
-      // Bottom of the first module, then upwards (top: downwards from the plot top)
-      let y = orient === 'bottom' ? pb.minY : (orient === 'center' ? centerY - stackHeight / 2 : pb.maxY);
+      const ownHalf = column.mods.map(m => { const b = moduleWorldBox(m, viewer); return (b.max.y - b.min.y) / 2; });
+      const offsets = [0];
+      for (let k = 1; k < column.mods.length; k++) offsets.push(offsets[k - 1] + (heights[k - 1] + heights[k]) / 2 + gap);
+      const span = offsets[offsets.length - 1];
+      const sign = orient === 'top' ? -1 : 1;
+      const first = orient === 'bottom' ? pb.minY + ownHalf[0] : (orient === 'center' ? centerY - span / 2 : pb.maxY - ownHalf[0]);
       column.mods.forEach((mod, k) => {
         const b = pierZoneSlotBox(mod, viewer);
         // The module's own outer face on the wall (its prongs' zones may reach past it, out of the
@@ -2254,14 +2416,7 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
           dz = wall.normal.z > 0 ? pb.maxZ - face.max.z : pb.minZ - face.min.z;
           dx = cursor + (column.along - (b.max.x - b.min.x)) / 2 - b.min.x;
         }
-        let dy;
-        if (orient === 'top') {
-          dy = y - b.max.y;
-          y -= heights[k] + gap;
-        } else {
-          dy = y - b.min.y;
-          y += heights[k] + gap;
-        }
+        const dy = first + sign * offsets[k] - (face.min.y + face.max.y) / 2;
         translateModule(mod, dx, dy, dz);
         // A pier's zones taller than the plot: its own box still stays within the plot height
         const own = moduleWorldBox(mod, viewer);
@@ -2271,6 +2426,10 @@ export function stackRepeatedDockTypes(dockModules, plotBounds, viewer = null, {
       cursor += column.along + gap;
     }
   }
+
+  // Later zone clean-ups (e.g. after a gizmo release) leave the stacked piers where the stacking put
+  // them (their zones may overlap each other's zones, never a box)
+  for (const mod of stacked) if (mod.userData) mod.userData.perimeterStacked = true;
 
   // Record the stacked modules' rotations in the plan (positions are synced by the caller)
   if (typeof viewer?.getModuleCalculatedRotation === 'function') {
@@ -2659,6 +2818,529 @@ export function clearPierProngCorridors(modules, plotBounds, viewer = null, { ga
   return moves;
 }
 
+/** A dock module: a pier or a dock area (by category or macro). */
+export function isDockOrPierModule(mod) {
+  if (!mod) return false;
+  if (isPierModule(mod)) return true;
+  const cat = (moduleCategoryOf(mod) || '').toLowerCase();
+  const macro = String(mod.userData?.macro || mod.macro || '').toLowerCase();
+  return cat === 'docks' || cat === 'dock' || cat === 'pier' || macro.includes('dock') || macro.includes('pier');
+}
+
+/**
+ * Whether a dock area faces its wall with its shortest side (its long side pointing out from the wall):
+ * the S/M ship maintenance and fabrication bays (any race). Every other dock area lies with its long
+ * side along its wall.
+ * @param {object} mod
+ * @returns {boolean}
+ */
+export function isShortSideToWallDock(mod) {
+  const macro = String(mod?.userData?.macro || mod?.macro || '');
+  let name = '';
+  try { name = getFriendlyName(macro) || ''; } catch (_) { name = ''; }
+  return /(^|\s)S\/M\b/i.test(name) || /^buildmodule_[a-z]+_(equip|ships)_m_dockarea/i.test(macro);
+}
+
+/**
+ * Whether a dock area takes a plot corner (a 1M dock area: 1M6S standard, basic or luxury); every
+ * other dock area (3M6S, 4M.., 8M, S/M ship maintenance or fabrication bays) takes the middle of a
+ * wall's length.
+ * @param {object} mod
+ * @returns {boolean}
+ */
+export function isCornerDockArea(mod) {
+  const macro = String(mod?.userData?.macro || mod?.macro || '');
+  let name = '';
+  try { name = getFriendlyName(macro) || ''; } catch (_) { name = ''; }
+  // "1M6S Basic Dock Area", not "Terran 4M10S Luxury Dock Area" nor "3M6S ..."
+  return /(^|[^0-9])1M\d*S/i.test(name);
+}
+
+/**
+ * Spread: slides each pier along the plot floor so its prongs sit as close to two side walls (a
+ * vertical edge of the plot) as they can; the top and bottom do not count, and the pier keeps its
+ * level and heading. Along each horizontal axis a pier goes toward the side more of its prongs face
+ * (its docking clamp then on that wall); where as many face each way (a T pier's side prongs), toward
+ * the nearer wall, so one of them reaches it and the middle prong ends as near a second wall as the
+ * pier's own box allows (its middle prong on one wall, its crossbar's end on the other). It goes as
+ * far as the wall allows while its room (box, zone squares and tunnels: pierZoneSlotBox and
+ * getPierProngCorridors) stays `gap` apart from every other pier's, its box inside the plot;
+ * otherwise as far as it can short of that. A pier `canTurn` allows also tries its other three level
+ * quarter turns and keeps the heading whose zones come out shortest: its unpaired prongs' tunnels
+ * (a T pier's middle prong) first, with `pairs` also the shorter of each opposite pair. With `pairs`
+ * false only the unpaired prongs count (a T pier's middle prong onto its wall, its exclusion zone as
+ * short as it can be); piers `isFixed` keeps stay.
+ * @param {Array<object>} modules
+ * @param {object} plotBounds getPlotBoundingBox result
+ * @param {object} [viewer]
+ * @param {{ gap?: number, pairs?: boolean, isFixed?: (mod: object) => boolean, canTurn?: (mod: object) => boolean }} [options]
+ * @returns {number} how many piers moved
+ */
+export function pushPierProngsToEdges(modules, plotBounds, viewer = null, { gap = 15, pairs = true, isFixed = () => false, canTurn = () => true } = {}) {
+  const pb = plotBounds;
+  const piers = (modules || []).filter(m => m && m.visible !== false && isPierModule(m));
+  if (piers.length === 0) return 0;
+  const hit = (a, b) =>
+    Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > -gap + 1e-3 &&
+    Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > -gap + 1e-3 &&
+    Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > -gap + 1e-3;
+  const roomOf = (m) => [pierZoneSlotBox(m, viewer), ...getPierProngCorridors(m, pb, viewer)];
+  const rooms = new Map(piers.map(p => [p, roomOf(p)]));
+  const clashes = (p, room) => piers.some(o => o !== p && room.some(r => rooms.get(o).some(q => hit(r, q))));
+  const STEP = 100;
+
+  // Slides p toward the edges its prongs face (X and Z only: it keeps its level)
+  const slide = (p) => {
+    const clamps = pierClampsInScene(p);
+    for (const axis of ['x', 'z']) {
+      const plus = clamps.filter(c => c.d[axis] > 0.7).length, minus = clamps.filter(c => c.d[axis] < -0.7).length;
+      if (!plus && !minus) continue;
+      const box = moduleWorldBox(p, viewer);
+      const lo = axis === 'x' ? pb.minX : pb.minZ, hi = axis === 'x' ? pb.maxX : pb.maxZ;
+      let sign = Math.sign(plus - minus);
+      if (!sign) {
+        // As many prongs face each way (a T pier's side prongs): toward the nearer wall when `pairs`
+        if (!pairs) continue;
+        sign = (hi - box.max[axis]) <= (box.min[axis] - lo) ? 1 : -1;
+      }
+      const full = sign > 0 ? hi - box.max[axis] : lo - box.min[axis];
+      if (Math.abs(full) < 1) continue;
+      // The farthest slide toward that edge that keeps the zones apart (from the full slide back)
+      const n = Math.ceil(Math.abs(full) / STEP);
+      for (let i = 0; i < n; i++) {
+        const dist = full - sign * i * STEP;
+        if (sign * dist <= 0) break;
+        translateModule(p, axis === 'x' ? dist : 0, 0, axis === 'z' ? dist : 0);
+        if (!clashes(p, roomOf(p))) break;
+        translateModule(p, axis === 'x' ? -dist : 0, 0, axis === 'z' ? -dist : 0);
+      }
+    }
+  };
+  // How long its zones are: the unpaired prongs' tunnels (a T pier's middle prong) first; with
+  // `pairs`, also the shorter of each opposite pair
+  const score = (p) => {
+    const shapes = getPierClampTunnelShapes(p, pb, viewer) || [];
+    const dirs = shapes.map(t => t.direction);
+    let unpaired = 0, paired = [];
+    shapes.forEach((t, i) => {
+      const opp = dirs.findIndex((e, j) => j !== i && t.direction.x * e.x + t.direction.z * e.z < -0.9);
+      if (opp < 0) unpaired += t.length; else paired.push([Math.min(i, opp), t.length]);
+    });
+    let pairSum = 0;
+    if (pairs) { const by = new Map(); for (const [k, l] of paired) by.set(k, Math.min(by.get(k) ?? Infinity, l)); for (const l of by.values()) pairSum += l; }
+    return unpaired + pairSum;
+  };
+
+  // How many tunnels the score counts
+  const countedTunnels = (p) => {
+    const dirs = (getPierClampTunnelShapes(p, pb, viewer) || []).map(t => t.direction);
+    const unpaired = dirs.filter((d, i) => !dirs.some((e, j) => j !== i && d.x * e.x + d.z * e.z < -0.9)).length;
+    return Math.max(1, unpaired + (pairs ? (dirs.length - unpaired) / 2 : 0));
+  };
+
+  let moved = 0;
+  for (const p of piers) {
+    if (isFixed(p)) continue;
+    if (!pierClampsInScene(p).length) continue;
+    const pos0 = p.position?.clone?.(), q0 = p.quaternion?.clone?.();
+    const restore = () => { p.position.copy(pos0); p.quaternion.copy(q0); if (typeof p.updateMatrixWorld === 'function') p.updateMatrixWorld(true); };
+    // Only a pier with a lane turns (not a hub with bays all around)
+    const turnable = canTurn(p) && pos0 && q0 && typeof p.position.copy === 'function' && !!getPierLaneWorldDirection(p);
+    // Its own heading, then (when it may turn) the other three quarter turns: the heading and place
+    // whose zones come out shortest, the zones apart from every other pier's
+    let best = null;
+    for (let t = 0; t < (turnable ? 4 : 1); t++) {
+      if (t > 0) { restore(); for (let k = 0; k < t; k++) quarterTurnPier(p, viewer); }
+      slide(p);
+      if (clashes(p, roomOf(p))) continue;
+      const sc = score(p);
+      if (!best || sc < best.score - 1) best = { t, score: sc, pos: p.position?.clone?.(), q: p.quaternion?.clone?.() };
+      // Its own heading already gets them short (each under 100 m): no turn
+      if (t === 0 && best && best.score < 100 * countedTunnels(p)) break;
+    }
+    if (turnable) {
+      if (best) { p.position.copy(best.pos); p.quaternion.copy(best.q); if (typeof p.updateMatrixWorld === 'function') p.updateMatrixWorld(true); }
+      else restore();
+    } else if (!best) {
+      // (not turnable: no saved state; a slide only happens when it is clear)
+    }
+    const changed = pos0 ? p.position.distanceTo(pos0) > 1e-6 || (q0 && p.quaternion.angleTo(q0) > 1e-6) : true;
+    if (changed) {
+      rooms.set(p, roomOf(p));
+      syncPlanPosition(p, viewer);
+      if (best?.t && typeof viewer?.getModuleCalculatedRotation === 'function') {
+        const planMod = viewer.currentPlan?.modules?.find(m => m.index === p.userData?.index);
+        const rot = planMod ? viewer.getModuleCalculatedRotation(p.userData.index, { decimals: 3 }) : null;
+        if (planMod && rot) planMod.rotation = { ...(planMod.rotation || {}), yaw: rot.yaw, pitch: rot.pitch, roll: rot.roll };
+      }
+      moved++;
+    }
+  }
+  return moved;
+}
+
+/** Turns a pier a quarter turn about the vertical through its box centre (it stays level). */
+function quarterTurnPier(p, viewer) {
+  const before = moduleWorldBox(p, viewer);
+  if (typeof p.rotateOnWorldAxis === 'function' && typeof p.position?.constructor === 'function') {
+    p.rotateOnWorldAxis(new p.position.constructor(0, 1, 0), Math.PI / 2);
+  } else if (p.rotation) p.rotation.y = (p.rotation.y || 0) + Math.PI / 2;
+  if (typeof p.updateMatrixWorld === 'function') p.updateMatrixWorld(true);
+  const after = moduleWorldBox(p, viewer);
+  translateModule(p,
+    (before.min.x + before.max.x - after.min.x - after.max.x) / 2,
+    (before.min.y + before.max.y - after.min.y - after.max.y) / 2,
+    (before.min.z + before.max.z - after.min.z - after.max.z) / 2);
+}
+
+/**
+ * Moves piers so their exclusion zones are apart: no pier's room (its box, each prong's zone square
+ * and its tunnels out to the plot wall: pierZoneSlotBox and getPierProngCorridors) overlaps another
+ * pier's, `gap` apart. Then no pier's box is in another's zones, and no two piers' docking tunnels
+ * share space. Piers `isFixed` keeps stay and are settled first, then the others largest first; a pier
+ * overlapping one settled before it moves the least distance that clears all of them, sideways (X or
+ * Z) before up or down so it keeps its level, its box inside the plot. When no straight move clears
+ * at its own heading, it also tries the other three quarter turns about the vertical (it stays level;
+ * every tunnel still runs out through a plot wall); failing that, the nearest free place on a 2 km
+ * grid, at its own heading first. A pier with no free place stays (the zone clean-up handles it).
+ * @param {Array<object>} modules
+ * @param {object} plotBounds getPlotBoundingBox result
+ * @param {object} [viewer]
+ * @param {{ gap?: number, isFixed?: (mod: object) => boolean }} [options]
+ * @returns {number} how many piers moved
+ */
+export function separatePierZones(modules, plotBounds, viewer = null, { gap = 15, isFixed = () => false } = {}) {
+  const pb = plotBounds;
+  const piers = (modules || []).filter(m => m && m.visible !== false && isPierModule(m));
+  if (piers.length < 2) return 0;
+  const hit = (a, b) =>
+    Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > -gap + 1e-3 &&
+    Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > -gap + 1e-3 &&
+    Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > -gap + 1e-3;
+  const roomOf = (m) => [pierZoneSlotBox(m, viewer), ...getPierProngCorridors(m, pb, viewer)];
+  const inside = (b) => b.min.x >= pb.minX - 1e-6 && b.max.x <= pb.maxX + 1e-6 &&
+    b.min.y >= pb.minY - 1e-6 && b.max.y <= pb.maxY + 1e-6 &&
+    b.min.z >= pb.minZ - 1e-6 && b.max.z <= pb.maxZ + 1e-6;
+  const size = (m) => { const b = moduleWorldBox(m, viewer); return (b.max.x - b.min.x) * (b.max.y - b.min.y) * (b.max.z - b.min.z); };
+  const order = [...piers.filter(m => isFixed(m)), ...piers.filter(m => !isFixed(m)).sort((a, b) => size(b) - size(a))];
+  const settled = [];
+  let moved = 0;
+  for (const p of order) {
+    const clashes = (room) => settled.some(o => room.some(r => o.room.some(q => hit(r, q))));
+    let room = roomOf(p);
+    if (isFixed(p) || !clashes(room)) { settled.push({ p, room }); continue; }
+    // Is the pier clear when moved by d? (its tunnels re-measured out to the wall)
+    const clearAt = (d) => {
+      translateModule(p, d.x, d.y, d.z);
+      const ok = inside(moduleWorldBox(p, viewer)) && !clashes(roomOf(p));
+      translateModule(p, -d.x, -d.y, -d.z);
+      return ok;
+    };
+    const STEP = 250;
+    // The least move at the pier's current heading: sideways (X or Z) before up or down
+    const sweepMoves = () => {
+      const found = [];
+      const b = moduleWorldBox(p, viewer);
+      for (const axis of ['x', 'z', 'y']) {
+        const span = axis === 'x' ? pb.maxX - pb.minX : axis === 'y' ? pb.maxY - pb.minY : pb.maxZ - pb.minZ;
+        for (const sign of [1, -1]) {
+          for (let dist = 0; dist <= span; dist += STEP) {
+            const d = { x: 0, y: 0, z: 0, [axis]: sign * dist };
+            if (!inside({ min: { x: b.min.x + d.x, y: b.min.y + d.y, z: b.min.z + d.z }, max: { x: b.max.x + d.x, y: b.max.y + d.y, z: b.max.z + d.z } })) break;
+            if (clearAt(d)) { found.push(d); break; }
+          }
+        }
+      }
+      found.sort((u, v) => ((u.y !== 0) - (v.y !== 0)) ||
+        (Math.abs(u.x) + Math.abs(u.y) + Math.abs(u.z)) - (Math.abs(v.x) + Math.abs(v.y) + Math.abs(v.z)));
+      return found[0] || null;
+    };
+    // The nearest free place on a 2 km grid across the plot, at the current heading
+    const gridMove = () => {
+      const b = moduleWorldBox(p, viewer);
+      const c = { x: (b.min.x + b.max.x) / 2, y: (b.min.y + b.max.y) / 2, z: (b.min.z + b.max.z) / 2 };
+      const lines = (lo, hi) => { const n = Math.max(1, Math.floor((hi - lo) / 2000)); return Array.from({ length: n + 1 }, (_, i) => lo + (hi - lo) * i / n); };
+      const ds = [];
+      for (const x of [c.x, ...lines(pb.minX, pb.maxX)]) for (const y of [c.y, ...lines(pb.minY, pb.maxY)]) for (const z of [c.z, ...lines(pb.minZ, pb.maxZ)]) ds.push({ x: x - c.x, y: y - c.y, z: z - c.z });
+      ds.sort((u, v) => (u.x * u.x + u.y * u.y + u.z * u.z) - (v.x * v.x + v.y * v.y + v.z * v.z));
+      return ds.find(d => clearAt(d)) || null;
+    };
+    // Turn the pier a quarter turn about the vertical through its box centre (it stays level, its
+    // prongs still horizontal, so every tunnel still runs out through a plot wall)
+    const quarterTurn = () => {
+      const before = moduleWorldBox(p, viewer);
+      if (typeof p.rotateOnWorldAxis === 'function' && typeof p.position?.constructor === 'function') {
+        p.rotateOnWorldAxis(new p.position.constructor(0, 1, 0), Math.PI / 2);
+      } else if (p.rotation) p.rotation.y = (p.rotation.y || 0) + Math.PI / 2;
+      if (typeof p.updateMatrixWorld === 'function') p.updateMatrixWorld(true);
+      const after = moduleWorldBox(p, viewer);
+      translateModule(p,
+        (before.min.x + before.max.x - after.min.x - after.max.x) / 2,
+        (before.min.y + before.max.y - after.min.y - after.max.y) / 2,
+        (before.min.z + before.max.z - after.min.z - after.max.z) / 2);
+    };
+    // Its own heading first; then the other three quarter turns; the grid only when no turn has a
+    // straight move
+    let move = null, turns = 0;
+    for (let t = 0; t < 4 && !move; t++) {
+      if (t > 0) quarterTurn();
+      move = sweepMoves();
+      if (move) turns = t;
+    }
+    if (!move) {
+      quarterTurn(); // back to its own heading (four quarter turns)
+      for (let t = 0; t < 4 && !move; t++) {
+        if (t > 0) quarterTurn();
+        move = gridMove();
+        if (move) turns = t;
+      }
+      if (!move) quarterTurn(); // no place: back to its own heading
+    }
+    if (move) {
+      translateModule(p, move.x, move.y, move.z);
+      syncPlanPosition(p, viewer);
+      if (turns && typeof viewer?.getModuleCalculatedRotation === 'function') {
+        const planMod = viewer.currentPlan?.modules?.find(m => m.index === p.userData?.index);
+        const rot = planMod ? viewer.getModuleCalculatedRotation(p.userData.index, { decimals: 3 }) : null;
+        if (planMod && rot) planMod.rotation = { ...(planMod.rotation || {}), yaw: rot.yaw, pitch: rot.pitch, roll: rot.roll };
+      }
+      moved++;
+      room = roomOf(p);
+    }
+    settled.push({ p, room });
+  }
+  return moved;
+}
+
+/**
+ * Placement in two steps, docks first. 1) The docks (piers and dock areas) are settled among
+ * themselves: piers' zones apart (separatePierZones), each pier onto the wall its unpaired prongs
+ * face (a T pier's middle prong: pushPierProngsToEdges), no dock left in a pier's exclusion zones (clearPierProngCorridors over the docks
+ * alone), then the dock areas are placed one at a time against an outside plot wall, their boxes
+ * never in a pier's exclusion zones, at the level the docks Vertical Orientation and Perimeter
+ * placement gave them, each turned so its longest side runs along its wall (an S/M bay its shortest
+ * side facing the wall), none over or under
+ * another dock (footprints apart): 1M dock areas first, into the plot's corners, then the others (3M,
+ * 8M, S/M maintenance, ...) to the middle of a wall's length (isCornerDockArea), among places as good
+ * the farthest from the zones; with `spread`, each on a wall of its own where it can, as close as it
+ * can between the piers. They stay off the piers and each other,
+ * so no dock overlaps another (a dock area with no wall place left is placed like a module).
+ * 2) Then the remaining modules are placed one at a time, in the Layers category order, each
+ * checked for overlap against everything already placed: every dock's box (`gap` apart), every
+ * pier's exclusion zones (its box and its prongs' tunnels to the plot wall) and the modules placed
+ * before it. A module that overlaps nothing keeps its place; otherwise it goes the shortest distance
+ * sideways (X or Z), else up or down, past whatever is in the way, with its box inside the plot;
+ * failing that, to the nearest free place on a 1 km grid across the plot. A module with no free
+ * place stays where it is (the caller's clean-up handles it). Modules `isFixed` keeps never move.
+ * @param {Array<object>} modules
+ * @param {object} plotBounds getPlotBoundingBox result
+ * @param {object} [viewer]
+ * @param {{ gap?: number, isFixed?: (mod: object) => boolean, spread?: boolean }} [options]
+ * @returns {number} how many dock areas and other modules were moved (step 2 and the dock areas)
+ */
+export function placeModulesAroundDocks(modules, plotBounds, viewer = null, { gap = 15, isFixed = () => false, spread = false } = {}) {
+  const pb = plotBounds;
+  const visible = (modules || []).filter(m => m && m.visible !== false);
+  const docks = visible.filter(m => isDockOrPierModule(m));
+  if (docks.length === 0) return 0;
+
+  // 1. The docks first: piers' zones apart (no pier's box or zones in another's), then piers out
+  // of each other's boxes and zones, dock areas out of the zones
+  separatePierZones(docks, pb, viewer, { gap, isFixed });
+  // Every pier onto the wall its unpaired prongs face (a T pier's middle prong): those exclusion
+  // zones as short as they can be, the zones still apart
+  pushPierProngsToEdges(docks, pb, viewer, { gap, pairs: false, isFixed });
+  clearPierProngCorridors(docks, pb, viewer, { gap, isFixed });
+
+  const eps = 1e-3;
+  const intersects = (a, b, margin = 0) =>
+    Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > eps - margin &&
+    Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > eps - margin &&
+    Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > eps - margin;
+  const shifted = (b, d) => ({
+    min: { x: b.min.x + d.x, y: b.min.y + d.y, z: b.min.z + d.z },
+    max: { x: b.max.x + d.x, y: b.max.y + d.y, z: b.max.z + d.z }
+  });
+  const inside = (b) => b.min.x >= pb.minX - 1e-6 && b.max.x <= pb.maxX + 1e-6 &&
+    b.min.y >= pb.minY - 1e-6 && b.max.y <= pb.maxY + 1e-6 &&
+    b.min.z >= pb.minZ - 1e-6 && b.max.z <= pb.maxZ + 1e-6;
+
+  // Everything placed so far: the piers' boxes (kept `gap` away) and zones (no margin: they already
+  // are clearance), then each dock area and module as it is placed
+  const placed = [];
+  for (const d of docks.filter(m => isPierModule(m))) {
+    placed.push({ box: moduleWorldBox(d, viewer), margin: gap });
+    for (const c of getPierProngCorridors(d, pb, viewer)) placed.push({ box: c, margin: 0 });
+  }
+  const hitsAt = (nb) => placed.filter(p => intersects(nb, p.box, p.margin));
+
+  const FREE_SPOT_STEP = 1000;
+  const along = (lo, hi) => { const n = Math.max(1, Math.floor((hi - lo) / FREE_SPOT_STEP)); return Array.from({ length: n + 1 }, (_, i) => lo + (hi - lo) * i / n); };
+  const lines = { x: along(pb.minX, pb.maxX), y: along(pb.minY, pb.maxY), z: along(pb.minZ, pb.maxZ) };
+
+  // Then the dock areas, one at a time, off the piers and each other (kept `gap` apart); 2. then the
+  // remaining modules, one at a time in the Layers order
+  const dockAreas = docks.filter(m => !isPierModule(m));
+  const rest = sortModulesByLayerCategoryOrder(visible.filter(m => !isDockOrPierModule(m)));
+  let moved = 0;
+
+  // Dock areas go to an outside wall, their boxes out of every pier zone, keeping the level the docks
+  // Vertical Orientation and Perimeter placement gave them, turned so their longest side runs along
+  // that wall (an S/M bay instead faces the wall with its shortest side: isShortSideToWallDock), and never over or under another dock (no two docks' footprints overlap, whatever their
+  // heights). 1M dock areas (1M6S) are placed first. Without Spread, 1M dock areas take the plot's
+  // corners (their box on two walls) and the others (3M6S, 8M, S/M ship maintenance or fabrication
+  // bays, ...) the middle of a wall's length; among places as good, the farthest from the zones (and
+  // the piers). With `spread`, each goes to a wall no other dock area is on where it can, as close as
+  // it can between the piers (nearest to the two nearest piers). Then the least move. Only when no wall
+  // place at its level is free does one change level, as little as it can. One at a time, `gap` apart.
+  const zoneBoxes = placed.map(p => p.box);
+  const boxGap = (a, b) => Math.hypot(
+    Math.max(0, a.min.x - b.max.x, b.min.x - a.max.x),
+    Math.max(0, a.min.y - b.max.y, b.min.y - a.max.y),
+    Math.max(0, a.min.z - b.max.z, b.min.z - a.max.z));
+  const WALL_STEP = 250;
+  const steps = (lo, hi) => {
+    if (hi <= lo) return [(lo + hi) / 2];
+    const n = Math.max(1, Math.ceil((hi - lo) / WALL_STEP));
+    return Array.from({ length: n + 1 }, (_, i) => lo + (hi - lo) * i / n);
+  };
+  // Every dock's footprint (piers' boxes, then each dock area as it is placed): none over another
+  const pierBoxes = docks.filter(m => isPierModule(m)).map(m => moduleWorldBox(m, viewer));
+  const footprints = [...pierBoxes];
+  const overFootprint = (nb) => footprints.some(f =>
+    Math.min(nb.max.x, f.max.x) - Math.max(nb.min.x, f.min.x) > -gap + 1e-3 &&
+    Math.min(nb.max.z, f.max.z) - Math.max(nb.min.z, f.min.z) > -gap + 1e-3);
+  const wallUses = new Map();
+  const wallPlaced = new Set();
+  const byClass = [...dockAreas.filter(m => isCornerDockArea(m)), ...dockAreas.filter(m => !isCornerDockArea(m))];
+  for (const mod of byClass) {
+    if (isFixed(mod)) continue;
+    const corner = isCornerDockArea(mod);
+    const box = moduleWorldBox(mod, viewer);
+    const w = { x: box.max.x - box.min.x, y: box.max.y - box.min.y, z: box.max.z - box.min.z };
+    const c = { x: (box.min.x + box.max.x) / 2, y: (box.min.y + box.max.y) / 2, z: (box.min.z + box.max.z) / 2 };
+    const longAlongX = w.x >= w.z;
+    const turnable = typeof mod.rotateOnWorldAxis === 'function' && typeof mod.position?.constructor === 'function';
+    const shortToWall = isShortSideToWallDock(mod);
+    const level = Math.min(Math.max(c.y, pb.minY + w.y / 2), pb.maxY - w.y / 2);
+    let best = null;
+    const same = (u, v) => Math.abs(u - v) <= 1;
+    // A place: its centre, the wall, its size there (long side along the wall), its centre along the
+    // wall between lo and hi
+    const consider = (cx, cy, cz, wall, size, along, lo, hi) => {
+      const nb = { min: { x: cx - size.x / 2, y: cy - size.y / 2, z: cz - size.z / 2 }, max: { x: cx + size.x / 2, y: cy + size.y / 2, z: cz + size.z / 2 } };
+      if (!inside(nb) || hitsAt(nb).length || overFootprint(nb)) return;
+      const off = Math.abs(cy - level);
+      const travel = Math.hypot(cx - c.x, cz - c.z);
+      let k1, k2;
+      if (spread) {
+        // A wall of its own first; then as close as it can between the piers
+        k1 = wallUses.get(wall) || 0;
+        const ds = pierBoxes.map(pbx => boxGap(nb, pbx)).sort((u, v) => u - v);
+        k2 = ds.length ? ds[0] + (ds.length > 1 ? ds[1] : 0) : 0;
+      } else {
+        // Its place on the wall: a corner (either end) for 1M, else the middle; then far from the zones
+        k1 = corner ? Math.min(along - lo, hi - along) : Math.abs(along - (lo + hi) / 2);
+        k2 = -(zoneBoxes.length ? Math.min(...zoneBoxes.map(z => boxGap(nb, z))) : 0);
+      }
+      const better = !best || off < best.off - 1 || (same(off, best.off) && (k1 < best.k1 - (spread ? 0.5 : 1) || (Math.abs(k1 - best.k1) <= (spread ? 0.5 : 1) &&
+        (k2 < best.k2 - 1 || (same(k2, best.k2) && travel < best.travel - 1e-6)))));
+      if (better) best = { cx, cy, cz, nb, wall, size, off, k1, k2, travel };
+    };
+    const scan = (ys) => {
+      // Long side along the wall: along Z on the ±X walls, along X on the ±Z walls
+      // Long side along the wall, except an S/M bay: its short side faces the wall (long side out from
+      // it). A module that cannot be turned keeps the size it has.
+      const lo = Math.min(w.x, w.z), hi = Math.max(w.x, w.z);
+      const sx = !turnable ? w : shortToWall ? { x: hi, y: w.y, z: lo } : { x: lo, y: w.y, z: hi };   // on ±X walls
+      const sz = !turnable ? w : shortToWall ? { x: lo, y: w.y, z: hi } : { x: hi, y: w.y, z: lo };   // on ±Z walls
+      const zLo = pb.minZ + sx.z / 2, zHi = pb.maxZ - sx.z / 2, xLo = pb.minX + sz.x / 2, xHi = pb.maxX - sz.x / 2;
+      for (const y of ys) {
+        for (const z of [c.z, (zLo + zHi) / 2, ...steps(zLo, zHi)]) {
+          consider(pb.maxX - sx.x / 2, y, z, '+x', sx, z, zLo, zHi);
+          consider(pb.minX + sx.x / 2, y, z, '-x', sx, z, zLo, zHi);
+        }
+        for (const x of [c.x, (xLo + xHi) / 2, ...steps(xLo, xHi)]) {
+          consider(x, y, pb.maxZ - sz.z / 2, '+z', sz, x, xLo, xHi);
+          consider(x, y, pb.minZ + sz.z / 2, '-z', sz, x, xLo, xHi);
+        }
+      }
+    };
+    scan([level]);
+    if (!best) scan(steps(pb.minY + w.y / 2, pb.maxY - w.y / 2));
+    if (!best) continue; // no wall place left: placed below like any module
+    // Turn it a quarter when its long side would not run along the wall
+    const onZWall = best.wall === '+z' || best.wall === '-z';
+    const wantLongAlongX = turnable ? (shortToWall ? !onZWall : onZWall) : longAlongX;
+    if (Math.abs(w.x - w.z) > 1 && wantLongAlongX !== longAlongX) quarterTurnPier(mod, viewer);
+    const now = moduleWorldBox(mod, viewer);
+    translateModule(mod, best.cx - (now.min.x + now.max.x) / 2, best.cy - (now.min.y + now.max.y) / 2, best.cz - (now.min.z + now.max.z) / 2);
+    const placedBox = moduleWorldBox(mod, viewer);
+    if (Math.hypot(best.cx - c.x, best.cy - c.y, best.cz - c.z) > 1e-6 || wantLongAlongX !== longAlongX) {
+      syncPlanPosition(mod, viewer);
+      if (wantLongAlongX !== longAlongX && Math.abs(w.x - w.z) > 1 && typeof viewer?.getModuleCalculatedRotation === 'function') {
+        const planMod = viewer.currentPlan?.modules?.find(m => m.index === mod.userData?.index);
+        const rot = planMod ? viewer.getModuleCalculatedRotation(mod.userData.index, { decimals: 3 }) : null;
+        if (planMod && rot) planMod.rotation = { ...(planMod.rotation || {}), yaw: rot.yaw, pitch: rot.pitch, roll: rot.roll };
+      }
+      moved++;
+    }
+    placed.push({ box: placedBox, margin: gap });
+    footprints.push(placedBox);
+    wallUses.set(best.wall, (wallUses.get(best.wall) || 0) + 1);
+    wallPlaced.add(mod);
+  }
+
+  for (const mod of [...dockAreas.filter(m => !wallPlaced.has(m)), ...rest]) {
+    const isDock = dockAreas.includes(mod);
+    const box = moduleWorldBox(mod, viewer);
+    const blocking = isFixed(mod) ? [] : hitsAt(box);
+    if (blocking.length) {
+      // In each direction: past what is in the way, on past whatever is next, until a free place or
+      // the plot wall
+      const sweep = (axis, sign) => {
+        const past = (list) => Math.max(...list.map(({ box: o, margin }) =>
+          sign > 0 ? o.max[axis] + margin - box.min[axis] : box.max[axis] - (o.min[axis] - margin)));
+        let dist = past(blocking);
+        for (let step = 0; step < 64; step++) {
+          const d = { x: 0, y: 0, z: 0, [axis]: sign * dist };
+          const nb = shifted(box, d);
+          if (!inside(nb)) return null;
+          const hit = hitsAt(nb);
+          if (hit.length === 0) return d;
+          const next = past(hit);
+          if (!(next > dist + 1e-6)) return null;
+          dist = next;
+        }
+        return null;
+      };
+      const found = [];
+      for (const axis of ['x', 'z', 'y']) for (const sign of [1, -1]) { const d = sweep(axis, sign); if (d) found.push(d); }
+      // Sideways first so modules keep their level; the shortest move of each kind
+      found.sort((a, b) => ((a.y !== 0) - (b.y !== 0)) ||
+        (Math.abs(a.x) + Math.abs(a.y) + Math.abs(a.z)) - (Math.abs(b.x) + Math.abs(b.y) + Math.abs(b.z)));
+      let move = found[0] || null;
+      if (!move) {
+        // A crowded plot: the nearest free place on the grid (own coordinates count as grid lines)
+        const c = { x: (box.min.x + box.max.x) / 2, y: (box.min.y + box.max.y) / 2, z: (box.min.z + box.max.z) / 2 };
+        const ds = [];
+        for (const x of [c.x, ...lines.x]) for (const y of [c.y, ...lines.y]) for (const z of [c.z, ...lines.z]) ds.push({ x: x - c.x, y: y - c.y, z: z - c.z });
+        ds.sort((a, b) => (a.x * a.x + a.y * a.y + a.z * a.z) - (b.x * b.x + b.y * b.y + b.z * b.z));
+        move = ds.find(d => { const nb = shifted(box, d); return inside(nb) && hitsAt(nb).length === 0; }) || null;
+      }
+      if (move) {
+        translateModule(mod, move.x, move.y, move.z);
+        syncPlanPosition(mod, viewer);
+        moved++;
+        placed.push({ box: shifted(box, move), margin: isDock ? gap : 0 });
+        continue;
+      }
+    }
+    placed.push({ box, margin: isDock ? gap : 0 });
+  }
+  return moved;
+}
+
 /**
  * Moves every visible module the least distance that brings its own bounding box inside the plot BB
  * (a box larger than the plot along an axis is centred on it instead), then writes the positions to
@@ -2937,6 +3619,10 @@ export function applyDocksPerimeterPlacement(selections = null, viewer = null) {
   keepModulesInsidePlot(v.modulesGroup.children, plotBounds, v);
   // Nothing else may sit in the stacks' space
   clearStackedDocksSpace(stacked, v.modulesGroup.children, plotBounds, v, gap);
+  // Spread: every pier's prongs as close to the plot's edges as they can be
+  if (selSet.has('spread')) pushPierProngsToEdges(dockModules, plotBounds, v, { gap, canTurn: (m) => !stacked.has(m) });
+  // Docks settled first; then the other modules placed around them, out of the pier zones
+  placeModulesAroundDocks(v.modulesGroup.children, plotBounds, v, { gap, isFixed: (m) => stacked.has(m), spread: selSet.has('spread') });
   // Nothing may block a pier's prongs out to the plot wall
   clearPierProngCorridors(v.modulesGroup.children, plotBounds, v, { gap, isFixed: (m) => stacked.has(m) });
 
@@ -3087,6 +3773,8 @@ export function applyDocksVerticalOrientation(orientation = null, viewer = null)
   const orient = orientation || getDocksVerticalOrientation();
   isDocksVerticalApplied = true;
   if (!v || !v.modulesGroup || !v.modulesGroup.children || v.modulesGroup.children.length === 0) return;
+  // No Perimeter stack is kept: the docks are placed by the Vertical level alone
+  for (const m of v.modulesGroup.children) if (m?.userData) delete m.userData.perimeterStacked;
   const plotBounds = getPlotBoundingBox(v.currentPlotConfig || getCurrentPlotConfig());
   const centerY = plotBounds.centerY !== undefined ? plotBounds.centerY : (plotBounds.maxY + plotBounds.minY) / 2;
 
@@ -3133,6 +3821,8 @@ export function applyDocksVerticalOrientation(orientation = null, viewer = null)
 
     // Insure any Layout Orientations don't have any module BB extend outside the plot BB
     keepModulesInsidePlot(v.modulesGroup.children, plotBounds, v);
+    // Docks settled first; then the other modules placed around them, out of the pier zones
+    placeModulesAroundDocks(v.modulesGroup.children, plotBounds, v);
     // Nothing may block a pier's prongs out to the plot wall
     clearPierProngCorridors(v.modulesGroup.children, plotBounds, v);
 

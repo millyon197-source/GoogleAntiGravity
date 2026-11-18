@@ -67,8 +67,10 @@ initModuleDisplayPanel(viewer);
 console.log('--- Step 1: Loading blueprint ---');
 await viewer.loadStationPlanContents(docksPlan);
 
-const dockMesh = viewer.modulesGroup.children.find(m => m.userData.macro.includes('dock'));
-assert.ok(dockMesh, 'Dock mesh must exist in modulesGroup');
+// The pier follows the docks Vertical Orientation (the dock areas go to outside walls, as far from
+// the pier's zones as they can be)
+const dockMesh = viewer.modulesGroup.children.find(m => m.userData.macro.includes('pier_'));
+assert.ok(dockMesh, 'Pier mesh must exist in modulesGroup');
 console.log('Blueprint loaded. Authored dock Y:', dockMesh.position.y);
 assert.strictEqual(dockMesh.position.y, 6000, 'Upon loading blueprint, dock Y must remain at authored 6000');
 assert.strictEqual(isBlueprintModeActive(), true, 'Blueprint mode must be active upon load');
@@ -95,6 +97,11 @@ vertSelect.dispatchEvent(new dom.window.Event('change'));
 console.log('After selecting center, dock Y:', dockMesh.position.y);
 assert.strictEqual(dockMesh.position.y, expectedCenterY, `Dock Y must be moved to center (${expectedCenterY})`);
 assert.strictEqual(isDocksVerticalAppliedToCurrentPlan(), true, 'Orientation must be marked as applied');
+for (const area of viewer.modulesGroup.children.filter(m => m.userData.macro.includes('dockarea'))) {
+  const b = viewer.getModuleWorldBoundingBox(area);
+  const onWall = Math.abs(b.max.x - pBounds.maxX) < 1 || Math.abs(b.min.x - pBounds.minX) < 1 || Math.abs(b.max.z - pBounds.maxZ) < 1 || Math.abs(b.min.z - pBounds.minZ) < 1;
+  assert.ok(onWall, `dock area #${area.userData.index} against an outside wall`);
+}
 
 console.log('--- Step 4: Subsequent dropdown selection of "top" ---');
 vertSelect.value = 'top';
@@ -113,7 +120,7 @@ assert.strictEqual(dockMesh.position.y, expectedBottomY, `Dock Y must be moved t
 console.log('--- Step 6: Reloading blueprint resets vertical applied flag and retains blueprint authored coords ---');
 const reloadedPlan = parseConstructionPlan(docksXml);
 await viewer.loadStationPlanContents(reloadedPlan);
-const reloadedDock = viewer.modulesGroup.children.find(m => m.userData.macro.includes('dock'));
+const reloadedDock = viewer.modulesGroup.children.find(m => m.userData.macro.includes('pier_'));
 assert.strictEqual(reloadedDock.position.y, 6000, 'On reload, dock Y must reset to authored 6000');
 assert.strictEqual(isDocksVerticalAppliedToCurrentPlan(), false, 'Orientation must reset to not applied on reload');
 

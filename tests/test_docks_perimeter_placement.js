@@ -126,7 +126,7 @@ console.log('✓ Verified: Multi-selection toggles correctly and Clear removes a
 
 // =========================================================================
 // Test 3: "stacked" places the largest piers along the longest dimension displaced vertically by BB;
-// dock areas are not stacked (they keep their X/Z, at the docks level)
+// dock areas are not stacked: they go to an outside wall, out of the pier zones, at the docks level
 // =========================================================================
 console.log('\n--- Test 3: Stacked Placement ---');
 
@@ -186,10 +186,11 @@ assert.ok(dockMed.position.y < dockSmall.position.y, 'Medium dock must be below 
 const diffHugeToMed = dockMed.position.y - dockHuge.position.y;
 assert.ok(diffHugeToMed >= 200, `Vertical displacement between docks should be >= half-heights (got ${diffHugeToMed})`);
 
-// The dock area is not stacked: same X/Z, on the plot floor (docks orientation 'bottom')
+// The dock area is not stacked: against an outside wall (its 400 m box flush with it), at the docks
+// level (Vertical Orientation 'bottom'), out of the piers' zones
 const dockArea = mods.find(m => m.name === 'dock_area');
-assert.strictEqual(dockArea.position.x, 1234, 'dock area keeps its X');
-assert.strictEqual(dockArea.position.z, -2345, 'dock area keeps its Z');
+const onWall = Math.abs(Math.abs(dockArea.position.x) - (10000 - 200)) < 1e-6 || Math.abs(Math.abs(dockArea.position.z) - (5000 - 200)) < 1e-6;
+assert.ok(onWall, `dock area against an outside wall (at ${dockArea.position.x}, ${dockArea.position.z})`);
 assert.strictEqual(dockArea.position.y, -10000 + 130, 'dock area at the docks level (bottom)');
 
 console.log('✓ Verified: Stacked places the largest piers along the longest dimension, vertically displaced by BB height; dock areas are not stacked.');

@@ -76,6 +76,10 @@ import {
   applyDocksPerimeterPlacement,
   keepModulesInsidePlot,
   clearPierProngCorridors,
+  getPierProngCorridors,
+  separatePierZones,
+  placeModulesAroundDocks,
+  isDockOrPierModule,
   getPierClampTunnelShapes,
   orientPierLanesOutward
 } from './module-display-panel.js';
@@ -2971,8 +2975,27 @@ export class StationViewer {
     const before = new Map(mods.map(m => [m, m.position.clone()]));
     const keep = new Set((released || []).filter(m => isPierModule(m)));
     const hasPiers = visible.some(m => isPierModule(m));
+    // Piers the Perimeter stacking placed stay where they are too, unless one now has a box in
+    // another pier's zones or its zones over another pier's box (e.g. a released pier's zones over
+    // it): no pier's box may be in a zone, so that one gives way and is no longer kept as stacked
+    if (hasPiers) {
+      const piers = visible.filter(m => isPierModule(m));
+      const box = new Map(piers.map(p => [p, this.getModuleWorldBoundingBox(p)]));
+      const zones = new Map(piers.map(p => [p, getPierProngCorridors(p, pb, this)]));
+      const hit = (a, b) => Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x) > 0.5 &&
+        Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y) > 0.5 &&
+        Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z) > 0.5;
+      for (const s of piers) {
+        if (!s.userData?.perimeterStacked || keep.has(s)) continue;
+        const conflict = piers.some(o => o !== s &&
+          (zones.get(o).some(z => hit(box.get(s), z)) || zones.get(s).some(z => hit(box.get(o), z))));
+        if (conflict) delete s.userData.perimeterStacked;
+      }
+    }
+    // Piers' zones apart first (the released and stacked ones stay), then nothing left in any zone
+    if (hasPiers) separatePierZones(mods, pb, this, { isFixed: (m) => keep.has(m) || !!m.userData?.perimeterStacked });
     for (let round = 0; round < 4; round++) {
-      if (hasPiers) clearPierProngCorridors(mods, pb, this, { isFixed: (m) => keep.has(m) });
+      if (hasPiers) clearPierProngCorridors(mods, pb, this, { isFixed: (m) => keep.has(m) || !!m.userData?.perimeterStacked });
       this.modulesGroup.updateMatrixWorld(true);
       const outside = visible.filter(m => this.isModuleOutsidePlot(m, pb));
       if (outside.length === 0) break;
@@ -5619,15 +5642,32 @@ export class StationViewer {
 
   /**
    * After a Layout placement moved the modules: piers' lanes out of the plot through the nearest wall
-   * (tilted piers levelled), every module's own BB inside the plot, and no module or pier in any
-   * pier's exclusion zones (clearPierProngCorridors). The docks layouts end the same way.
+   * (tilted piers levelled), every module's own BB inside the plot, then the docks settled among
+   * themselves and the remaining modules placed one at a time around them, each checked against the
+   * docks, every pier's exclusion zones and the modules placed before it (placeModulesAroundDocks).
+   * A final clearPierProngCorridors pass leaves no module or pier in any pier's exclusion zones. The
+   * docks layouts end the same way. With Docks Perimeter options checked (Stacked, Spread, Lanes)
+   * the docks' Perimeter placement is applied instead, so a layout keeps e.g. the stacked piers.
    */
   settlePierZonesAfterLayout() {
     const modules = this.modulesGroup?.children;
     if (!modules || modules.length === 0) return;
+    // With Perimeter options checked (e.g. Stacked), the docks go back to the perimeter after the
+    // layout; that placement settles the other modules around them and clears the pier zones itself
+    // Docks follow the Docks-1 Orientation: the Perimeter placement when an option is checked, else
+    // the Vertical level; either one settles the other modules around them and clears the zones
+    if (isDocks1Present() && modules.some(m => m && m.visible !== false && isDockOrPierModule(m))) {
+      const perimeterSelections = getDocksPerimeterSelections();
+      if (perimeterSelections.size > 0 && !perimeterSelections.has('clear')) applyDocksPerimeterPlacement(perimeterSelections, this);
+      else applyDocksVerticalOrientation(getDocksVerticalOrientation(), this);
+      return;
+    }
     const plotBounds = getPlotBoundingBox(this.currentPlotConfig || getCurrentPlotConfig());
+    // The layout re-placed every module: no Perimeter stack is left to keep
+    for (const m of modules) if (m.userData) delete m.userData.perimeterStacked;
     orientPierLanesOutward(modules, plotBounds, this);
     keepModulesInsidePlot(modules, plotBounds, this);
+    placeModulesAroundDocks(modules, plotBounds, this);
     clearPierProngCorridors(modules, plotBounds, this);
     this.updatePlotBoxViolations();
   }

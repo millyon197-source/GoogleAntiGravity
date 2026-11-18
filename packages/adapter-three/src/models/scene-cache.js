@@ -57,7 +57,10 @@ export function isSceneCacheCandidate(url) {
     part.startsWith('detail_') ||
     u.includes('billboard') || u.includes('ad_signs') || u.includes('/fx_') || u.includes('/anim_') ||
     /detail_[a-z0-9]+_main/.test(u) || u.includes('simon') ||
-    (u.includes('part_main') && u.includes('/production/'));
+    (u.includes('part_main') && u.includes('/production/')) ||
+    // pier bodies (part_main, or pieces such as part_main_left): several materials (hull, pattern,
+    // fx glow) the .bin would merge
+    (/^part_main(_(?!wreck|collision)[a-z]+)?$/.test(part) && u.includes('/dock/pier_'));
 }
 
 /** Path of the scene cache file for a .dae URL or path. */

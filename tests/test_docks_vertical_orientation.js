@@ -8,6 +8,7 @@ import {
   applyDocksVerticalOrientation,
   calculateLayeredPlacement,
   getPlotBoundingBox,
+  getPierProngCorridors,
   isDocks1Present,
   addActionableElement,
   clearActionableElements
@@ -189,6 +190,9 @@ mockViewerInstance.renderScene = () => { sceneRendered = true; };
 
 applyDocksVerticalOrientation('top', mockViewerInstance);
 assert.strictEqual(mockViewerInstance.modulesGroup.children[0].position.y, 4900);
+// a dock area goes to an outside wall (no piers: the nearest wall place at the docks level)
+{ const p = mockViewerInstance.modulesGroup.children[0].position;
+  assert.ok(Math.abs(Math.abs(p.x) - 4750) < 1e-6 || Math.abs(Math.abs(p.z) - 4750) < 1e-6, `dock area against an outside wall (at ${p.x}, ${p.z})`); }
 assert.strictEqual(sceneRendered, true, 'renderScene should be called after dock position change');
 
 applyDocksVerticalOrientation('center', mockViewerInstance);
@@ -205,7 +209,7 @@ assert.ok(resolvedDocksPath.includes('Egosoft\\X4\\47624366\\constructionplan') 
   'Should find Docks.xml in C:\\Users\\Zeus\\OneDrive\\Documents\\Egosoft\\X4\\47624366\\constructionplan first');
 console.log('✓ Verified: Blueprint XML resolver searches C:\\Users\\Zeus\\OneDrive\\Documents\\Egosoft\\X4\\47624366\\constructionplan first.');
 
-// 7. Test Docks.xml moves ALL docks to plot BB location
+// 7. Test Docks.xml: the pier to the docks level, the dock areas to outside walls
 const docksXml = readBlueprintXml('Docks.xml');
 assert.ok(docksXml, 'readBlueprintXml should read Docks.xml');
 const docksPlan = parseConstructionPlan(docksXml);
@@ -242,32 +246,49 @@ const docksViewer = {
   }
 };
 
+// The pier goes to the docks level; the dock areas to an outside wall, as far from the pier's
+// exclusion zones as they can be (so not necessarily at the docks level), never in them
+const isPierMod = (c) => /pier_/.test(c.userData.macro);
+const checkDockAreasOnWalls = (label) => {
+  const pier = docksViewer.modulesGroup.children.find(isPierMod);
+  const zones = getPierProngCorridors(pier, getPlotBoundingBox(docksViewer.currentPlotConfig), docksViewer);
+  for (const c of docksViewer.modulesGroup.children.filter(m => !isPierMod(m))) {
+    const s = c.userData.initialSize, p = c.position;
+    const onWall = Math.abs(Math.abs(p.x) + s.x / 2 - 10000) < 5 || Math.abs(Math.abs(p.z) + s.z / 2 - 10000) < 5;
+    assert.ok(onWall, `${label}: dock area #${c.userData.index} against an outside wall (at ${p.x}, ${p.z})`);
+    const b = { min: { x: p.x - s.x / 2, y: p.y - s.y / 2, z: p.z - s.z / 2 }, max: { x: p.x + s.x / 2, y: p.y + s.y / 2, z: p.z + s.z / 2 } };
+    for (const z of zones) {
+      const ov = Math.min(b.max.x, z.max.x) - Math.max(b.min.x, z.min.x) > 0.5 && Math.min(b.max.y, z.max.y) - Math.max(b.min.y, z.min.y) > 0.5 && Math.min(b.max.z, z.max.z) - Math.max(b.min.z, z.min.z) > 0.5;
+      assert.ok(!ov, `${label}: dock area #${c.userData.index} out of the pier's exclusion zones`);
+    }
+  }
+};
+
 // Test top
 applyDocksVerticalOrientation('top', docksViewer);
-docksViewer.modulesGroup.children.forEach((c, idx) => {
-  const halfY = c.userData.initialSize.y / 2;
-  const topEdge = c.position.y + halfY;
-  // Top edge should touch maxY (10000)
-  assert.ok(Math.abs(topEdge - 10000) < 5, `Module #${c.userData.index} top edge (${topEdge}) should reach plot BB maxY (10000)`);
+docksViewer.modulesGroup.children.filter(isPierMod).forEach((c) => {
+  const topEdge = c.position.y + c.userData.initialSize.y / 2;
+  assert.ok(Math.abs(topEdge - 10000) < 5, `Pier #${c.userData.index} top edge (${topEdge}) should reach plot BB maxY (10000)`);
 });
-console.log('✓ Verified: Docks.xml moves ALL 3 docks to top BB location.');
+checkDockAreasOnWalls('top');
+console.log('✓ Verified: Docks.xml: the pier at the top, the dock areas on outside walls out of its zones.');
 
 // Test center
 applyDocksVerticalOrientation('center', docksViewer);
-docksViewer.modulesGroup.children.forEach((c) => {
-  assert.ok(Math.abs(c.position.y - 0) < 5, `Module #${c.userData.index} center (${c.position.y}) should reach plot BB centerY (0)`);
+docksViewer.modulesGroup.children.filter(isPierMod).forEach((c) => {
+  assert.ok(Math.abs(c.position.y - 0) < 5, `Pier #${c.userData.index} center (${c.position.y}) should reach plot BB centerY (0)`);
 });
-console.log('✓ Verified: Docks.xml moves ALL 3 docks to center BB location.');
+checkDockAreasOnWalls('center');
+console.log('✓ Verified: Docks.xml: the pier in the middle, the dock areas on outside walls out of its zones.');
 
 // Test bottom
 applyDocksVerticalOrientation('bottom', docksViewer);
-docksViewer.modulesGroup.children.forEach((c) => {
-  const halfY = c.userData.initialSize.y / 2;
-  const bottomEdge = c.position.y - halfY;
-  // Bottom edge should touch minY (-10000)
-  assert.ok(Math.abs(bottomEdge - (-10000)) < 5, `Module #${c.userData.index} bottom edge (${bottomEdge}) should reach plot BB minY (-10000)`);
+docksViewer.modulesGroup.children.filter(isPierMod).forEach((c) => {
+  const bottomEdge = c.position.y - c.userData.initialSize.y / 2;
+  assert.ok(Math.abs(bottomEdge - (-10000)) < 5, `Pier #${c.userData.index} bottom edge (${bottomEdge}) should reach plot BB minY (-10000)`);
 });
-console.log('✓ Verified: Docks.xml moves ALL 3 docks to bottom BB location.');
+checkDockAreasOnWalls('bottom');
+console.log('✓ Verified: Docks.xml: the pier at the bottom, the dock areas on outside walls out of its zones.');
 
 // 8. Test that NO module BB overlaps the plot BB across all Layout Orientations and plot sizes
 const testConfigs = [

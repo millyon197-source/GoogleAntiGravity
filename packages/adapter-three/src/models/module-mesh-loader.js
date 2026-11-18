@@ -462,7 +462,10 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           uLower.includes('detail_xl_main') ||
           /detail_[a-z0-9]+_main/.test(uLower) ||
           uLower.includes('simon') ||
-          (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production')));
+          (uLower.includes('part_main') && (uLower.includes('/production/') || uLower.includes('structures\\production'))) ||
+          // Pier bodies draw hull, pattern and fx-glow panels with separate materials, which the .bin merges
+          // (part_main, or its pieces such as part_main_left / part_main_top)
+          (/^part_main(_(?!wreck|collision)[a-z]+)?$/.test(partBase) && /[\\/]dock[\\/]pier_/.test(uLower));
 
       // The prebuilt scene cache (tools/generate-scene-cache.js) covers every part that would otherwise be
       // parsed from its .dae: the ones below that always need the .dae, and parts that have no .bin.
@@ -471,7 +474,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
       if (sceneTemplate) {
         // from the cache
       } else if (needsCollada) {
-        // fx*, anim*, billboards/signs, detail_m/l/s_main, simon and production part_main components have
+        // fx*, anim*, billboards/signs, detail_m/l/s_main, simon, production and pier part_main components have
         // distinct subnodes (hull, fx, alpha, lightcones, foliage) and authored colour/UV channels that the
         // .bin format does not keep, so they always come from the .dae.
         sceneTemplate = await host.loadColladaModel(url);
