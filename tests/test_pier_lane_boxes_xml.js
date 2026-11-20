@@ -70,7 +70,9 @@ if (fs.existsSync(DOCK)) assert.ok(compared >= 16, `compared ${compared} piers w
 // pier_ter_harbor_03's parts are placed by their XML offsets (they were all drawn at the origin)
 const ter03 = OFFSETS.pier_ter_harbor_03;
 assert.deepStrictEqual(ter03?.bounding_box?.map(v => Math.round(v) + 0), [1300, 0, 0], 'ter_harbor_03 lane model at its connection');
-assert.ok(Math.abs(ter03.anim_arrows[0] - 440.6379) < 0.01 && Math.abs(ter03.fx_decals[0] - 200.6352) < 0.01, 'ter_harbor_03 arrows and decals placed');
+// The arrows' mesh has a <pivot> (0.619, 0.369, -79.495) on top of its connection (-440.638, -11.015, 0)
+assert.ok(Math.abs(ter03.anim_arrows[0] - 440.0188) < 0.01 && Math.abs(ter03.anim_arrows[2] - -79.49484) < 0.01 &&
+  Math.abs(ter03.fx_decals[0] - 200.6352) < 0.01, 'ter_harbor_03 arrows (with their pivot) and decals placed');
 console.log(`  ✓ ${Object.keys(BOXES).length} piers with lane boxes; ${compared} match their extracted lane model exactly`);
 
 // 3. Loader: a box is added only when no lane model loaded

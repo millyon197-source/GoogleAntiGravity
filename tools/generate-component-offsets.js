@@ -22,6 +22,9 @@
  *   node tools/generate-component-offsets.js --verbose  also list every disagreeing existing part
  *   node tools/generate-component-offsets.js --check    verify each new part's mesh against the XML
  *                                                      <size><center> once placed (slower: reads the .dae files)
+ *   node tools/generate-component-offsets.js --fix-pivots [--keep=comp/part,...]
+ *                                                      also rewrite existing parts whose mesh has a <pivot> and
+ *                                                      whose table entry disagrees (except the --keep ones)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,6 +33,9 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
 const WRITE = args.has('--write');
+const FIX_PIVOTS = args.has('--fix-pivots');
+const KEEP = new Set((process.argv.find(a => a.startsWith('--keep=')) || '--keep=').slice(7).split(',').filter(Boolean));
+const pivotParts = new Set();
 const VERBOSE = args.has('--verbose');
 const CHECK = args.has('--check');
 
@@ -182,7 +188,7 @@ const table = JSON.parse(fs.readFileSync(HASH_TABLE_PATH, 'utf8'));
 
 const generated = {};
 const report = { components: 0, noXml: [], unresolvedParents: [], rotatedPartMain: [], partMainMismatch: [], checkOk: 0, checkFail: [] };
-const comparison = { agree: 0, disagree: [], missingInTable: 0 };
+const comparison = { agree: 0, disagree: [], missingInTable: 0, pivotFixes: [] };
 
 for (const bucket of Object.values(table)) {
   for (const entry of bucket) {
@@ -222,6 +228,7 @@ for (const bucket of Object.values(table)) {
       if (w.unresolved) report.unresolvedParents.push(`${key}/${partName} (parent ${conn.parent})`);
       // The mesh's origin: the connection's position plus the part's pivot, if any
       const pivot = conn.pivots?.get(partName);
+      if (pivot) pivotParts.add(`${key}/${partName}`);
       const origin = pivot ? qRotate(w.quat, pivot).map((v, i) => v + w.pos[i]) : w.pos;
       const pos = [-origin[0], origin[1], origin[2]].map((v, i) => v - groupShift[i]);
       const quat = [w.quat[0], -w.quat[1], -w.quat[2], w.quat[3]];
@@ -257,7 +264,10 @@ for (const [key, parts] of Object.entries(generated)) {
     const existing = offsets[key][partName];
     if (!existing) { comparison.missingInTable++; continue; }
     if (sameEntry(existing, gen)) comparison.agree++;
-    else comparison.disagree.push(`${key}/${partName}: table ${JSON.stringify(existing)} vs generated ${JSON.stringify(gen)}`);
+    else {
+      comparison.disagree.push(`${key}/${partName}: table ${JSON.stringify(existing)} vs generated ${JSON.stringify(gen)}`);
+      if (pivotParts.has(`${key}/${partName}`) && !KEEP.has(`${key}/${partName}`)) comparison.pivotFixes.push([key, partName, gen]);
+    }
   }
 }
 
@@ -283,11 +293,15 @@ if (report.partMainMismatch.length) {
   report.partMainMismatch.slice(0, 20).forEach(l => console.log(`  ! ${l}`));
 }
 
-if (WRITE) {
+console.log(`Existing parts with a <pivot> that disagree: ${comparison.pivotFixes.length}${KEEP.size ? ` (${KEEP.size} kept by --keep)` : ''}`);
+if (VERBOSE || FIX_PIVOTS) comparison.pivotFixes.forEach(([k, p]) => console.log(`  p ${k}/${p}`));
+if (WRITE || FIX_PIVOTS) {
   const merged = { ...offsets };
-  for (const k of newKeys) merged[k] = generated[k];
+  if (WRITE) for (const k of newKeys) merged[k] = generated[k];
+  if (FIX_PIVOTS) for (const [k, p, gen] of comparison.pivotFixes) merged[k] = { ...merged[k], [p]: gen };
   fs.writeFileSync(OFFSETS_PATH, JSON.stringify(merged, null, 2) + '\n');
-  console.log(`Wrote ${newKeys.length} new components to ${path.relative(root, OFFSETS_PATH)}`);
+  if (WRITE) console.log(`Wrote ${newKeys.length} new components to ${path.relative(root, OFFSETS_PATH)}`);
+  if (FIX_PIVOTS) console.log(`Rewrote ${comparison.pivotFixes.length} existing pivot parts in ${path.relative(root, OFFSETS_PATH)}`);
 } else {
   console.log('Report only; run with --write to add the new components.');
 }
