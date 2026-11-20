@@ -27,6 +27,13 @@
    "roughness": "/assets1/textures/natural/natural_trees_01_smooth.dds",
    "metalness": null,
    "emissive": null
+  },
+  "transparent": {
+   "diffuse": "/assets1/textures/environments/transparent_diff.dds",
+   "normal": null,
+   "roughness": null,
+   "metalness": null,
+   "emissive": null
   }
  },
  "binaryMaterials": {

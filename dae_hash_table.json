@@ -479,6 +479,8 @@
       "hash": 345065833,
       "folder_path": "/assets1/structures/connectionmodules/struct_spl_vertical_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -531,6 +533,11 @@
       "hash": 2358894330,
       "folder_path": "/assets1/structures/storage/storage_spl_l_solid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -554,6 +561,9 @@
       "hash": 2953771317,
       "folder_path": "/assets1/structures/production/prod_spl_scruffinfruit_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -685,7 +695,8 @@
       "hash": 525366636,
       "folder_path": "/assets1/structures/dock/dockarea_spl_xl_carrier_01_data",
       "files": [
-        "part_main-lod0.dae"
+        "part_main-lod0.dae",
+        "triggerpart_slowzone-lod0.dae"
       ]
     }
   ],
@@ -1537,7 +1548,8 @@
       "hash": 123771451,
       "folder_path": "/assets1/structures/dock/dockarea_ter_xl_resupplier_01_data",
       "files": [
-        "part_main-lod0.dae"
+        "part_main-lod0.dae",
+        "triggerpart_slowzone-lod0.dae"
       ]
     }
   ],
@@ -1783,6 +1795,11 @@
       "hash": 2173506032,
       "folder_path": "/assets1/structures/storage/storage_spl_l_liquid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -1795,6 +1812,15 @@
       "hash": 1652907956,
       "folder_path": "/assets1/structures/habitat/hab_ter_l_01_data",
       "files": [
+        "anim_arrows01-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_forcefield-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "anim_train_01-lod0.dae",
+        "anim_train_02-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -1919,7 +1945,133 @@
   [],
   [],
   [],
-  [],
+  [
+    {
+      "key": "torus_maze",
+      "hash": 2941252862,
+      "folder_path": "/assets1/structures/landmarks/torus_maze_data",
+      "files": [
+        "anim_forcefieldfx-lod0.dae",
+        "anim_radiationbody001-lod0.dae",
+        "anim_radiationbody004-lod0.dae",
+        "anim_radiationbody005-lod0.dae",
+        "anim_radiationbody006-lod0.dae",
+        "anim_radiationbody007-lod0.dae",
+        "anim_radiationbody008-lod0.dae",
+        "box010-lod0.dae",
+        "box07-lod0.dae",
+        "box08-lod0.dae",
+        "box09-lod0.dae",
+        "cylinder_rotator4-lod0.dae",
+        "cylinder_rotator5-lod0.dae",
+        "cylinder_rotator6-lod0.dae",
+        "cylinder_rotator7-lod0.dae",
+        "detail_m_room_01-lod0.dae",
+        "detail_m_room_02-lod0.dae",
+        "detail_m_wall_01-lod0.dae",
+        "detail_m_wall_02-lod0.dae",
+        "detail_m_wall_03-lod0.dae",
+        "detail_s_room_03-lod0.dae",
+        "detail_s_wall_01_curve_01-lod0.dae",
+        "detail_s_wall_01_curve_02-lod0.dae",
+        "detail_s_wall_01_ramp_01-lod0.dae",
+        "detail_s_wall_04-lod0.dae",
+        "detail_s_wall_05-lod0.dae",
+        "detail_s_wall_06-lod0.dae",
+        "detail_xs_room_04-lod0.dae",
+        "detail_xs_room_05-lod0.dae",
+        "detail_xs_room_06-lod0.dae",
+        "detail_xs_room_07-lod0.dae",
+        "detail_xs_turretroom_detail-lod0.dae",
+        "door_ext_inter01-lod0.dae",
+        "door_ext_inter02-lod0.dae",
+        "door_ext_inter03-lod0.dae",
+        "door_ext_inter04-lod0.dae",
+        "door_ext_inter05-lod0.dae",
+        "door_ext_inter06-lod0.dae",
+        "door_ext_inter07-lod0.dae",
+        "door_ext_inter08-lod0.dae",
+        "door_interact1a-lod0.dae",
+        "door_interact1b-lod0.dae",
+        "door_interact3a-lod0.dae",
+        "door_interact3b-lod0.dae",
+        "door_interactx00-lod0.dae",
+        "door_interactx01-lod0.dae",
+        "door_interactx02-lod0.dae",
+        "door_interactx03-lod0.dae",
+        "door_interactx04-lod0.dae",
+        "door_interactx05-lod0.dae",
+        "door_interactx06-lod0.dae",
+        "door_interactx07-lod0.dae",
+        "door_interactx08-lod0.dae",
+        "door_interactx09-lod0.dae",
+        "door_interactx10-lod0.dae",
+        "door_interactx11-lod0.dae",
+        "eobject38-lod0.dae",
+        "eobject41-lod0.dae",
+        "eobject73-lod0.dae",
+        "eobject74-lod0.dae",
+        "object17-lod0.dae",
+        "object18-lod0.dae",
+        "object19-lod0.dae",
+        "object20-lod0.dae",
+        "object22-lod0.dae",
+        "part_airlockdoor01-lod0.dae",
+        "part_airlockdoor02-lod0.dae",
+        "part_airlockdoor03-lod0.dae",
+        "part_airlockdoor04-lod0.dae",
+        "part_airlockdoor05-lod0.dae",
+        "part_airlockdoor06-lod0.dae",
+        "part_airlockdoor07-lod0.dae",
+        "part_airlockdoor08-lod0.dae",
+        "part_animationdummy-lod0.dae",
+        "part_door_frame009-lod0.dae",
+        "part_door_frame010-lod0.dae",
+        "part_door_frame011-lod0.dae",
+        "part_door_frame012-lod0.dae",
+        "part_door_frame_01-lod0.dae",
+        "part_door_frame_02-lod0.dae",
+        "part_door_frame_03-lod0.dae",
+        "part_door_frame_04-lod0.dae",
+        "part_door_frame_05-lod0.dae",
+        "part_door_frame_06-lod0.dae",
+        "part_door_frame_07-lod0.dae",
+        "part_door_frame_08-lod0.dae",
+        "part_nrdecal08-lod0.dae",
+        "part_room_01-lod0.dae",
+        "part_room_02-lod0.dae",
+        "part_room_03-lod0.dae",
+        "part_room_04-lod0.dae",
+        "part_room_05-lod0.dae",
+        "part_room_05_door_01-lod0.dae",
+        "part_room_05_door_02-lod0.dae",
+        "part_room_06-lod0.dae",
+        "part_room_07-lod0.dae",
+        "part_wall_01-lod0.dae",
+        "part_wall_01_curve_01-lod0.dae",
+        "part_wall_01_curve_02-lod0.dae",
+        "part_wall_01_ramp_01-lod0.dae",
+        "part_wall_02-lod0.dae",
+        "part_wall_03-lod0.dae",
+        "part_wall_04-lod0.dae",
+        "part_wall_05-lod0.dae",
+        "part_wall_06-lod0.dae",
+        "rail_01-lod0.dae",
+        "rail_02-lod0.dae",
+        "rail_03-lod0.dae",
+        "rail_04-lod0.dae",
+        "room_01_detail003-lod0.dae",
+        "room_01_main003-lod0.dae",
+        "shadowcaster_01-lod0.dae",
+        "wall_element_01_curve_detail003-lod0.dae",
+        "wall_element_01_curve_main003-lod0.dae",
+        "wall_element_01_detail017-lod0.dae",
+        "wall_element_01_main017-lod0.dae",
+        "wall_element_01b003-lod0.dae",
+        "wall_element_01c003-lod0.dae"
+      ]
+    }
+  ],
   [],
   [],
   [
@@ -2120,6 +2272,9 @@
       "hash": 1296053729,
       "folder_path": "/assets1/structures/defence/defence_ter_tube_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -2240,6 +2395,8 @@
       "hash": 322801344,
       "folder_path": "/assets1/structures/connectionmodules/struct_spl_cross_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -2266,6 +2423,11 @@
       "hash": 3127000924,
       "folder_path": "/assets1/structures/connectionmodules/struct_ter_base_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -2338,6 +2500,15 @@
       "hash": 2218566311,
       "folder_path": "/assets1/structures/storage/storage_ter_l_liquid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_containers-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -2445,7 +2616,16 @@
   ],
   [],
   [],
-  [],
+  [
+    {
+      "key": "torus_switchlight",
+      "hash": 3747560924,
+      "folder_path": "/assets1/structures/landmarks/torus_switchlight_data",
+      "files": [
+        "part_lightswitch001-lod0.dae"
+      ]
+    }
+  ],
   [
     {
       "key": "landmarks_tel_tradestation_01_ring_inside_01",
@@ -2484,6 +2664,10 @@
       "hash": 28218582,
       "folder_path": "/assets1/structures/storage/storage_spl_s_solid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -2608,6 +2792,8 @@
       "hash": 2481426962,
       "folder_path": "/assets1/structures/defence/defence_spl_claim_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -2616,7 +2802,8 @@
       "hash": 2885364294,
       "folder_path": "/assets1/structures/dock/dockarea_ter_xl_carrier_01_data",
       "files": [
-        "part_main-lod0.dae"
+        "part_main-lod0.dae",
+        "triggerpart_slowzone-lod0.dae"
       ]
     }
   ],
@@ -2643,6 +2830,9 @@
       "hash": 1412032097,
       "folder_path": "/assets1/structures/defence/defence_ter_disc_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detal_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -2889,6 +3079,14 @@
       "hash": 1963864419,
       "folder_path": "/assets1/structures/storage/storage_ter_m_container_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -3080,6 +3278,14 @@
       "hash": 99410722,
       "folder_path": "/assets1/structures/storage/storage_ter_s_container_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -3133,6 +3339,11 @@
       "hash": 3458028009,
       "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_equip_xl_data",
       "files": [
+        "detail_l_alpha-lod0.dae",
+        "detail_l_main-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_light-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -3465,7 +3676,95 @@
   ],
   [],
   [],
-  [],
+  [
+    {
+      "key": "xenon_asteroid_01_base_01_story",
+      "hash": 3203262456,
+      "folder_path": "/assets1/structures/landmarks/xenon_asteroid_01_base_01_story_data",
+      "files": [
+        "detail_l_main-lod0.dae",
+        "detail_l_main01-lod0.dae",
+        "detail_l_main02-lod0.dae",
+        "detail_l_main03-lod0.dae",
+        "door_frame009-lod0.dae",
+        "door_interact1a-lod0.dae",
+        "door_interact1a001-lod0.dae",
+        "fx_glow-lod0.dae",
+        "fx_lightcones-lod0.dae",
+        "line01-lod0.dae",
+        "object008-lod0.dae",
+        "object009-lod0.dae",
+        "object010-lod0.dae",
+        "object011-lod0.dae",
+        "object012-lod0.dae",
+        "object016-lod0.dae",
+        "object018-lod0.dae",
+        "object019-lod0.dae",
+        "object020-lod0.dae",
+        "object021-lod0.dae",
+        "object022-lod0.dae",
+        "object023-lod0.dae",
+        "object024-lod0.dae",
+        "object025-lod0.dae",
+        "object026-lod0.dae",
+        "object027-lod0.dae",
+        "object028-lod0.dae",
+        "object029-lod0.dae",
+        "object030-lod0.dae",
+        "object031-lod0.dae",
+        "object032-lod0.dae",
+        "object033-lod0.dae",
+        "object034-lod0.dae",
+        "object035-lod0.dae",
+        "object036-lod0.dae",
+        "object037-lod0.dae",
+        "object038-lod0.dae",
+        "object13-lod0.dae",
+        "object15-lod0.dae",
+        "object17-lod0.dae",
+        "part_04-lod0.dae",
+        "part_asteroidp67-lod0.dae",
+        "part_lcone_big-lod0.dae",
+        "part_lcone_big001-lod0.dae",
+        "part_lcone_big002-lod0.dae",
+        "part_lcone_big003-lod0.dae",
+        "part_lcone_big004-lod0.dae",
+        "part_lcone_big005-lod0.dae",
+        "part_lcone_big006-lod0.dae",
+        "part_lcone_big007-lod0.dae",
+        "part_lcone_big008-lod0.dae",
+        "part_lcone_big009-lod0.dae",
+        "part_lcone_big010-lod0.dae",
+        "part_lcone_big011-lod0.dae",
+        "part_lcone_big012-lod0.dae",
+        "part_lcone_big013-lod0.dae",
+        "part_lcone_big014-lod0.dae",
+        "part_lcone_big015-lod0.dae",
+        "part_lcone_big017-lod0.dae",
+        "part_lcone_big018-lod0.dae",
+        "part_lcone_big019-lod0.dae",
+        "part_lcone_big020-lod0.dae",
+        "part_lcone_big021-lod0.dae",
+        "part_lcone_big16-lod0.dae",
+        "part_lcone_small001-lod0.dae",
+        "part_lcone_small002-lod0.dae",
+        "part_main007-lod0.dae",
+        "part_main008-lod0.dae",
+        "part_main009-lod0.dae",
+        "part_main010-lod0.dae",
+        "part_main011-lod0.dae",
+        "part_main012-lod0.dae",
+        "part_main013-lod0.dae",
+        "part_main02-lod0.dae",
+        "tube002-lod0.dae",
+        "tube003-lod0.dae",
+        "tube004-lod0.dae",
+        "tube005-lod0.dae",
+        "tube01-lod0.dae",
+        "xenon_asteroid_01_part_01-lod0.dae"
+      ]
+    }
+  ],
   [
     {
       "key": "buildmodule_bor_ships_xl",
@@ -3477,6 +3776,73 @@
         "part_main_01-lod0.dae",
         "part_main_02-lod0.dae"
       ]
+    },
+    {
+      "key": "dockarea_par_l_expeditionary_01",
+      "hash": 636423942,
+      "folder_path": "/assets1/structures/dock/dockarea_par_l_expeditionary_01_data",
+      "files": [
+        "anim_dockbay_01-lod0.dae",
+        "anim_dockbay_wingb-lod0.dae",
+        "anim_dockbay_wingf-lod0.dae",
+        "anim_dockbay_wingl-lod0.dae",
+        "anim_dockbay_wingr-lod0.dae",
+        "anim_dockingpos_01-lod0.dae",
+        "anim_door_01-lod0.dae",
+        "anim_door_01_top-lod0.dae",
+        "anim_door_01_top_inner-lod0.dae",
+        "anim_door_01l-lod0.dae",
+        "anim_door_01r-lod0.dae",
+        "anim_door_02-lod0.dae",
+        "anim_door_02_top-lod0.dae",
+        "anim_door_02_top_inner-lod0.dae",
+        "anim_door_02l-lod0.dae",
+        "anim_door_02r-lod0.dae",
+        "anim_elevator_01-lod0.dae",
+        "anim_elevator_01_details-lod0.dae",
+        "anim_elevator_01_enter-lod0.dae",
+        "anim_elevator_01_exit_01l-lod0.dae",
+        "anim_elevator_01_exit_01r-lod0.dae",
+        "anim_elevator_01_exit_02l-lod0.dae",
+        "anim_elevator_01_exit_02r-lod0.dae",
+        "anim_elevator_01_platform-lod0.dae",
+        "anim_elevator_01_platform_enter-lod0.dae",
+        "anim_elevator_01_platform_exit_01l-lod0.dae",
+        "anim_elevator_01_platform_exit_01r-lod0.dae",
+        "anim_elevator_01_platform_exit_02l-lod0.dae",
+        "anim_elevator_01_platform_exit_02r-lod0.dae",
+        "anim_elevator_01_platformbutton-lod0.dae",
+        "anim_elevator_01_swithbottom-lod0.dae",
+        "anim_elevator_02-lod0.dae",
+        "anim_elevator_02_enter_anchor-lod0.dae",
+        "anim_elevator_02_enterl-lod0.dae",
+        "anim_elevator_02_enterr-lod0.dae",
+        "anim_elevator_02_exit_anchor-lod0.dae",
+        "anim_elevator_02_exitl-lod0.dae",
+        "anim_elevator_02_exitr-lod0.dae",
+        "anim_elevator_02_platform-lod0.dae",
+        "anim_elevator_02_platform_enter_anchor-lod0.dae",
+        "anim_elevator_02_platform_enterl-lod0.dae",
+        "anim_elevator_02_platform_enterr-lod0.dae",
+        "anim_elevator_02_platform_exit_anchor-lod0.dae",
+        "anim_elevator_02_platform_exitl-lod0.dae",
+        "anim_elevator_02_platform_exitr-lod0.dae",
+        "anim_elevator_02_platformbutton-lod0.dae",
+        "anim_elevator_02_switch_01-lod0.dae",
+        "anim_engine_01-lod0.dae",
+        "anim_hgr_engine_ccw-lod0.dae",
+        "anim_hgr_engine_cw-lod0.dae",
+        "anim_main-lod0.dae",
+        "detail_m_crg-lod0.dae",
+        "detail_m_hgr-lod0.dae",
+        "detail_m_jnt-lod0.dae",
+        "fx_dockingpos_01-lod0.dae",
+        "fx_m_crg-lod0.dae",
+        "fx_m_glass-lod0.dae",
+        "fx_m_hgr-lod0.dae",
+        "fx_m_jnt-lod0.dae",
+        "part_hangar-lod0.dae"
+      ]
     }
   ],
   [],
@@ -3486,6 +3852,16 @@
       "hash": 3991651064,
       "folder_path": "/assets1/structures/dock/dockarea_ter_m_station_01_hightech_data",
       "files": [
+        "anim_cross-lod0.dae",
+        "anim_forcefieldfx-lod0.dae",
+        "anim_hatch_01-lod0.dae",
+        "anim_hatch_02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_s_main01-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_interior-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -3570,6 +3946,9 @@
       "hash": 4177629025,
       "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_equip_l_data",
       "files": [
+        "detail_m_main-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "fx_light-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -3578,6 +3957,7 @@
       "hash": 1633362198,
       "folder_path": "/assets1/structures/landmarks/ter_torus_exterior_data",
       "files": [
+        "detail_s_debree_01-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -3754,6 +4134,13 @@
       "hash": 739251387,
       "folder_path": "/assets1/structures/storage/storage_ter_s_liquid_tradestation_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -3766,6 +4153,11 @@
       "hash": 2892312315,
       "folder_path": "/assets1/structures/production/prod_ter_metallicmicrolattice_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -3925,6 +4317,14 @@
       "hash": 2529939899,
       "folder_path": "/assets1/structures/habitat/hab_ter_s_01_data",
       "files": [
+        "anim_arrows01-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_forcefield-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "anim_train-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -3973,6 +4373,12 @@
       "hash": 1483731892,
       "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_ships_xl_data",
       "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_alpha-lod0.dae",
+        "detail_s_main_l-lod0.dae",
+        "detail_s_main_r-lod0.dae",
+        "detail_xs_alpha-lod0.dae",
+        "fx_light-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -4007,6 +4413,7 @@
       "hash": 1987719187,
       "folder_path": "/assets1/structures/landmarks/torus_turretbase_data",
       "files": [
+        "part_invisible-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -4069,6 +4476,9 @@
       "hash": 1190599597,
       "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_ships_l_data",
       "files": [
+        "detail_l_main-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_light-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -4108,6 +4518,12 @@
       "hash": 1370959077,
       "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_ships_m_dockarea_01_data",
       "files": [
+        "anim_forcefieldfx-lod0.dae",
+        "anim_poslight-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "fx_haze-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -4134,6 +4550,12 @@
       "hash": 463455170,
       "folder_path": "/assets1/structures/production/prod_ter_mre_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "anim_production-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -4160,6 +4582,11 @@
       "hash": 4172960932,
       "folder_path": "/assets1/structures/storage/storage_spl_m_liquid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "object01-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -4224,6 +4651,14 @@
   [],
   [],
   [
+    {
+      "key": "torus_maze_explosiondummy_02",
+      "hash": 1369273809,
+      "folder_path": "/assets1/structures/landmarks/torus_maze_explosiondummy_02_data",
+      "files": [
+        "room_02_main-lod0.dae"
+      ]
+    },
     {
       "key": "xenon_small_station_01_base",
       "hash": 1043100932,
@@ -4581,6 +5016,14 @@
       "hash": 525494363,
       "folder_path": "/assets1/structures/storage/storage_ter_s_solid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -4930,6 +5373,11 @@
       "hash": 2400737438,
       "folder_path": "/assets1/structures/storage/storage_spl_l_container_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -5225,6 +5673,10 @@
       "hash": 3993063906,
       "folder_path": "/assets1/structures/storage/storage_spl_m_solid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -5250,6 +5702,14 @@
       "hash": 465155308,
       "folder_path": "/assets1/structures/storage/storage_ter_s_liquid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -5510,6 +5970,14 @@
       "hash": 3606005220,
       "folder_path": "/assets1/structures/storage/storage_ter_l_solid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -5817,6 +6285,11 @@
       "hash": 2542323014,
       "folder_path": "/assets1/structures/production/prod_ter_medicalsupplies_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -5842,6 +6315,12 @@
       "hash": 1323133887,
       "folder_path": "/assets1/structures/buildmodule/buildmodule_ter_equip_m_dockarea_01_data",
       "files": [
+        "anim_forcefieldfx-lod0.dae",
+        "anim_poslight-lod0.dae",
+        "detail_s_alpha-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "fx_haze-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -5856,6 +6335,10 @@
       "hash": 2498677823,
       "folder_path": "/assets1/structures/habitat/hab_spl_s_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -5882,6 +6365,10 @@
       "hash": 2624524527,
       "folder_path": "/assets1/structures/storage/storage_spl_s_container_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6056,6 +6543,14 @@
       "hash": 166570937,
       "folder_path": "/assets1/structures/storage/storage_ter_m_liquid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6189,6 +6684,14 @@
       "hash": 80727367,
       "folder_path": "/assets1/structures/storage/storage_ter_m_solid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6201,7 +6704,8 @@
       "hash": 890102655,
       "folder_path": "/assets1/structures/dock/dockarea_atf_xl_battleship_01_data",
       "files": [
-        "part_main-lod0.dae"
+        "part_main-lod0.dae",
+        "triggerpart_slowzone-lod0.dae"
       ]
     }
   ],
@@ -6291,6 +6795,13 @@
       "hash": 1413031788,
       "folder_path": "/assets1/structures/storage/storage_ter_m_container_tradestation_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6328,6 +6839,10 @@
       "hash": 1286916031,
       "folder_path": "/assets1/structures/storage/storage_spl_s_liquid_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6578,6 +7093,11 @@
       "hash": 2466656121,
       "folder_path": "/assets1/structures/connectionmodules/struct_ter_cross_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6591,6 +7111,8 @@
       "hash": 3636898351,
       "folder_path": "/assets1/structures/connectionmodules/struct_spl_base_02_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -6599,6 +7121,8 @@
       "hash": 1161967063,
       "folder_path": "/assets1/structures/defence/defence_spl_tube_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -6818,6 +7342,12 @@
       "hash": 383126432,
       "folder_path": "/assets1/structures/connectionmodules/struct_ter_vertical_02_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -6898,6 +7428,14 @@
       "hash": 3058829074,
       "folder_path": "/assets1/structures/habitat/hab_ter_m_01_data",
       "files": [
+        "anim_arrows01-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_forcefield-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "anim_train-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -7185,6 +7723,11 @@
       "hash": 598644739,
       "folder_path": "/assets1/structures/production/prod_ter_siliconcarbide_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -7346,6 +7889,11 @@
       "hash": 3286071078,
       "folder_path": "/assets1/structures/habitat/hab_spl_l_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_m_main01-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -7530,6 +8078,11 @@
       "hash": 1956129548,
       "folder_path": "/assets1/structures/connectionmodules/struct_ter_base_03_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     },
@@ -7583,7 +8136,17 @@
       "hash": 3912632362,
       "folder_path": "/assets1/structures/connectionmodules/struct_spl_base_03_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
+      ]
+    },
+    {
+      "key": "torus_switchlight_100ms",
+      "hash": 197784538,
+      "folder_path": "/assets1/structures/landmarks/torus_switchlight_100ms_data",
+      "files": [
+        "part_lightswitch001-lod0.dae"
       ]
     },
     {
@@ -7681,7 +8244,8 @@
       "hash": 4283755387,
       "folder_path": "/assets1/structures/dock/dockarea_spl_xl_resupplier_01_data",
       "files": [
-        "part_main-lod0.dae"
+        "part_main-lod0.dae",
+        "triggerpart_slowzone-lod0.dae"
       ]
     },
     {
@@ -7706,6 +8270,70 @@
   ],
   [],
   [
+    {
+      "key": "ship_ter_l_trans_container_01_landmark",
+      "hash": 490741967,
+      "folder_path": "/assets1/structures/landmarks/ship_ter_l_trans_container_01_landmark_data",
+      "files": [
+        "anim_engine-lod0.dae",
+        "anim_front-lod0.dae",
+        "detail_m_decals-lod0.dae",
+        "detail_m_decals001-lod0.dae",
+        "detail_m_decals002-lod0.dae",
+        "detail_m_decals003-lod0.dae",
+        "detail_m_decals004-lod0.dae",
+        "detail_m_decals005-lod0.dae",
+        "detail_m_decals006-lod0.dae",
+        "detail_m_decals007-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_xl_flap01-lod0.dae",
+        "detail_xl_flap02-lod0.dae",
+        "detail_xs_lookat_target-lod0.dae",
+        "fx_decals02-lod0.dae",
+        "mesher06-lod0.dae",
+        "mesher07-lod0.dae",
+        "mesher08-lod0.dae",
+        "object05-lod0.dae",
+        "part_back-lod0.dae",
+        "part_barrel-lod0.dae",
+        "part_barrel001-lod0.dae",
+        "part_barrel002-lod0.dae",
+        "part_barrel003-lod0.dae",
+        "part_barrel004-lod0.dae",
+        "part_barrel005-lod0.dae",
+        "part_barrel006-lod0.dae",
+        "part_barrel007-lod0.dae",
+        "part_container-lod0.dae",
+        "part_containers_back-lod0.dae",
+        "part_dock-lod0.dae",
+        "part_front-lod0.dae",
+        "part_gun-lod0.dae",
+        "part_gun001-lod0.dae",
+        "part_gun002-lod0.dae",
+        "part_gun003-lod0.dae",
+        "part_gun004-lod0.dae",
+        "part_gun005-lod0.dae",
+        "part_gun006-lod0.dae",
+        "part_gun007-lod0.dae",
+        "part_main02-lod0.dae",
+        "part_rotator-lod0.dae",
+        "part_rotator001-lod0.dae",
+        "part_rotator002-lod0.dae",
+        "part_rotator003-lod0.dae",
+        "part_rotator004-lod0.dae",
+        "part_rotator005-lod0.dae",
+        "part_rotator006-lod0.dae",
+        "part_rotator007-lod0.dae",
+        "part_socket-lod0.dae",
+        "part_socket001-lod0.dae",
+        "part_socket002-lod0.dae",
+        "part_socket003-lod0.dae",
+        "part_socket004-lod0.dae",
+        "part_socket005-lod0.dae",
+        "part_socket006-lod0.dae",
+        "part_socket007-lod0.dae"
+      ]
+    },
     {
       "key": "storage_bor_l_liquid_01",
       "hash": 3019633238,
@@ -7785,6 +8413,8 @@
       "hash": 3666175867,
       "folder_path": "/assets1/structures/connectionmodules/struct_spl_base_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -7913,6 +8543,8 @@
       "hash": 4160875727,
       "folder_path": "/assets1/structures/defence/defence_spl_disc_01_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8192,6 +8824,11 @@
       "hash": 3226172327,
       "folder_path": "/assets1/structures/connectionmodules/struct_ter_base_02_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8368,6 +9005,25 @@
       "hash": 1288759336,
       "folder_path": "/assets1/structures/production/prod_spl_cheltmeat_data",
       "files": [
+        "anim_alge01_01-lod0.dae",
+        "anim_alge01_02-lod0.dae",
+        "anim_alge02_01-lod0.dae",
+        "anim_alge02_02-lod0.dae",
+        "anim_alge03_01-lod0.dae",
+        "anim_alge03_011-lod0.dae",
+        "anim_alge04_01-lod0.dae",
+        "anim_alge04_02-lod0.dae",
+        "anim_alge05_01-lod0.dae",
+        "anim_alge05_011-lod0.dae",
+        "anim_alge06_004-lod0.dae",
+        "anim_alge06_01-lod0.dae",
+        "anim_alge06_02-lod0.dae",
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_distortion-lod0.dae",
+        "anim_glass-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8433,6 +9089,8 @@
       "hash": 1547248952,
       "folder_path": "/assets1/structures/connectionmodules/struct_spl_vertical_02_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8454,6 +9112,27 @@
   ],
   [],
   [
+    {
+      "key": "prod_ter_scrap_recycler",
+      "hash": 1569020801,
+      "folder_path": "/assets1/structures/production/prod_ter_scrap_recycler_data",
+      "files": [
+        "anim_arrows-lod0.dae",
+        "anim_assembly-lod0.dae",
+        "anim_core-lod0.dae",
+        "anim_core_center-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_generator-lod0.dae",
+        "anim_main-lod0.dae",
+        "anim_main_ter-lod0.dae",
+        "anim_poslight-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_top_ter-lod0.dae"
+      ]
+    },
     {
       "key": "landmarks_gen_spacesuit_level_01_room_02",
       "hash": 1640510043,
@@ -8517,6 +9196,12 @@
       "hash": 3637572432,
       "folder_path": "/assets1/structures/connectionmodules/struct_ter_vertical_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8574,6 +9259,11 @@
       "hash": 3812553168,
       "folder_path": "/assets1/structures/production/prod_ter_computronicsubstrate_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8720,6 +9410,14 @@
       "hash": 2682519531,
       "folder_path": "/assets1/structures/storage/storage_ter_l_container_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_arrows02-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_cross02-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_container-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8778,6 +9476,11 @@
       "hash": 540493745,
       "folder_path": "/assets1/structures/production/prod_ter_stimulants_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8853,6 +9556,7 @@
       "hash": 3980230175,
       "folder_path": "/assets1/structures/landmarks/torus_turretbase_v2_data",
       "files": [
+        "part_invisible-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -8877,6 +9581,10 @@
       "hash": 2229198705,
       "folder_path": "/assets1/structures/habitat/hab_spl_m_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -9028,6 +9736,74 @@
       "hash": 58110770,
       "folder_path": "/assets1/structures/production/prod_ter_proteinpaste_data",
       "files": [
+        "anim_alge01_004-lod0.dae",
+        "anim_alge01_005-lod0.dae",
+        "anim_alge01_006-lod0.dae",
+        "anim_alge01_007-lod0.dae",
+        "anim_alge01_008-lod0.dae",
+        "anim_alge01_009-lod0.dae",
+        "anim_alge01_01-lod0.dae",
+        "anim_alge01_010-lod0.dae",
+        "anim_alge01_011-lod0.dae",
+        "anim_alge01_012-lod0.dae",
+        "anim_alge01_013-lod0.dae",
+        "anim_alge01_014-lod0.dae",
+        "anim_alge01_015-lod0.dae",
+        "anim_alge01_016-lod0.dae",
+        "anim_alge01_017-lod0.dae",
+        "anim_alge01_018-lod0.dae",
+        "anim_alge01_019-lod0.dae",
+        "anim_alge01_02-lod0.dae",
+        "anim_alge01_020-lod0.dae",
+        "anim_alge01_021-lod0.dae",
+        "anim_alge01_022-lod0.dae",
+        "anim_alge01_023-lod0.dae",
+        "anim_alge01_024-lod0.dae",
+        "anim_alge01_025-lod0.dae",
+        "anim_alge01_026-lod0.dae",
+        "anim_alge01_027-lod0.dae",
+        "anim_alge01_028-lod0.dae",
+        "anim_alge01_029-lod0.dae",
+        "anim_alge01_03-lod0.dae",
+        "anim_alge01_030-lod0.dae",
+        "anim_alge01_031-lod0.dae",
+        "anim_alge01_032-lod0.dae",
+        "anim_alge01_033-lod0.dae",
+        "anim_alge01_034-lod0.dae",
+        "anim_alge01_035-lod0.dae",
+        "anim_alge01_036-lod0.dae",
+        "anim_alge02_003-lod0.dae",
+        "anim_alge02_004-lod0.dae",
+        "anim_alge02_005-lod0.dae",
+        "anim_alge02_006-lod0.dae",
+        "anim_alge02_007-lod0.dae",
+        "anim_alge02_008-lod0.dae",
+        "anim_alge02_009-lod0.dae",
+        "anim_alge02_01-lod0.dae",
+        "anim_alge02_010-lod0.dae",
+        "anim_alge02_011-lod0.dae",
+        "anim_alge02_012-lod0.dae",
+        "anim_alge02_013-lod0.dae",
+        "anim_alge02_014-lod0.dae",
+        "anim_alge02_015-lod0.dae",
+        "anim_alge02_016-lod0.dae",
+        "anim_alge02_017-lod0.dae",
+        "anim_alge02_018-lod0.dae",
+        "anim_alge02_019-lod0.dae",
+        "anim_alge02_02-lod0.dae",
+        "anim_alge02_020-lod0.dae",
+        "anim_alge02_021-lod0.dae",
+        "anim_alge02_022-lod0.dae",
+        "anim_alge02_023-lod0.dae",
+        "anim_alge02_024-lod0.dae",
+        "anim_arrows-lod0.dae",
+        "anim_bubbles-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_distortion-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
+        "fx_decals-lod0.dae",
+        "part_glass-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -9383,6 +10159,10 @@
       "hash": 229635311,
       "folder_path": "/assets1/structures/storage/storage_spl_m_container_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_m_main-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -9400,6 +10180,11 @@
       "hash": 3164402377,
       "folder_path": "/assets1/structures/defence/defence_ter_claim_01_data",
       "files": [
+        "anim_arrows-lod0.dae",
+        "anim_cross-lod0.dae",
+        "anim_poslights-lod0.dae",
+        "detail_xs_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -9460,6 +10245,9 @@
       "hash": 3768672005,
       "folder_path": "/assets1/structures/production/prod_ter_energycells_data",
       "files": [
+        "anim_poslights-lod0.dae",
+        "detail_s_main-lod0.dae",
+        "fx_decals-lod0.dae",
         "part_main-lod0.dae"
       ]
     }
@@ -9633,7 +10421,19 @@
   [],
   [],
   [],
-  [],
+  [
+    {
+      "key": "torus_maze_explosiondummy_01",
+      "hash": 3440733145,
+      "folder_path": "/assets1/structures/landmarks/torus_maze_explosiondummy_01_data",
+      "files": [
+        "object01-lod0.dae",
+        "object02-lod0.dae",
+        "object03-lod0.dae",
+        "wall_element_01_main-lod0.dae"
+      ]
+    }
+  ],
   [],
   [],
   [],
