@@ -25,6 +25,9 @@
  *   node tools/generate-component-offsets.js --fix-pivots [--keep=comp/part,...]
  *                                                      also rewrite existing parts whose mesh has a <pivot> and
  *                                                      whose table entry disagrees (except the --keep ones)
+ *   node tools/generate-component-offsets.js --add-missing [--keep=comp/part,...]
+ *                                                      also add parts of existing components that the XML places
+ *                                                      off the origin but the table has no entry for (drawn at 0)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,6 +37,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
 const WRITE = args.has('--write');
 const FIX_PIVOTS = args.has('--fix-pivots');
+const ADD_MISSING = args.has('--add-missing');
 const KEEP = new Set((process.argv.find(a => a.startsWith('--keep=')) || '--keep=').slice(7).split(',').filter(Boolean));
 const pivotParts = new Set();
 const VERBOSE = args.has('--verbose');
@@ -188,7 +192,7 @@ const table = JSON.parse(fs.readFileSync(HASH_TABLE_PATH, 'utf8'));
 
 const generated = {};
 const report = { components: 0, noXml: [], unresolvedParents: [], rotatedPartMain: [], partMainMismatch: [], checkOk: 0, checkFail: [] };
-const comparison = { agree: 0, disagree: [], missingInTable: 0, pivotFixes: [] };
+const comparison = { agree: 0, disagree: [], missingInTable: 0, pivotFixes: [], missing: [] };
 
 for (const bucket of Object.values(table)) {
   for (const entry of bucket) {
@@ -221,9 +225,20 @@ for (const bucket of Object.values(table)) {
     const folderAbs = path.join(root, entry.folder_path);
     const parts = {};
     for (const partName of meshParts(folderAbs, entry.files)) {
-      if (partName === 'part_main') continue; // placed by the group shift
       const conn = byPart.get(partName);
       if (!conn) continue;
+      // part_main is placed by the group shift (part-main-offsets.json); a pivot on it moves its
+      // mesh from there, so it then gets an entry holding just the pivot (e.g. prod_tel_swampplants,
+      // whose hull mesh sits 30 m above its connection)
+      if (partName === 'part_main') {
+        const pmPivot = conn.pivots?.get('part_main');
+        if (!pmPivot) continue;
+        pivotParts.add(`${key}/part_main`);
+        const w = worldTransform(conn, byPart, conns);
+        const d = qRotate(w.quat, pmPivot);
+        parts.part_main = toEntry([-d[0], d[1], d[2]], [0, 0, 0, 1]);
+        continue;
+      }
       const w = worldTransform(conn, byPart, conns);
       if (w.unresolved) report.unresolvedParents.push(`${key}/${partName} (parent ${conn.parent})`);
       // The mesh's origin: the connection's position plus the part's pivot, if any
@@ -262,7 +277,13 @@ for (const [key, parts] of Object.entries(generated)) {
   if (!offsets[key]) continue;
   for (const [partName, gen] of Object.entries(parts)) {
     const existing = offsets[key][partName];
-    if (!existing) { comparison.missingInTable++; continue; }
+    if (!existing) {
+      comparison.missingInTable++;
+      // A pivot part the table has no entry for (e.g. a part_main with a pivot) is added too
+      if (pivotParts.has(`${key}/${partName}`) && !KEEP.has(`${key}/${partName}`)) comparison.pivotFixes.push([key, partName, gen]);
+      else if (!KEEP.has(`${key}/${partName}`)) comparison.missing.push([key, partName, gen]);
+      continue;
+    }
     if (sameEntry(existing, gen)) comparison.agree++;
     else {
       comparison.disagree.push(`${key}/${partName}: table ${JSON.stringify(existing)} vs generated ${JSON.stringify(gen)}`);
@@ -295,13 +316,17 @@ if (report.partMainMismatch.length) {
 
 console.log(`Existing parts with a <pivot> that disagree: ${comparison.pivotFixes.length}${KEEP.size ? ` (${KEEP.size} kept by --keep)` : ''}`);
 if (VERBOSE || FIX_PIVOTS) comparison.pivotFixes.forEach(([k, p]) => console.log(`  p ${k}/${p}`));
-if (WRITE || FIX_PIVOTS) {
+console.log(`Existing components' parts placed off their origin in the XML but missing from the table: ${comparison.missing.length}`);
+if (VERBOSE || ADD_MISSING) comparison.missing.forEach(([k, p, g]) => console.log(`  m ${k}/${p} ${JSON.stringify(g)}`));
+if (WRITE || FIX_PIVOTS || ADD_MISSING) {
   const merged = { ...offsets };
   if (WRITE) for (const k of newKeys) merged[k] = generated[k];
   if (FIX_PIVOTS) for (const [k, p, gen] of comparison.pivotFixes) merged[k] = { ...merged[k], [p]: gen };
+  if (ADD_MISSING) for (const [k, p, gen] of comparison.missing) merged[k] = { ...merged[k], [p]: gen };
   fs.writeFileSync(OFFSETS_PATH, JSON.stringify(merged, null, 2) + '\n');
   if (WRITE) console.log(`Wrote ${newKeys.length} new components to ${path.relative(root, OFFSETS_PATH)}`);
   if (FIX_PIVOTS) console.log(`Rewrote ${comparison.pivotFixes.length} existing pivot parts in ${path.relative(root, OFFSETS_PATH)}`);
+  if (ADD_MISSING) console.log(`Added ${comparison.missing.length} missing parts to ${path.relative(root, OFFSETS_PATH)}`);
 } else {
   console.log('Report only; run with --write to add the new components.');
 }
