@@ -94,7 +94,18 @@ function parseConnections(xml) {
     const size = sizeCenter && sizeMax
       ? { center: ['x', 'y', 'z'].map(k => parseFloat(attr(sizeCenter, k)) || 0), max: ['x', 'y', 'z'].map(k => parseFloat(attr(sizeMax, k)) || 0) }
       : null;
-    conns.set(name, { name, parent: attr(head, 'parent') || null, pos, quat, parts, size });
+    const rawCenter = body.match(/<size_raw>[\s\S]*?<center\b[^>]*>/)?.[0].match(/<center\b[^>]*>/)?.[0];
+    const sizeRaw = rawCenter ? { center: ['x', 'y', 'z'].map(k => parseFloat(attr(rawCenter, k)) || 0) } : null;
+    // A part's <pivot><offset>: its mesh is stored relative to the pivot, so the game draws it at
+    // the connection's position plus the pivot (turned by the connection), e.g. the 304 m
+    // anim_distortion of prod_ter_proteinpaste sits 214 m from its connection's origin
+    const pivots = new Map();
+    for (const pm of body.matchAll(/<part\b[^>]*\bname="([^"]+)"[^>]*>([\s\S]*?)<\/part>/g)) {
+      const pv = pm[2].match(/<pivot>\s*<offset>([\s\S]*?)<\/offset>/)?.[1];
+      const pp = pv?.match(/<position\b[^>]*>/)?.[0];
+      if (pp) pivots.set(pm[1].toLowerCase(), ['x', 'y', 'z'].map(k => parseFloat(attr(pp, k)) || 0));
+    }
+    conns.set(name, { name, parent: attr(head, 'parent') || null, pos, quat, parts, size, sizeRaw, pivots });
   }
   return conns;
 }
@@ -209,7 +220,10 @@ for (const bucket of Object.values(table)) {
       if (!conn) continue;
       const w = worldTransform(conn, byPart, conns);
       if (w.unresolved) report.unresolvedParents.push(`${key}/${partName} (parent ${conn.parent})`);
-      const pos = [-w.pos[0], w.pos[1], w.pos[2]].map((v, i) => v - groupShift[i]);
+      // The mesh's origin: the connection's position plus the part's pivot, if any
+      const pivot = conn.pivots?.get(partName);
+      const origin = pivot ? qRotate(w.quat, pivot).map((v, i) => v + w.pos[i]) : w.pos;
+      const pos = [-origin[0], origin[1], origin[2]].map((v, i) => v - groupShift[i]);
       const quat = [w.quat[0], -w.quat[1], -w.quat[2], w.quat[3]];
       if (pos.every(v => Math.abs(v) < EPS) && isIdentityQ(quat)) continue;
       parts[partName] = toEntry(pos, quat);
@@ -219,7 +233,11 @@ for (const bucket of Object.values(table)) {
         const c = meshCenter(folderAbs, partName);
         if (c) {
           const placed = qRotate(quat, c).map((v, i) => v + pos[i] + groupShift[i]);
-          const xmlWorld = qRotate(w.quat, conn.size.center).map((v, i) => v + w.pos[i]);
+          // The XML box centre is already in component axes (turned by the connection's own and
+          // its parents' rotations), measured from the part's placed position: no rotation applies.
+          // <size_raw> is the mesh's own box; <size> may be padded, so size_raw is used when present.
+          const xmlCenter = (conn.sizeRaw || conn.size).center;
+          const xmlWorld = xmlCenter.map((v, i) => v + w.pos[i]);
           const expected = [-xmlWorld[0], xmlWorld[1], xmlWorld[2]];
           const err = Math.hypot(...placed.map((v, i) => v - expected[i]));
           const tol = Math.max(1, Math.max(...conn.size.max) * 0.02);
