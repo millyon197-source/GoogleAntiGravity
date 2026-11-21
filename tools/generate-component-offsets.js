@@ -25,6 +25,8 @@
  *   node tools/generate-component-offsets.js --fix-pivots [--keep=comp/part,...]
  *                                                      also rewrite existing parts whose mesh has a <pivot> and
  *                                                      whose table entry disagrees (except the --keep ones)
+ *   node tools/generate-component-offsets.js --parents  write src/component-part-parents.json only: which drawn
+ *                                                      part hangs off which (the loader attaches it so it follows)
  *   node tools/generate-component-offsets.js --add-missing [--keep=comp/part,...]
  *                                                      also add parts of existing components that the XML places
  *                                                      off the origin but the table has no entry for (drawn at 0)
@@ -38,12 +40,14 @@ const args = new Set(process.argv.slice(2));
 const WRITE = args.has('--write');
 const FIX_PIVOTS = args.has('--fix-pivots');
 const ADD_MISSING = args.has('--add-missing');
+const PARENTS = args.has('--parents');
 const KEEP = new Set((process.argv.find(a => a.startsWith('--keep=')) || '--keep=').slice(7).split(',').filter(Boolean));
 const pivotParts = new Set();
 const VERBOSE = args.has('--verbose');
 const CHECK = args.has('--check');
 
 const OFFSETS_PATH = path.join(root, 'src/component-offsets.json');
+const PARENTS_PATH = path.join(root, 'src/component-part-parents.json');
 const PART_MAIN_PATH = path.join(root, 'src/part-main-offsets.json');
 const HASH_TABLE_PATH = path.join(root, 'dae_hash_table.json');
 
@@ -191,6 +195,7 @@ const partMainOffsets = JSON.parse(fs.readFileSync(PART_MAIN_PATH, 'utf8'));
 const table = JSON.parse(fs.readFileSync(HASH_TABLE_PATH, 'utf8'));
 
 const generated = {};
+const partParents = {};
 const report = { components: 0, noXml: [], unresolvedParents: [], rotatedPartMain: [], partMainMismatch: [], checkOk: 0, checkFail: [] };
 const comparison = { agree: 0, disagree: [], missingInTable: 0, pivotFixes: [], missing: [] };
 
@@ -224,7 +229,19 @@ for (const bucket of Object.values(table)) {
 
     const folderAbs = path.join(root, entry.folder_path);
     const parts = {};
-    for (const partName of meshParts(folderAbs, entry.files)) {
+    const meshSet = meshParts(folderAbs, entry.files);
+    // Which drawn part hangs off which: a connection's parent="..." names a part (or a connection)
+    // the game moves it with, e.g. the algae chains of prod_ter_proteinpaste (iklink). part_main
+    // never moves, so parts hanging off it are left where they are.
+    for (const partName of meshSet) {
+      const conn = byPart.get(partName);
+      if (!conn?.parent) continue;
+      const pRef = conn.parent.toLowerCase();
+      const parentPart = byPart.has(pRef) ? pRef : conns.get(conn.parent)?.parts.find(p => meshSet.has(p));
+      if (!parentPart || parentPart === partName || parentPart === 'part_main' || !meshSet.has(parentPart)) continue;
+      (partParents[key] ||= {})[partName] = parentPart;
+    }
+    for (const partName of meshSet) {
       const conn = byPart.get(partName);
       if (!conn) continue;
       // part_main is placed by the group shift (part-main-offsets.json); a pivot on it moves its
@@ -327,6 +344,14 @@ if (WRITE || FIX_PIVOTS || ADD_MISSING) {
   if (WRITE) console.log(`Wrote ${newKeys.length} new components to ${path.relative(root, OFFSETS_PATH)}`);
   if (FIX_PIVOTS) console.log(`Rewrote ${comparison.pivotFixes.length} existing pivot parts in ${path.relative(root, OFFSETS_PATH)}`);
   if (ADD_MISSING) console.log(`Added ${comparison.missing.length} missing parts to ${path.relative(root, OFFSETS_PATH)}`);
-} else {
+}
+const parentLinks = Object.values(partParents).reduce((n, m) => n + Object.keys(m).length, 0);
+console.log(`Part parents: ${parentLinks} parts in ${Object.keys(partParents).length} components hang off another drawn part`);
+if (WRITE || FIX_PIVOTS || ADD_MISSING || PARENTS) {
+  const sorted = Object.fromEntries(Object.keys(partParents).sort().map(k => [k, Object.fromEntries(Object.keys(partParents[k]).sort().map(p => [p, partParents[k][p]]))]));
+  fs.writeFileSync(PARENTS_PATH, JSON.stringify(sorted, null, 1) + '\n');
+  console.log(`Wrote ${path.relative(root, PARENTS_PATH)}`);
+}
+if (!(WRITE || FIX_PIVOTS || ADD_MISSING || PARENTS)) {
   console.log('Report only; run with --write to add the new components.');
 }

@@ -86,6 +86,7 @@ import {
 import PART_MAIN_OFFSETS from './part-main-offsets.json' with { type: 'json' };
 import TEXTURE_LOOKUPS from './texture-lookups.json' with { type: 'json' };
 import COMPONENT_OFFSETS from './component-offsets.json' with { type: 'json' };
+import COMPONENT_PART_PARENTS from './component-part-parents.json' with { type: 'json' };
 import PIER_LANE_BOXES from './pier-lane-boxes.json' with { type: 'json' };
 import { pairModulesAtSnaps } from './snap-pairing.js';
 import SNAP_FACINGS from './snap-facings.json' with { type: 'json' };
@@ -1888,6 +1889,7 @@ export class StationViewer {
     return loadModuleMesh(this, mod, {
       partMainOffsets: PART_MAIN_OFFSETS,
       componentOffsets: COMPONENT_OFFSETS,
+      partParents: COMPONENT_PART_PARENTS,
       log: sendLogToVSC
     });
   }

@@ -24,8 +24,37 @@ const consoleLog = (msg, type = 'log') => (type === 'warn' ? console.warn(msg) :
  * @typedef {Object} ModuleMeshOptions
  * @property {Record<string, number[]>} [partMainOffsets] Per-module part_main placement offsets.
  * @property {Record<string, Object>} [componentOffsets] Per-component placement offsets.
+ * @property {Record<string, Record<string, string>>} [partParents] Per-component child part -> the
+ *   drawn part it hangs off (component-part-parents.json), so it follows that part's animation.
  * @property {(msg: string, type?: 'log'|'warn'|'error') => void} [log] Diagnostic logger.
  */
+
+/**
+ * Hangs each child part under the part the game moves it with (the connection's parent="..."),
+ * keeping where it is drawn: a chain such as prod_ter_proteinpaste's algae (anim_alge01_004 ->
+ * _005 -> _006) then bends as one when its parts animate, instead of each segment swinging on
+ * its own and drifting apart. Animators read their rest pose on the first update, so they work
+ * in the parent's frame afterwards.
+ * @param {THREE.Group} meshGroup the module's mesh group, holding every part scene
+ * @param {THREE.Object3D[]} scenes the part scenes
+ * @param {Record<string, string>|undefined} links child part name -> parent part name
+ * @returns {number} how many parts were attached
+ */
+export function attachChildParts(meshGroup, scenes, links) {
+  if (!links) return 0;
+  const byName = new Map(scenes.map(s => [String(s.userData.partName || s.name).toLowerCase(), s]));
+  const isAncestor = (a, b) => { for (let o = b; o; o = o.parent) if (o === a) return true; return false; };
+  meshGroup.updateMatrixWorld(true);
+  let attached = 0;
+  for (const [child, parent] of Object.entries(links)) {
+    const c = byName.get(child);
+    const p = byName.get(parent);
+    if (!c || !p || c === p || isAncestor(c, p)) continue;
+    p.attach(c);
+    attached++;
+  }
+  return attached;
+}
 
 /** Stencil value the anim_cross mask writes and anim_arrows tests for. */
 export const ARROW_MASK_STENCIL_REF = 1;
@@ -421,7 +450,7 @@ export function addXmlLaneBoxes(meshGroup, loadedScenes, boxes) {
   return added;
 }
 
-export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componentOffsets = {}, allowAnimations, log = consoleLog } = {}) {
+export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componentOffsets = {}, partParents = {}, allowAnimations, log = consoleLog } = {}) {
   const { baseName, folderPath } = host.resolveModuleAssetEntry(mod.macro);
   const activeFiles = host.getModuleActiveComponentFiles(mod.index, mod.macro);
   const uniqueUrls = folderPath ? activeFiles.map(f => `${folderPath}/${f}`) : [];
@@ -1018,6 +1047,7 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
     for (const scene of loadedScenes) {
       meshGroup.add(scene);
     }
+    attachChildParts(meshGroup, loadedScenes, partParents[baseName]);
   }
 
   if (offset) {
