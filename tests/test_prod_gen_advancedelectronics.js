@@ -2,6 +2,8 @@ import assert from 'assert';
 import * as THREE from 'three';
 import { StationViewer } from '../src/viewer.js';
 import COMPONENT_OFFSETS from '../src/component-offsets.json' with { type: 'json' };
+import PART_PARENTS from '../src/component-part-parents.json' with { type: 'json' };
+import { attachChildParts } from '../packages/adapter-three/src/models/module-mesh-loader.js';
 
 console.log('[*] Testing prod_gen_advancedelectronics Assets, Animations, and Texture Mappings...');
 
@@ -160,12 +162,14 @@ const offsets = COMPONENT_OFFSETS['prod_gen_advancedelectronics'];
 assert.ok(offsets, 'prod_gen_advancedelectronics offsets must exist');
 
 // Verify core centrifuge offset
-assert.deepStrictEqual(offsets['anim_centrifuge'], [110.487, 2.7689, 0.7379], 'anim_centrifuge offset');
-assert.deepStrictEqual(offsets['anim_bubbles'], [110.2217, 2.8705, 0.9315], 'anim_bubbles offset');
-assert.deepStrictEqual(offsets['fx_shield'], [109.5315, 2.7688, -0.4631], 'fx_shield offset');
-assert.deepStrictEqual(offsets['detail_s_main'], [110.4871, 2.7689, 0.7934], 'detail_s_main offset');
-assert.deepStrictEqual(offsets['anim_capsule_fast01'], [204.0819, 2.7689, 533.9253], 'anim_capsule_fast01 offset');
-assert.deepStrictEqual(offsets['anim_capsule_fast08'], [16.8684, 2.7689, 533.9837], 'anim_capsule_fast08 offset');
+// Component-space offsets from the game XML (generate-component-offsets.js), compared to 1 mm
+const near = (got, want, msg) => assert.ok(Array.isArray(got) && want.every((w, i) => Math.abs(got[i] - w) < 0.001), `${msg}: ${JSON.stringify(got)} vs ${JSON.stringify(want)}`);
+near(offsets['anim_centrifuge'], [110.487, 2.7689, 0.7379], 'anim_centrifuge offset');
+near(offsets['anim_bubbles'], [110.2217, 2.8705, 0.9315], 'anim_bubbles offset');
+near(offsets['fx_shield'], [109.5315, 2.7688, -0.4631], 'fx_shield offset');
+near(offsets['detail_s_main'], [110.4871, 2.7689, 0.7934], 'detail_s_main offset');
+near(offsets['anim_capsule_fast01'], [204.0819, 2.7689, 533.9253], 'anim_capsule_fast01 offset');
+near(offsets['anim_capsule_fast08'], [16.8684, 2.7689, 533.9837], 'anim_capsule_fast08 offset');
 
 // Test offset application simulation matching loadModuleMesh
 const testScene = new THREE.Group();
@@ -647,7 +651,8 @@ for (const n of simonXsNums) {
   assert.ok(advOffsets[`detail_xs_simon_${n}`], `Offset for detail_xs_simon_${n} must exist`);
 }
 assert.ok(advOffsets['fx_corehull_main'], 'Offset for fx_corehull_main must exist');
-assert.deepStrictEqual(advOffsets['fx_decals'], [0.0, 0.0, 0.0], 'Offset for fx_decals must be [0, 0, 0]');
+// fx_decals sits at the component origin: no entry, or an all-zero one
+assert.ok((advOffsets['fx_decals'] || [0, 0, 0]).slice(0, 3).every(v => Math.abs(v) < 0.001), 'fx_decals at the origin');
 console.log('  ✓ [PASS] Connection offsets for all 26 target parts verified');
 
 // 14. Verification of damagearea-lod0 (Invisible Hazard Trigger Volume - No 1.1km Glowing Beam Artifact)
@@ -670,130 +675,73 @@ console.log('  ✓ [PASS] damagearea-lod0 correctly classified as hidden hazard 
 
 
 
-// 15. Verification of anim_capsuleholder11..16, anim_capsuleshield, and anim_holdershield
-// Hierarchy, Offsets, and Synchronized Mechanical Rotation with anim_centrifuge
+// 15. anim_capsuleholder11..16, anim_capsuleshield and anim_holdershield hang off anim_centrifuge
+// (component-part-parents.json, from the XML parent="anim_centrifuge"). Their offsets are in component
+// space like every other part; the loader attaches them under the centrifuge keeping where they are drawn,
+// so the centrifuge's own animation (its .ANI clip) carries them round.
 const advCentOffsets = COMPONENT_OFFSETS['prod_gen_advancedelectronics'];
-assert.deepStrictEqual(advCentOffsets['anim_capsuleholder11'], [0.0, 0.0, -532.7382], 'anim_capsuleholder11 offset');
-assert.deepStrictEqual(advCentOffsets['anim_capsuleholder12'], [0.0, 0.0, -319.3197], 'anim_capsuleholder12 offset');
-assert.deepStrictEqual(advCentOffsets['anim_capsuleholder13'], [0.0, 0.0, -106.4756], 'anim_capsuleholder13 offset');
-assert.deepStrictEqual(advCentOffsets['anim_capsuleholder14'], [0.0, 0.0, 106.842], 'anim_capsuleholder14 offset');
-assert.deepStrictEqual(advCentOffsets['anim_capsuleholder15'], [0.0, 0.0, 319.566], 'anim_capsuleholder15 offset');
-assert.deepStrictEqual(advCentOffsets['anim_capsuleholder16'], [0.0, 0.0, 532.5207], 'anim_capsuleholder16 offset');
-assert.deepStrictEqual(advCentOffsets['anim_capsuleshield'], [0.0, 0.0, -0.108], 'anim_capsuleshield offset');
-assert.deepStrictEqual(advCentOffsets['anim_holdershield'], [0.0, -0.9231, -0.9463], 'anim_holdershield offset');
-console.log('  ✓ [PASS] Capsuleholder and shield local connection offsets verified');
+const centrifugeChildren = ['anim_capsuleholder11', 'anim_capsuleholder12', 'anim_capsuleholder13', 'anim_capsuleholder14',
+  'anim_capsuleholder15', 'anim_capsuleholder16', 'anim_capsuleshield', 'anim_holdershield'];
+for (const c of centrifugeChildren) assert.strictEqual(PART_PARENTS.prod_gen_advancedelectronics?.[c], 'anim_centrifuge', `${c} hangs off anim_centrifuge`);
+near(advCentOffsets['anim_capsuleholder11'], [110.487, 2.768808, -532.0003], 'anim_capsuleholder11 offset');
+near(advCentOffsets['anim_capsuleholder16'], [110.487, 2.768992, 533.2586], 'anim_capsuleholder16 offset');
+near(advCentOffsets['anim_capsuleshield'], [110.4869, 2.768869, 0.6299288], 'anim_capsuleshield offset');
+console.log('  ✓ [PASS] Capsule holders and shields hang off the centrifuge, placed in component space');
 
-// Test hierarchical scene attachment & synchronized mechanical rotation
-const testCentrifuge = new THREE.Group();
-testCentrifuge.name = 'anim_centrifuge';
-testCentrifuge.userData.partName = 'anim_centrifuge';
-testCentrifuge.position.set(110.487, 2.7689, 0.7379);
-
-const testHolder = new THREE.Group();
-testHolder.name = 'anim_capsuleholder11';
-testHolder.userData.partName = 'anim_capsuleholder11';
-testHolder.position.set(0.0, 0.0, -532.7382);
-
-// Add a test mesh to the holder at radius Y = -25m
-const holderMeshGeom = new THREE.BoxGeometry(2, 2, 2);
-const holderTestMesh = new THREE.Mesh(holderMeshGeom);
+const placed = (name) => {
+  const g = new THREE.Group();
+  g.name = name;
+  g.userData.partName = name;
+  const o = advCentOffsets[name] || [0, 0, 0];
+  g.position.set(o[0], o[1], o[2]);
+  if (o.length >= 7) g.quaternion.set(o[3], o[4], o[5], o[6]);
+  return g;
+};
+const testMeshGroup = new THREE.Group();
+const testCentrifuge = placed('anim_centrifuge');
+const testHolder = placed('anim_capsuleholder11');
+const holderTestMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2));
 holderTestMesh.position.set(0, -25, 0);
 testHolder.add(holderTestMesh);
-
-// Parent holder to centrifuge as done in loadModuleMesh
-testCentrifuge.add(testHolder);
-
-const testMeshGroup = new THREE.Group();
-testMeshGroup.add(testCentrifuge);
-
-// Initial position at rotation = 0
+testMeshGroup.add(testCentrifuge, testHolder);
 testMeshGroup.updateMatrixWorld(true);
-const vPos0 = new THREE.Vector3();
-holderTestMesh.getWorldPosition(vPos0);
-assert.strictEqual(vPos0.x, 110.487, 'Holder mesh initial X must equal centrifuge center X');
-assert.ok(Math.abs(vPos0.y - (2.7689 - 25)) < 0.001, 'Holder mesh initial Y must be at radius -25m below shaft');
-assert.ok(Math.abs(vPos0.z - (0.7379 - 532.7382)) < 0.001, 'Holder mesh initial Z must match connection Z');
+const vPos0 = holderTestMesh.getWorldPosition(new THREE.Vector3());
+assert.strictEqual(attachChildParts(testMeshGroup, [testCentrifuge, testHolder], PART_PARENTS.prod_gen_advancedelectronics), 1);
+assert.strictEqual(testHolder.parent, testCentrifuge, 'the holder is attached under the centrifuge');
+testMeshGroup.updateMatrixWorld(true);
+assert.ok(holderTestMesh.getWorldPosition(new THREE.Vector3()).distanceTo(vPos0) < 1e-6, 'attaching keeps the holder where it is drawn');
 
-// Rotate centrifuge by 90 degrees (Math.PI / 2)
+// The centrifuge turns: the holder goes round its axis (z), keeping its distance and its z
+const axis = testCentrifuge.getWorldPosition(new THREE.Vector3());
 testCentrifuge.rotation.z = Math.PI / 2;
 testMeshGroup.updateMatrixWorld(true);
-const vPos90 = new THREE.Vector3();
-holderTestMesh.getWorldPosition(vPos90);
+const vPos90 = holderTestMesh.getWorldPosition(new THREE.Vector3());
+assert.ok(vPos90.distanceTo(vPos0) > 1, 'the holder moved with the centrifuge');
+const radius = (p) => Math.hypot(p.x - axis.x, p.y - axis.y);
+assert.ok(Math.abs(radius(vPos90) - radius(vPos0)) < 0.001, 'the holder keeps its distance from the centrifuge axis');
+assert.ok(Math.abs(vPos90.z - vPos0.z) < 0.001, 'the holder keeps its place along the axis');
+console.log('  ✓ [PASS] anim_capsuleholder goes round with the centrifuge it is attached to');
 
-// At 90 deg rotation, (0, -25) rotates to (25, 0)
-assert.ok(Math.abs(vPos90.x - (110.487 + 25)) < 0.001, 'Holder mesh X must rotate 90 deg to right of shaft');
-assert.ok(Math.abs(vPos90.y - 2.7689) < 0.001, 'Holder mesh Y must rotate 90 deg to shaft level');
-assert.ok(Math.abs(vPos90.z - (0.7379 - 532.7382)) < 0.001, 'Holder mesh Z must remain constant during rotation');
-console.log('  ✓ [PASS] anim_capsuleholder synchronized circular mechanical rotation around centrifuge verified');
-
-// 16. Verification of detail_xs_simon Flight Animation & detail_s_simon_container Parenting
+// 16. Each detail_s_simon_container hangs off its detail_xs_simon bot and travels with it
 const advOffsetsAll = COMPONENT_OFFSETS['prod_gen_advancedelectronics'];
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_01'], [-6.3215, 0.0, 0.0], 'detail_s_simon_container_01 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_02'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_02 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_03'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_03 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_04'], [6.3214, 0.0, 0.0], 'detail_s_simon_container_04 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_05'], [0.0, -6.3215, 0.0], 'detail_s_simon_container_05 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_06'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_06 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_07'], [0.0, -6.3215, 0.0], 'detail_s_simon_container_07 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_08'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_08 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_09'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_09 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_10'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_10 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_12'], [0.0, -6.3214, 0.0], 'detail_s_simon_container_12 offset');
-assert.deepStrictEqual(advOffsetsAll['detail_s_simon_container_18'], [-6.3214, 0.0, 0.0], 'detail_s_simon_container_18 offset');
-console.log('  ✓ [PASS] detail_s_simon_container parent-relative connection offsets verified');
-
-// Test Simon flying bot flight trajectory & synchronized container movement
-const testSimonBot = new THREE.Group();
-testSimonBot.name = 'detail_xs_simon_01';
-testSimonBot.userData.partName = 'detail_xs_simon_01';
-const simonInitPos = advOffsetsAll['detail_xs_simon_01'];
-testSimonBot.position.set(simonInitPos[0], simonInitPos[1], simonInitPos[2]);
-
-const testSimonContainer = new THREE.Group();
-testSimonContainer.name = 'detail_s_simon_container_01';
-testSimonContainer.userData.partName = 'detail_s_simon_container_01';
-testSimonContainer.position.set(-6.3215, 0, 0);
-
-// Parent container to flying bot
-testSimonBot.add(testSimonContainer);
-
-const simonBasePos = testSimonBot.position.clone();
-const simonDelta = [-334.78, 0.08, -11.66];
-const simonPeriod = 80.0;
-
-const simonAnim = {
-  object: testSimonBot,
-  update: (time) => {
-    const phase = (time * (Math.PI * 2 / simonPeriod)) % (Math.PI * 2);
-    const u = (1 - Math.cos(phase)) * 0.5;
-    testSimonBot.position.x = simonBasePos.x + u * simonDelta[0];
-    testSimonBot.position.y = simonBasePos.y + u * simonDelta[1] + Math.sin(time * 2.2) * 1.2;
-    testSimonBot.position.z = simonBasePos.z + u * simonDelta[2];
-    testSimonBot.rotation.z = Math.sin(phase) * 0.08;
-    testSimonBot.rotation.x = Math.sin(time * 2.8) * 0.03;
-  }
-};
-
-// Test t=0 (starting dock position)
-simonAnim.update(0);
-testSimonBot.updateMatrixWorld(true);
-assert.strictEqual(testSimonBot.position.x, simonInitPos[0], 'Simon bot at t=0 must be at initial X');
-
-const containerWorldPos0 = new THREE.Vector3();
-testSimonContainer.getWorldPosition(containerWorldPos0);
-assert.ok(Math.abs(containerWorldPos0.x - (simonInitPos[0] - 6.3215)) < 0.001, 'Container at t=0 must be at bot X - 6.32m');
-
-// Test t=40s (half-way through 80s cycle, u = 1.0, maximum travel distance)
-simonAnim.update(40);
-testSimonBot.updateMatrixWorld(true);
-const expectedMaxX = simonInitPos[0] + simonDelta[0];
-assert.ok(Math.abs(testSimonBot.position.x - expectedMaxX) < 0.001, 'Simon bot at t=40s must reach target destination waypoint');
-
-const containerWorldPos40 = new THREE.Vector3();
-testSimonContainer.getWorldPosition(containerWorldPos40);
-assert.ok(Math.abs(containerWorldPos40.x - (expectedMaxX - 6.3215)) < 0.001, 'Container at t=40s must travel with bot to destination');
-assert.ok(Math.abs(containerWorldPos40.x - containerWorldPos0.x - simonDelta[0]) < 0.001, 'Container displacement must exactly equal bot displacement');
-console.log('  ✓ [PASS] detail_xs_simon autonomous flight trajectory & synchronized container transport verified');
+for (const n of simonContainerNums) {
+  assert.strictEqual(PART_PARENTS.prod_gen_advancedelectronics?.[`detail_s_simon_container_${n}`], `detail_xs_simon_${n}`, `container ${n} hangs off bot ${n}`);
+}
+// Container 01: 6.32 m from its bot along the bot's turned x (connection (6.3215, 0, 0) on the bot, X mirrored)
+const testSimonBot = placed('detail_xs_simon_01');
+const testSimonContainer = placed('detail_s_simon_container_01');
+const simonGroup = new THREE.Group();
+simonGroup.add(testSimonBot, testSimonContainer);
+simonGroup.updateMatrixWorld(true);
+assert.ok(Math.abs(testSimonBot.position.distanceTo(testSimonContainer.position) - 6.3215) < 0.001, 'container 01 sits 6.32 m from its bot');
+attachChildParts(simonGroup, [testSimonBot, testSimonContainer], PART_PARENTS.prod_gen_advancedelectronics);
+assert.strictEqual(testSimonContainer.parent, testSimonBot, 'container attached under its bot');
+const cont0 = testSimonContainer.getWorldPosition(new THREE.Vector3());
+testSimonBot.position.add(new THREE.Vector3(-334.78, 0.08, -11.66));
+simonGroup.updateMatrixWorld(true);
+const cont1 = testSimonContainer.getWorldPosition(new THREE.Vector3());
+assert.ok(cont1.clone().sub(cont0).distanceTo(new THREE.Vector3(-334.78, 0.08, -11.66)) < 0.001, 'the container travels with its bot');
+console.log('  ✓ [PASS] detail_s_simon_container placed 6.32 m off its bot and carried with it');
 
 // 17. Verification of Animation Halting (Stop Anim) & Subdue Defaults for prod_gen_advancedelectronics
 assert.strictEqual(typeof viewer.setModuleAnimationHalted, 'function', 'viewer.setModuleAnimationHalted must exist');

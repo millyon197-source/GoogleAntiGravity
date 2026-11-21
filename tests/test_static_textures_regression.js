@@ -40,9 +40,8 @@ assert(!viewerCode.includes("url.toLowerCase().includes('glow')"),
 assert(!viewerCode.includes("binUrl.toLowerCase().includes('glow')"),
   'binUrl.includes("glow") in createBinaryMesh isPoslight must be removed');
 
-// fx_anim_stomp_smoke must not be stomped in animatedParts
-assert(viewerCode.includes("partBase.startsWith('anim_stomp') && !partBase.includes('wheels')"),
-  'Stamping pistons in animatedParts must check partBase.startsWith("anim_stomp") to exclude smoke FX');
+// No hand-made piston motion is left to catch fx_anim_stomp_smoke: parts move only by their .ANI clip
+assert(!viewerCode.includes("startsWith('anim_stomp')"), 'no hand-made stamping-piston rule');
 
 console.log('  ✓ [PASS] All overly broad string conditionals removed from viewer.js');
 
@@ -134,32 +133,5 @@ await viewer.applyTexturesToMeshGroup(
 
 assert.strictEqual(viewer.animatedTextures.length, initialAnimCount, 'anim_stones must NOT add any animated textures');
 console.log('  ✓ [PASS] Fluid mud animates cleanly while rocks, gravel, and ore remain completely static');
-
-// 5. Test fx_anim_stomp_smoke is excluded from mechanical stamping pistons
-console.log('  [4] Testing smoke FX exclusion from mechanical stamping pistons...');
-viewer.animatedParts = [];
-
-const smokeScene = new THREE.Group();
-const smokeUrl = 'assets1/structures/production/prod_gen_cutcrystals_data/fx_anim_stomp_smoke02-lod0.dae';
-const smokePartBase = smokeUrl.split('/').pop().replace(/-lod\d+\.dae$/i, '').toLowerCase();
-
-// Simulate the matching condition from viewer.js
-if (smokeUrl.toLowerCase().includes('anim_stomp') && smokePartBase.startsWith('anim_stomp') && !smokePartBase.includes('wheels')) {
-  viewer.animatedParts.push({ object: smokeScene, update: () => {} });
-}
-
-assert.strictEqual(viewer.animatedParts.length, 0, 'fx_anim_stomp_smoke must NOT register in animatedParts');
-
-// Actual stamping piston must register
-const pistonScene = new THREE.Group();
-const pistonUrl = 'assets1/structures/production/prod_gen_cutcrystals_data/anim_stomp01-lod0.dae';
-const pistonPartBase = pistonUrl.split('/').pop().replace(/-lod\d+\.dae$/i, '').toLowerCase();
-
-if (pistonUrl.toLowerCase().includes('anim_stomp') && pistonPartBase.startsWith('anim_stomp') && !pistonPartBase.includes('wheels')) {
-  viewer.animatedParts.push({ object: pistonScene, update: () => {} });
-}
-
-assert.strictEqual(viewer.animatedParts.length, 1, 'anim_stomp01 must register in animatedParts');
-console.log('  ✓ [PASS] Mechanical stamping machine correctly identifies pistons and ignores smoke FX');
 
 console.log('\n[SUCCESS] All Static Textures Animation Regression Tests Passed Cleanly!');

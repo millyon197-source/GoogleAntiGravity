@@ -1,13 +1,21 @@
 import assert from 'node:assert';
 import * as THREE from 'three';
 import { StationViewer } from '../src/viewer.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import COMPONENT_OFFSETS from '../src/component-offsets.json' with { type: 'json' };
-import {
-  loadModuleMesh,
-  CRANE_HOLDER_KEYFRAMES,
-  CRANE_ARM_KEYFRAMES,
-  interpolateKeyframes
-} from '@x4/adapter-three';
+import PART_PARENTS from '../src/component-part-parents.json' with { type: 'json' };
+import { loadModuleMesh, loadModuleAniClips } from '@x4/adapter-three';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// The game's own animation file, read from disk the way the viewer fetches it
+const fetchLocal = async (url) => {
+  const file = path.join(root, url.replace(/^\//, ''));
+  if (!fs.existsSync(file)) return { ok: false };
+  const buf = fs.readFileSync(file);
+  return { ok: true, arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) };
+};
 
 console.log('[*] Testing prod_arg_wheat Hierarchy, Component Offsets & Crane Animation Pipeline...');
 
@@ -20,13 +28,15 @@ assert.ok(entry.defaultFiles.includes('anim_crane_holder-lod0.dae'), 'must inclu
 assert.ok(entry.defaultFiles.includes('anim_arm-lod0.dae'), 'must include anim_arm-lod0.dae');
 console.log('  ✓ [PASS] resolveModuleAssetEntry discovers anim_main, anim_crane_holder, and anim_arm');
 
-// 2. Verify component connection offsets in component-offsets.json
+// 2. Offsets are in component space (generated from the XML); the hierarchy comes from component-part-parents.json
 const offsets = COMPONENT_OFFSETS['prod_arg_wheat'];
 assert.ok(offsets, 'prod_arg_wheat offsets must exist');
-assert.deepStrictEqual(offsets['anim_main'], [0, -2.0394, 15.7267], 'anim_main offset');
-assert.deepStrictEqual(offsets['anim_crane_holder'], [174.896, -38.6334, -542.5852], 'anim_crane_holder local offset relative to anim_main');
-assert.deepStrictEqual(offsets['anim_arm'], [-12.7555, -6.5071, -89.7079], 'anim_arm local offset relative to anim_crane_holder');
-console.log('  ✓ [PASS] Authentic local connection offsets verified in component-offsets.json');
+const near = (got, want, msg) => assert.ok(Array.isArray(got) && want.every((w, i) => Math.abs(got[i] - w) < 0.001), `${msg}: ${JSON.stringify(got)}`);
+near(offsets['anim_main'], [0, -2.039436, 15.72672], 'anim_main offset');
+near(offsets['anim_crane_holder'], [174.896, -40.67284, -526.8585], 'anim_crane_holder offset');
+near(offsets['anim_arm'], [162.1404, -47.17998, -616.5664], 'anim_arm offset');
+assert.deepStrictEqual(PART_PARENTS['prod_arg_wheat'], { anim_arm: 'anim_crane_holder', anim_crane_holder: 'anim_main' }, 'crane chain from the XML');
+console.log('  ✓ [PASS] Component-space offsets and the XML crane chain verified');
 
 // 3. Test loadModuleMesh hierarchical parenting and rest placement
 const mockHost = {
@@ -49,10 +59,12 @@ const mockHost = {
     return grp;
   },
   applyTexturesToMeshGroup: async () => {},
+  shouldAnimateModule: () => true,
+  loadModuleAnimations: (folder) => loadModuleAniClips(folder, fetchLocal),
   animatedParts: []
 };
 
-const moduleRoot = await loadModuleMesh(mockHost, { macro: 'prod_arg_wheat_macro', index: 0 }, { componentOffsets: COMPONENT_OFFSETS });
+const moduleRoot = await loadModuleMesh(mockHost, { macro: 'prod_arg_wheat_macro', index: 0 }, { componentOffsets: COMPONENT_OFFSETS, partParents: PART_PARENTS });
 assert.ok(moduleRoot, 'moduleRoot must load');
 
 const meshGroup = moduleRoot.getObjectByName('module_mesh_group');
@@ -94,50 +106,38 @@ assert.ok(Math.abs(armWorldPos.y - (-47.18)) < 0.005, 'arm world Y must match co
 assert.ok(Math.abs(armWorldPos.z - (-616.5664)) < 0.005, 'arm world Z must match composed Z (-616.5664)');
 console.log('  ✓ [PASS] Rest world positions match generated connection compositions');
 
-// 5. Test animation registration in animatedParts
-const craneAnim = mockHost.animatedParts.find(p => p.object === craneHolder);
-assert.ok(craneAnim, 'anim_crane_holder must be registered in animatedParts');
-const armAnim = mockHost.animatedParts.find(p => p.object === animArm);
-assert.ok(armAnim, 'anim_arm must be registered in animatedParts');
+// 5. Animation comes from the game's PROD_ARG_WHEAT_DATA.ANI (mode_active, 66.67 s), nothing hand-made
+const haveAni = fs.existsSync(path.join(root, 'assets1/structures/production/PROD_ARG_WHEAT_DATA.ANI'));
+if (haveAni) {
+  const craneAnim = mockHost.animatedParts.find(p => p.object === craneHolder);
+  const armAnim = mockHost.animatedParts.find(p => p.object === animArm);
+  assert.ok(craneAnim && craneAnim.source === 'ani', 'anim_crane_holder animated from the .ANI');
+  assert.ok(armAnim && armAnim.source === 'ani', 'anim_arm animated from the .ANI');
 
-// 6. Test animation motion over cycle
-// At t = 0
-craneAnim.update(0);
-armAnim.update(0);
-moduleRoot.updateMatrixWorld(true);
-assert.ok(Math.abs(craneHolder.position.x - 174.896) < 0.001, 'crane at rest t=0');
-assert.ok(Math.abs(animArm.position.z - (-89.7079)) < 0.001, 'arm at rest t=0');
+  craneAnim.update(0);
+  armAnim.update(0);
+  const craneRest = craneHolder.position.clone();
+  const armRest = animArm.position.clone();
+  moduleRoot.updateMatrixWorld(true);
+  const armWorld0 = animArm.getWorldPosition(new THREE.Vector3());
 
-// At t = 6.67s (crane moves along X by +228.514, arm extends along Z by +151.383)
-craneAnim.update(6.67);
-armAnim.update(6.67);
-moduleRoot.updateMatrixWorld(true);
+  // At 6.67 s the crane has run +228.5 m along its rail (x) and the arm reached +151.4 m (z)
+  craneAnim.update(6.67);
+  armAnim.update(6.67);
+  moduleRoot.updateMatrixWorld(true);
+  assert.ok(Math.abs(craneHolder.position.x - craneRest.x - 228.514) < 0.5, `crane x at 6.67 s: +${(craneHolder.position.x - craneRest.x).toFixed(2)}`);
+  assert.ok(Math.abs(animArm.position.z - armRest.z - 151.383) < 0.5, `arm z at 6.67 s: +${(animArm.position.z - armRest.z).toFixed(2)}`);
+  // The arm hangs off the crane holder, so it rides along the rail with it
+  const armWorld6 = animArm.getWorldPosition(new THREE.Vector3());
+  assert.ok(Math.abs(armWorld6.x - armWorld0.x - 228.514) < 0.5, 'arm carried along x by the crane holder');
 
-const expectedCraneX = 174.896 + 228.514; // 403.41
-assert.ok(Math.abs(craneHolder.position.x - expectedCraneX) < 0.05, `crane X at 6.67s (${craneHolder.position.x}) should be ~${expectedCraneX}`);
-const expectedArmZ = -89.7079 + 151.383; // 61.6751
-assert.ok(Math.abs(animArm.position.z - expectedArmZ) < 0.05, `arm Z at 6.67s (${animArm.position.z}) should be ~${expectedArmZ}`);
-
-// Verify hierarchical synchronization: arm world position along X moved WITH crane holder!
-const armWorldPos6s = new THREE.Vector3();
-animArm.getWorldPosition(armWorldPos6s);
-const expectedArmWorldX = expectedCraneX - 12.7555; // 390.6545
-assert.ok(Math.abs(armWorldPos6s.x - expectedArmWorldX) < 0.05, `arm world X (${armWorldPos6s.x}) must move with crane holder (${expectedArmWorldX})`);
-
-// At t = 13.33s (crane is stationary at 403.41 while working)
-craneAnim.update(13.33);
-assert.ok(Math.abs(craneHolder.position.x - expectedCraneX) < 0.05, 'crane X remains stationary during working period');
-
-// At t = 23.33s (crane moves across to opposite side: deltaX = -311.015)
-craneAnim.update(23.33);
-const expectedCraneX23 = 174.896 - 311.015; // -136.119
-assert.ok(Math.abs(craneHolder.position.x - expectedCraneX23) < 0.05, `crane X at 23.33s (${craneHolder.position.x}) should be ~${expectedCraneX23}`);
-
-// At t = 66.67s (cycle completed, back to rest)
-craneAnim.update(66.667);
-armAnim.update(66.667);
-assert.ok(Math.abs(craneHolder.position.x - 174.896) < 0.05, 'crane returns to rest at end of cycle');
-assert.ok(Math.abs(animArm.position.z - (-89.7079)) < 0.05, 'arm returns to rest at end of cycle');
-
-console.log('  ✓ [PASS] Mechanical animation loop verified: crane traverses X track, arm extends in Z hierarchically');
+  // End of the cycle: back at rest
+  craneAnim.update(66.667);
+  armAnim.update(66.667);
+  assert.ok(craneHolder.position.distanceTo(craneRest) < 0.05, 'crane back at rest at the end of the cycle');
+  assert.ok(animArm.position.distanceTo(armRest) < 0.05, 'arm back at rest at the end of the cycle');
+  console.log('  ✓ [PASS] Crane runs its rail and the arm rides with it, from the game animation');
+} else {
+  console.log('  - game animation file not present; animation checks skipped');
+}
 console.log('\n[SUCCESS] All prod_arg_wheat crane and arm positioning/animation tests passed!');

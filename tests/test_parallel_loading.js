@@ -43,7 +43,13 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     },
     loadColladaModel: async () => { throw new Error('not expected'); },
     loadBinaryModel: async () => { throw new Error('not expected'); },
-    applyTexturesToMeshGroup: async () => {}
+    applyTexturesToMeshGroup: async () => {},
+    // Game animation clips for the two anim_ parts (parts without one stay still)
+    loadModuleAnimations: async () => {
+      const k = (time, value) => ({ time, value, interp: [2, 2, 2], handles: [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]] });
+      const clip = (part) => ({ part, name: 'loop', duration: 2, position: [k(0, [0, 0, 0]), k(2, [0, 1, 0])], rotation: [], scale: [] });
+      return new Map([['anim_vent', [clip('anim_vent')]], ['anim_arm', [clip('anim_arm')]]]);
+    }
   };
   const logged = [];
   const root = await loadModuleMesh(host, { macro: 'test_mod_macro', index: 3 }, { log: (m, t) => logged.push([m, t]) });

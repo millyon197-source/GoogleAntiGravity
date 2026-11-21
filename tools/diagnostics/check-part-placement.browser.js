@@ -97,3 +97,79 @@ export async function checkModuleParts(viewer, mod, { parts = null, ref = 'part_
   }
   return { key: e.baseName, ref: refName, rows };
 }
+
+/**
+ * Browser diagnostic: for each part the XML hangs off another drawn part (a connection's
+ * parent="..."), how far the drawn child's origin is from its attachment point on the drawn
+ * parent (the child connection's position in the parent's frame, X mirrored). Run it at rest and
+ * after stepping animations (viewer.updateAnimatedParts(t)): a chain that comes apart shows here.
+ *
+ * @param {object} viewer the StationViewer
+ * @param {object} mod a loaded module group
+ * @returns {Promise<{ key: string, rows: Array<{ child: string, parent: string, gap: number }> }|{ error: string }>}
+ */
+export async function checkChainLinks(viewer, mod) {
+  const e = viewer.resolveModuleAssetEntry(mod.userData.macro);
+  if (!e) return { error: `no asset entry for ${mod.userData.macro}` };
+  const xml = await (await fetch(e.folderPath.replace(/_data$/, '') + '.xml')).text();
+  const attr = (s, n) => s.match(new RegExp(`\\b${n}="([^"]*)"`))?.[1];
+  const byConn = new Map();
+  const links = [];
+  for (const mm of xml.matchAll(/<connection\b([^>]*?)(\/>|>([\s\S]*?)<\/connection>)/g)) {
+    const head = mm[1];
+    const body = mm[3] || '';
+    const parts = [...body.matchAll(/<part\b[^>]*\bname="([^"]+)"/g)].map(x => x[1].toLowerCase());
+    byConn.set(attr(head, 'name'), parts);
+    const parent = attr(head, 'parent');
+    const p = (body.split(/<parts\b|<animations\b/)[0].match(/<offset>([\s\S]*?)<\/offset>/)?.[1] || '').match(/<position\b[^>]*>/)?.[0];
+    if (parent && parts[0]) links.push({ child: parts[0], parent, pos: p ? ['x', 'y', 'z'].map(k => +attr(p, k) || 0) : [0, 0, 0] });
+  }
+  const drawn = new Map();
+  mod.traverse(o => { const n = o.userData?.partName?.toLowerCase(); if (n && !drawn.has(n)) drawn.set(n, o); });
+  const V = viewer.camera.position.constructor;
+  mod.updateMatrixWorld(true);
+  const rows = [];
+  for (const l of links) {
+    const parentName = drawn.has(l.parent.toLowerCase()) ? l.parent.toLowerCase() : byConn.get(l.parent)?.find(p => drawn.has(p));
+    const c = drawn.get(l.child);
+    const p = parentName && drawn.get(parentName);
+    if (!c || !p || parentName === 'part_main') continue;
+    const want = new V(-l.pos[0], l.pos[1], l.pos[2]).applyMatrix4(p.matrixWorld);
+    rows.push({ child: l.child, parent: parentName, gap: +c.getWorldPosition(new V()).distanceTo(want).toFixed(2) });
+  }
+  return { key: e.baseName, rows };
+}
+
+/**
+ * Loads the given module macros side by side (20 km apart) and reports, per module, how many
+ * parts are off their XML placement and how many chain links are open, at rest or after stepping
+ * the animations to each of `times` (seconds).
+ * @param {object} viewer the StationViewer
+ * @param {string[]} macros module macros
+ * @param {{ animate?: boolean, times?: number[], wait?: number }} [options]
+ * @returns {Promise<Record<string, string[]>>} one line per time, per module
+ */
+export async function measureModules(viewer, macros, { animate = false, times = [7, 23, 41], wait = 18000 } = {}) {
+  viewer.allowAllAnimations = animate;
+  const entries = macros.map((mc, i) => `<entry index="${i + 1}" macro="${mc}"><offset><position x="${i * 20000}" y="0" z="0"/></offset></entry>`).join('');
+  window.loadPlanFromXml(`<?xml version="1.0" encoding="UTF-8"?><plans><plan id="player_${Date.now()}" name="Measure" description="">${entries}</plan></plans>`);
+  await new Promise(r => setTimeout(r, wait));
+  const res = {};
+  for (const m of viewer.modulesGroup.children) {
+    const key = viewer.resolveModuleAssetEntry(m.userData.macro)?.baseName || m.userData.macro;
+    const lines = [];
+    for (const t of animate ? times : [null]) {
+      if (t !== null) viewer.updateAnimatedParts(t, 0.016);
+      const p = await checkModuleParts(viewer, m);
+      const c = await checkChainLinks(viewer, m);
+      const off = (p.rows || []).filter(x => x.off > 2);
+      const gaps = (c.rows || []).filter(x => x.gap > 1);
+      const offText = p.error || `${p.rows.length} parts, ${off.length} >2 m${off.length ? ` (${off.slice(0, 4).map(x => `${x.name}=${x.off}`).join(', ')})` : ''}`;
+      const gapText = `links ${(c.rows || []).length}, ${gaps.length} open >1 m${gaps.length ? ` (max ${Math.max(...gaps.map(x => x.gap))}: ${gaps.slice(0, 3).map(x => `${x.child}=${x.gap}`).join(', ')})` : ''}`;
+      lines.push(`${t === null ? 'rest' : `t=${t}`}: ${offText}; ${gapText}`);
+    }
+    res[key] = lines;
+  }
+  viewer.allowAllAnimations = false;
+  return res;
+}

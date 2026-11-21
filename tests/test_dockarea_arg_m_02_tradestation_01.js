@@ -1,6 +1,7 @@
 import assert from 'assert';
 import * as THREE from 'three';
 import { StationViewer } from '../src/viewer.js';
+import COMPONENT_OFFSETS from '../src/component-offsets.json' with { type: 'json' };
 
 console.log('[*] Testing dockarea_arg_m_02_tradestation_01 Assets, Animations, and Texture Mappings...');
 
@@ -129,28 +130,24 @@ const hatch02Group = new THREE.Group();
 const urlHatch01 = `${folder}/anim_hatch_01-lod0.dae`;
 const urlHatch02 = `${folder}/anim_hatch_02-lod0.dae`;
 
-// Simulate the connection offset logic in loadModuleMesh
-const applyHatchOffset = (scene, url) => {
-  const urlLower = url.toLowerCase();
-  if (urlLower.includes('dockarea_arg_m_02_tradestation_01')) {
-    if (urlLower.includes('anim_hatch_01')) {
-      scene.position.set(-466.9438, 58.5607, -0.07168579);
-      scene.quaternion.set(0, 0.7071068, 0, -0.7071067);
-    } else if (urlLower.includes('anim_hatch_02')) {
-      scene.position.set(467.2225, 58.57285, -0.07168579);
-      scene.quaternion.set(0, 0.7071068, 0, -0.7071067);
-    }
-  }
+// The hatches are placed like every other part, from component-offsets.json (generated from the XML:
+// connection (466.94, 58.56, -0.07), quaternion (0, 0.7071, 0, -0.7071), X mirrored for three)
+const hatches = COMPONENT_OFFSETS['dockarea_arg_m_02_tradestation_01'];
+const applyOffset = (scene, url) => {
+  const off = hatches?.[url.split('/').pop().replace(/-lod\d+\.dae$/i, '')];
+  if (!off) return;
+  scene.position.set(off[0], off[1], off[2]);
+  if (off.length >= 7) scene.quaternion.set(off[3], off[4], off[5], off[6]);
 };
+applyOffset(hatch01Group, urlHatch01);
+applyOffset(hatch02Group, urlHatch02);
 
-applyHatchOffset(hatch01Group, urlHatch01);
-applyHatchOffset(hatch02Group, urlHatch02);
-
-assert.strictEqual(hatch01Group.position.x, -466.9438, 'anim_hatch_01 X offset');
-assert.strictEqual(hatch01Group.position.y, 58.5607, 'anim_hatch_01 Y offset');
-assert.strictEqual(hatch02Group.position.x, 467.2225, 'anim_hatch_02 X offset');
-assert.strictEqual(hatch02Group.position.y, 58.57285, 'anim_hatch_02 Y offset');
-console.log('  ✓ [PASS] anim_hatch_01 and anim_hatch_02 connection offsets and orientations verified');
+const near = (a, b) => Math.abs(a - b) < 0.001;
+assert.ok(near(hatch01Group.position.x, -466.9438) && near(hatch01Group.position.y, 58.5607), 'anim_hatch_01 position');
+assert.ok(near(hatch02Group.position.x, 467.2225) && near(hatch02Group.position.y, 58.57285), 'anim_hatch_02 position');
+// Turned a quarter about y, mirrored like the position: (qx, -qy, -qz, qw)
+assert.ok(near(hatch01Group.quaternion.y, -0.7071068) && near(hatch01Group.quaternion.w, -0.7071067), 'anim_hatch_01 orientation');
+console.log('  ✓ [PASS] anim_hatch_01 and anim_hatch_02 placed from the component offsets table');
 
 // 9. Test detail_s_main animated UV lights registration
 const detailFxMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());

@@ -18,8 +18,16 @@ globalThis.DOMParser = dom.window.DOMParser;
 const THREE = await import('three');
 const {
   parseAni, sampleChannel, choosePartAnimation, sampleSegments, createPartAnimator, aniUrlsForFolder,
-  loadModuleAniClips, loadModuleMesh, CRANE_HOLDER_KEYFRAMES
+  loadModuleAniClips, loadModuleMesh
 } = await import('@x4/adapter-three');
+
+// Reference: the wheat farm crane holder's mode_active position keys (x, X mirrored), as read once by hand
+// from PROD_ARG_WHEAT_DATA.ANI
+const CRANE_HOLDER_KEYFRAMES = [
+  { t: 0.0, v: 0.0 }, { t: 6.67, v: 228.514 }, { t: 13.33, v: 228.514 }, { t: 23.33, v: -311.015 },
+  { t: 30.00, v: -304.634 }, { t: 43.33, v: 241.687 }, { t: 46.67, v: 116.395 }, { t: 53.33, v: 213.750 },
+  { t: 56.67, v: 155.442 }, { t: 66.667, v: 0.0 }
+];
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readAni = (rel) => {
@@ -67,7 +75,7 @@ if (haveAssets) {
   walk(path.join(root, 'assets1'));
   const failed = files.filter(f => { const b = fs.readFileSync(f); return !parseAni(b); });
   assert.deepStrictEqual(failed, [], 'all .ANI files parse');
-  console.log(`  ✓ parseAni reads all ${files.length} .ANI files; crane keys match the hand-copied keyframes`);
+  console.log(`  ✓ parseAni reads all ${files.length} .ANI files; crane keys match the reference keyframes`);
 } else {
   console.log('  - assets1 .ANI files not present, skipping real-file checks');
 }
@@ -172,7 +180,7 @@ const key = (time, value, interp = 2, handles) => ({ time, value, interp: [inter
   const hatch = host.animatedParts.find(p => p.object.name === 'anim_hatch_01');
   const vent = host.animatedParts.find(p => p.object.name === 'anim_vent');
   assert.ok(hatch && hatch.source === 'ani' && hatch.moduleIndex === 7, 'a part with an .ANI clip plays it');
-  assert.ok(vent && vent.source === undefined, 'a part without one keeps its hand-made motion');
+  assert.ok(!vent, 'a part without one stays still: no hand-made motion');
   hatch.update(1);
   assert.ok(close(hatch.object.position.z, 1.5), 'the registered update moves the hatch');
 
@@ -181,7 +189,7 @@ const key = (time, value, interp = 2, handles) => ({ time, value, interp: [inter
   await loadModuleMesh(host, { macro: 'dock_x_macro', index: 8 }, {});
   assert.deepStrictEqual(folders, [], 'no .ANI load for modules that do not animate');
   assert.strictEqual(host.animatedParts.length, 0);
-  console.log('  ✓ loadModuleMesh registers .ANI clips per part, falls back to hand-made motion, skips idle modules');
+  console.log('  ✓ loadModuleMesh registers .ANI clips per part, leaves parts without one still, skips idle modules');
 }
 
 console.log('\n[PASS] test_ani_animations');

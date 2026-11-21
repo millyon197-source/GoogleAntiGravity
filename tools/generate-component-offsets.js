@@ -27,6 +27,8 @@
  *                                                      whose table entry disagrees (except the --keep ones)
  *   node tools/generate-component-offsets.js --parents  write src/component-part-parents.json only: which drawn
  *                                                      part hangs off which (the loader attaches it so it follows)
+ *   node tools/generate-component-offsets.js --regenerate=comp,...
+ *                                                      replace these components' entries with the generated ones
  *   node tools/generate-component-offsets.js --add-missing [--keep=comp/part,...]
  *                                                      also add parts of existing components that the XML places
  *                                                      off the origin but the table has no entry for (drawn at 0)
@@ -51,8 +53,10 @@ const PARENTS_PATH = path.join(root, 'src/component-part-parents.json');
 const PART_MAIN_PATH = path.join(root, 'src/part-main-offsets.json');
 const HASH_TABLE_PATH = path.join(root, 'dae_hash_table.json');
 
-// Components whose parts the loader places itself rather than through the table
-const LOADER_PLACED = new Set(['dockarea_arg_m_02_tradestation_01']);
+// --regenerate=comp,...: components whose table entries are replaced wholesale by the generated
+// ones (e.g. hand-made entries written relative to a parent part, from before the loader attached
+// child parts by component-part-parents.json)
+const REGENERATE = new Set((process.argv.find(a => a.startsWith('--regenerate=')) || '--regenerate=').slice(13).split(',').filter(Boolean));
 
 const EPS = 1e-4;
 
@@ -202,7 +206,6 @@ const comparison = { agree: 0, disagree: [], missingInTable: 0, pivotFixes: [], 
 for (const bucket of Object.values(table)) {
   for (const entry of bucket) {
     const key = entry.key;
-    if (LOADER_PLACED.has(key)) continue;
     let xmlPath = path.join(root, entry.folder_path.replace(/^\//, '').replace(/_data$/, '') + '.xml');
     if (!fs.existsSync(xmlPath)) {
       xmlPath = path.join(root, entry.folder_path.replace(/^\/assets1\//, 'assets/').replace(/_data$/, '') + '.xml');
@@ -335,11 +338,21 @@ console.log(`Existing parts with a <pivot> that disagree: ${comparison.pivotFixe
 if (VERBOSE || FIX_PIVOTS) comparison.pivotFixes.forEach(([k, p]) => console.log(`  p ${k}/${p}`));
 console.log(`Existing components' parts placed off their origin in the XML but missing from the table: ${comparison.missing.length}`);
 if (VERBOSE || ADD_MISSING) comparison.missing.forEach(([k, p, g]) => console.log(`  m ${k}/${p} ${JSON.stringify(g)}`));
-if (WRITE || FIX_PIVOTS || ADD_MISSING) {
+for (const k of REGENERATE) {
+  const old = offsets[k] || {};
+  const gen = generated[k] || {};
+  const changed = [...new Set([...Object.keys(old), ...Object.keys(gen)])].filter(p => !(old[p] && gen[p] && sameEntry(old[p], gen[p])));
+  console.log(`Regenerate ${k}: ${Object.keys(old).length} entries -> ${Object.keys(gen).length}; ${changed.length} differ${changed.length ? ` (${changed.slice(0, 12).join(', ')}${changed.length > 12 ? ', ...' : ''})` : ''}`);
+}
+if (WRITE || FIX_PIVOTS || ADD_MISSING || REGENERATE.size) {
   const merged = { ...offsets };
   if (WRITE) for (const k of newKeys) merged[k] = generated[k];
   if (FIX_PIVOTS) for (const [k, p, gen] of comparison.pivotFixes) merged[k] = { ...merged[k], [p]: gen };
   if (ADD_MISSING) for (const [k, p, gen] of comparison.missing) merged[k] = { ...merged[k], [p]: gen };
+  for (const k of REGENERATE) {
+    if (generated[k]) merged[k] = generated[k];
+    else delete merged[k];
+  }
   fs.writeFileSync(OFFSETS_PATH, JSON.stringify(merged, null, 2) + '\n');
   if (WRITE) console.log(`Wrote ${newKeys.length} new components to ${path.relative(root, OFFSETS_PATH)}`);
   if (FIX_PIVOTS) console.log(`Rewrote ${comparison.pivotFixes.length} existing pivot parts in ${path.relative(root, OFFSETS_PATH)}`);

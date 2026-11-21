@@ -51,12 +51,13 @@ assert(oreRes.diffuse && oreRes.diffuse.includes('nat_p2_gravel_01_diff.dds'), '
 
 console.log('  ✓ [PASS] Lava, fire, vapor, wrecks, mud, and ore resolve to authentic textures');
 
-// 3. Verify procedural mechanical animations
-console.log('  [3] Verifying procedural mechanical animations in animatedParts...');
-assert(viewerSrc.includes("url.toLowerCase().includes('anim_rotor')"), 'Rotors included in continuous rotation');
-assert(viewerSrc.includes("url.toLowerCase().includes('anim_stomp')"), 'Stamping machines included in reciprocating animation');
-assert(viewerSrc.includes("url.toLowerCase().includes('anim_alge')"), 'Bio-algae included in harmonic sway animation');
-console.log('  ✓ [PASS] Industrial rotors, stamping pistons, and bio-algae registered in animatedParts');
+// 3. Part motion comes only from the game's .ANI clips: no hand-made rotor, piston or algae motion
+console.log('  [3] Verifying part motion comes from the game animation files only...');
+for (const rule of ["includes('anim_rotor')", "includes('anim_stomp')", "includes('anim_alge')", 'interpolateKeyframes', 'simonConfigs']) {
+  assert(!viewerSrc.includes(rule), `no hand-made motion rule left: ${rule}`);
+}
+assert(viewerSrc.includes("source: 'ani'") && viewerSrc.includes('createPartAnimator(scene, aniSegments)'), 'parts animate from their .ANI clip');
+console.log('  ✓ [PASS] Rotors, pistons and algae move only by their game animation');
 
 // 4. Verify animated UV textures for fluids & lava
 console.log('  [4] Verifying animated UV scrolling for lava, fire, vapor, and mud...');

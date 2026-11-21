@@ -343,62 +343,6 @@ export function cloneSharingRawUvs(template) {
   return copy;
 }
 
-/** Wheat farm crane holder keyframes from game animations (PROD_ARG_WHEAT_DATA.ANI, mode_active 66.67s cycle). */
-export const CRANE_HOLDER_KEYFRAMES = [
-  { t: 0.0,    v: 0.0 },
-  { t: 6.67,   v: 228.514 },
-  { t: 13.33,  v: 228.514 },
-  { t: 23.33,  v: -311.015 },
-  { t: 30.00,  v: -304.634 },
-  { t: 43.33,  v: 241.687 },
-  { t: 46.67,  v: 116.395 },
-  { t: 53.33,  v: 213.750 },
-  { t: 56.67,  v: 155.442 },
-  { t: 66.667, v: 0.0 }
-];
-
-/** Wheat farm crane arm keyframes from game animations (PROD_ARG_WHEAT_DATA.ANI, mode_active 66.67s cycle). */
-export const CRANE_ARM_KEYFRAMES = [
-  { t: 0.0,    v: 0.0 },
-  { t: 6.67,   v: 151.383 },
-  { t: 13.33,  v: 152.932 },
-  { t: 20.00,  v: 31.552 },
-  { t: 26.67,  v: 160.185 },
-  { t: 33.33,  v: -0.209 },
-  { t: 40.00,  v: 60.487 },
-  { t: 46.67,  v: 187.889 },
-  { t: 53.33,  v: 151.555 },
-  { t: 60.00,  v: 154.674 },
-  { t: 66.667, v: 0.0 }
-];
-
-/**
- * Evaluates looped scalar keyframes with smoothstep interpolation between points.
- * @param {Array<{t: number, v: number}>} keyframes
- * @param {number} period
- * @param {number} time
- * @returns {number}
- */
-export function interpolateKeyframes(keyframes, period, time) {
-  if (!keyframes || keyframes.length === 0) return 0;
-  const t = ((time % period) + period) % period;
-  if (t <= keyframes[0].t) return keyframes[0].v;
-  if (t >= keyframes[keyframes.length - 1].t) return keyframes[keyframes.length - 1].v;
-
-  for (let i = 0; i < keyframes.length - 1; i++) {
-    const k0 = keyframes[i];
-    const k1 = keyframes[i + 1];
-    if (t >= k0.t && t <= k1.t) {
-      const dt = k1.t - k0.t;
-      if (dt <= 1e-6) return k0.v;
-      const u = (t - k0.t) / dt;
-      const s = u * u * (3 - 2 * u);
-      return k0.v + s * (k1.v - k0.v);
-    }
-  }
-  return keyframes[keyframes.length - 1].v;
-}
-
 /**
  * Loads and assembles all component meshes for one station module: resolves its DAE
  * components, loads each (binary fast path or Collada), applies materials, positions
@@ -548,32 +492,18 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           scene.userData.moduleIndex = mod.index;
         }
 
-        // Apply connection offsets for child parts with non-zero connection transforms
-        const urlLower = url.toLowerCase();
-        if (urlLower.includes('dockarea_arg_m_02_tradestation_01')) {
-          if (urlLower.includes('anim_hatch_01')) {
-            scene.position.set(-466.9438, 58.5607, -0.07168579);
-            scene.quaternion.set(0, 0.7071068, 0, -0.7071067);
-          } else if (urlLower.includes('anim_hatch_02')) {
-            scene.position.set(467.2225, 58.57285, -0.07168579);
-            scene.quaternion.set(0, 0.7071068, 0, -0.7071067);
-          }
-        } else {
-          let off = componentOffsets[baseName]?.[partBase];
-          if (!off && urlLower.includes('hab_arg_l_01')) {
-            off = componentOffsets['hab_arg_l_01']?.[partBase];
-          }
-          if (off) {
-            if (Array.isArray(off)) {
-              scene.position.set(off[0], off[1], off[2]);
-              if (off.length >= 7) {
-                scene.quaternion.set(off[3], off[4], off[5], off[6]);
-              }
-            } else if (off.position) {
-              scene.position.set(off.position[0], off.position[1], off.position[2]);
-              if (off.quaternion) {
-                scene.quaternion.set(off.quaternion[0], off.quaternion[1], off.quaternion[2], off.quaternion[3]);
-              }
+        // Place the part by its connection (and pivot) from component-offsets.json, in component space
+        const off = componentOffsets[baseName]?.[partBase];
+        if (off) {
+          if (Array.isArray(off)) {
+            scene.position.set(off[0], off[1], off[2]);
+            if (off.length >= 7) {
+              scene.quaternion.set(off[3], off[4], off[5], off[6]);
+            }
+          } else if (off.position) {
+            scene.position.set(off.position[0], off.position[1], off.position[2]);
+            if (off.quaternion) {
+              scene.quaternion.set(off.quaternion[0], off.quaternion[1], off.quaternion[2], off.quaternion[3]);
             }
           }
         }
@@ -834,107 +764,6 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
           source: 'ani',
           update: createPartAnimator(scene, aniSegments)
         });
-      } else if (canAnimate && host.animatedParts) {
-        // Parts without game animation data keep their hand-made motion
-        if (partBase.includes('anim_crane_holder')) {
-          const basePos = scene.position.clone();
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              scene.position.x = basePos.x + interpolateKeyframes(CRANE_HOLDER_KEYFRAMES, 66.666664, time);
-            }
-          });
-        } else if (partBase.includes('anim_arm')) {
-          const basePos = scene.position.clone();
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              scene.position.z = basePos.z + interpolateKeyframes(CRANE_ARM_KEYFRAMES, 66.666664, time);
-            }
-          });
-        } else if (partBase.includes('anim_vent')) {
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              scene.rotation.x = Math.sin(time * 1.5) * 0.25;
-            }
-          });
-        } else if ((url.toLowerCase().includes('anim_centrifuge') ||
-                    url.toLowerCase().includes('anim_rotor') ||
-                    url.toLowerCase().includes('anim_rotator') ||
-                    url.toLowerCase().includes('anim_fan') ||
-                    url.toLowerCase().includes('anim_stomp_wheels')) &&
-                   (partBase.includes('anim_centrifuge') ||
-                    partBase.includes('anim_rotor') ||
-                    partBase.includes('anim_rotator') ||
-                    partBase.includes('anim_fan') ||
-                    partBase.includes('anim_stomp_wheels'))) {
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              // Continuous industrial rotation (0.157 rad/s)
-              scene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
-            }
-          });
-        } else if (url.toLowerCase().includes('anim_stomp') && partBase.startsWith('anim_stomp') && !partBase.includes('wheels')) {
-          const basePosY = scene.position.y;
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              // Hydraulic stamping machine motion: downward crush and retract
-              const phase = (time * 2.2) % (Math.PI * 2);
-              const crush = Math.pow(Math.sin(phase), 4);
-              scene.position.y = basePosY - crush * 8.0;
-            }
-          });
-        } else if (url.toLowerCase().includes('anim_alge') && partBase.includes('anim_alge')) {
-          const baseRotZ = scene.rotation.z;
-          const algeOffset = (partBase.length * 1.3) % Math.PI;
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              // Harmonic bio-flora swaying underwater
-              scene.rotation.z = baseRotZ + Math.sin(time * 1.2 + algeOffset) * 0.05;
-            }
-          });
-        } else if (url.toLowerCase().includes('detail_xs_simon')) {
-          const simonConfigs = {
-            'detail_xs_simon_01': { delta: [-334.78, 0.08, -11.66], period: 80.0 },
-            'detail_xs_simon_02': { delta: [120.0, 8.0, -80.0], period: 66.7 },
-            'detail_xs_simon_03': { delta: [-60.0, 5.0, 40.0], period: 20.0 },
-            'detail_xs_simon_04': { delta: [334.77, -0.13, -200.77], period: 53.3 },
-            'detail_xs_simon_05': { delta: [-150.0, -6.0, 70.0], period: 40.0 },
-            'detail_xs_simon_06': { delta: [110.0, 10.0, 90.0], period: 48.3 },
-            'detail_xs_simon_07': { delta: [-140.0, -8.0, -60.0], period: 33.3 },
-            'detail_xs_simon_08': { delta: [-95.10, 33.86, -453.09], period: 60.0 },
-            'detail_xs_simon_09': { delta: [-80.0, 12.0, 120.0], period: 56.7 },
-            'detail_xs_simon_10': { delta: [-120.0, -10.0, 150.0], period: 66.7 },
-            'detail_xs_simon_12': { delta: [258.41, 18.87, -0.91], period: 60.0 },
-            'detail_xs_simon_18': { delta: [-332.63, 84.43, -248.36], period: 60.0 }
-          };
-          const cfg = simonConfigs[partBase] || { delta: [60.0, 5.0, 40.0], period: 40.0 };
-          const basePos = scene.position.clone();
-          const baseRot = scene.rotation.clone();
-          host.animatedParts.push({
-            object: scene,
-            moduleIndex: mod?.index,
-            update: (time) => {
-              const phase = (time * (Math.PI * 2 / cfg.period)) % (Math.PI * 2);
-              const u = (1 - Math.cos(phase)) * 0.5;
-              scene.position.x = basePos.x + u * cfg.delta[0];
-              scene.position.y = basePos.y + u * cfg.delta[1] + Math.sin(time * 2.2) * 1.2;
-              scene.position.z = basePos.z + u * cfg.delta[2];
-              scene.rotation.z = baseRot.z + Math.sin(phase) * 0.08;
-              scene.rotation.x = baseRot.x + Math.sin(time * 2.8) * 0.03;
-            }
-          });
-        }
       }
     } catch (e) {
       log(`  [-] Failed to load ${url}: ${e.message || e}`, 'warn');
@@ -951,104 +780,13 @@ export async function loadModuleMesh(host, mod, { partMainOffsets = {}, componen
   const meshGroup = new THREE.Group();
   meshGroup.name = 'module_mesh_group';
 
-  // Advanced electronics hierarchy: attach capsule holders and shields to rotating centrifuge
-  if (baseName.includes('prod_gen_advancedelectronics')) {
-    const centrifugeChildren = new Set([
-      'anim_capsuleholder11',
-      'anim_capsuleholder12',
-      'anim_capsuleholder13',
-      'anim_capsuleholder14',
-      'anim_capsuleholder15',
-      'anim_capsuleholder16',
-      'anim_capsuleshield',
-      'anim_holdershield'
-    ]);
-
-    let centrifugeScene = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_centrifuge');
-    if (!centrifugeScene && loadedScenes.some(s => centrifugeChildren.has(s.userData.partName || s.name))) {
-      centrifugeScene = new THREE.Group();
-      centrifugeScene.name = 'anim_centrifuge';
-      centrifugeScene.userData.partName = 'anim_centrifuge';
-      const centOff = componentOffsets['prod_gen_advancedelectronics']?.['anim_centrifuge'] || [110.487, 2.7689, 0.7379];
-      centrifugeScene.position.set(centOff[0], centOff[1], centOff[2]);
-      if (canAnimate && host.animatedParts) {
-        const centrifugeSegments = aniClips ? choosePartAnimation(aniClips.get('anim_centrifuge')) : null;
-        host.animatedParts.push({
-          object: centrifugeScene,
-          moduleIndex: mod?.index,
-          update: centrifugeSegments
-            ? createPartAnimator(centrifugeScene, centrifugeSegments)
-            : (time) => {
-              centrifugeScene.rotation.z = (time * (Math.PI * 2 / 40)) % (Math.PI * 2);
-            }
-        });
-      }
-      meshGroup.add(centrifugeScene);
-    }
-
-    const simonContainerParents = {
-      'detail_s_simon_container_01': 'detail_xs_simon_01',
-      'detail_s_simon_container_02': 'detail_xs_simon_02',
-      'detail_s_simon_container_03': 'detail_xs_simon_03',
-      'detail_s_simon_container_04': 'detail_xs_simon_04',
-      'detail_s_simon_container_05': 'detail_xs_simon_05',
-      'detail_s_simon_container_06': 'detail_xs_simon_06',
-      'detail_s_simon_container_07': 'detail_xs_simon_07',
-      'detail_s_simon_container_08': 'detail_xs_simon_08',
-      'detail_s_simon_container_09': 'detail_xs_simon_09',
-      'detail_s_simon_container_10': 'detail_xs_simon_10',
-      'detail_s_simon_container_12': 'detail_xs_simon_12',
-      'detail_s_simon_container_18': 'detail_xs_simon_18'
-    };
-
-    for (const scene of loadedScenes) {
-      const pName = scene.userData.partName || scene.name;
-      if (centrifugeChildren.has(pName)) {
-        if (centrifugeScene) {
-          centrifugeScene.add(scene);
-        } else {
-          meshGroup.add(scene);
-        }
-      } else if (simonContainerParents[pName]) {
-        const parentBotName = simonContainerParents[pName];
-        const parentBot = loadedScenes.find(s => (s.userData.partName || s.name) === parentBotName);
-        if (parentBot) {
-          parentBot.add(scene);
-        } else {
-          meshGroup.add(scene);
-        }
-      } else {
-        meshGroup.add(scene);
-      }
-    }
-  } else if (baseName.includes('prod_arg_wheat')) {
-    const animMain = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_main');
-    const craneHolder = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_crane_holder');
-    const animArm = loadedScenes.find(s => (s.userData.partName || s.name) === 'anim_arm');
-
-    if (craneHolder && animArm) {
-      craneHolder.add(animArm);
-    }
-    if (animMain && craneHolder) {
-      animMain.add(craneHolder);
-    }
-
-    for (const scene of loadedScenes) {
-      const pName = scene.userData.partName || scene.name;
-      if (pName === 'anim_arm') {
-        if (!craneHolder) meshGroup.add(scene);
-      } else if (pName === 'anim_crane_holder') {
-        if (!animMain) meshGroup.add(scene);
-      } else {
-        meshGroup.add(scene);
-      }
-    }
-  } else {
-    for (const scene of loadedScenes) {
-      meshGroup.add(scene);
-    }
-    attachChildParts(meshGroup, loadedScenes, partParents[baseName]);
+  // Every part on the mesh group, then each child part under the part the game moves it with
+  // (component-part-parents.json: centrifuge capsule holders, simon bot containers, the wheat crane,
+  // algae chains, ...)
+  for (const scene of loadedScenes) {
+    meshGroup.add(scene);
   }
+  attachChildParts(meshGroup, loadedScenes, partParents[baseName]);
 
   if (offset) {
     meshGroup.position.set(-offset[0], offset[1], offset[2]);
